@@ -10,6 +10,15 @@ sys.dont_write_bytecode = True
 # race_calendarのパス
 CALENDAR_PATH = "C:/keiba_ai/keiba_ai_ver2.0/texts/race_calendar/"
 
+def get_race_id_error(e):
+    """ エラー時動作を記載する 
+        Args:
+            e (Exception) : エラー内容 
+    """
+    
+    print(__name__ + ":" + __file__)
+    print(f"{e.__class__.__name__}: {e}")
+
 def get_year_id_all(place_id, year = date.today().year):
 
     """ 開催コースと年を指定して、1年間のrace_idを取得 
@@ -55,7 +64,7 @@ def get_year_id_calendar(place_id, year = date.today().year):
         return race_id_list
     # エラー時　エラー内容を出力
     except Exception as e:
-        print(f"{e.__class__.__name__}: {e}")
+        get_race_id_error(e)
         return race_id_list
 
 def get_past_year_id(place_id = 0, day = date.today()):
@@ -104,7 +113,7 @@ def get_past_year_id(place_id = 0, day = date.today()):
         return race_id_list
     # エラー時　エラー内容を出力
     except Exception as e:
-        print(f"{e.__class__.__name__}: {e}")
+        get_race_id_error(e)
         return race_id_list
 
 def get_past_weekly_id(place_id = 0, day = date.today()):
@@ -132,7 +141,7 @@ def get_past_weekly_id(place_id = 0, day = date.today()):
         return race_id_list
     # エラー時　エラー内容を出力
     except Exception as e:
-        print(f"{e.__class__.__name__}: {e}")
+        get_race_id_error(e)
         return race_id_list
     
 def get_next_weekly_id(place_id = 0, day = date.today()):
@@ -160,7 +169,7 @@ def get_next_weekly_id(place_id = 0, day = date.today()):
         return race_id_list
     # エラー時　エラー内容を出力
     except Exception as e:
-        print(f"{e.__class__.__name__}: {e}")
+        get_race_id_error(e)
         return race_id_list
 
 def get_daily_id(place_id = 0, race_day = date.today()):
@@ -204,7 +213,7 @@ def get_daily_id(place_id = 0, race_day = date.today()):
         return race_id_list
     # エラー時　エラー内容を出力
     except Exception as e:
-        print(f"{e.__class__.__name__}: {e}")
+        get_race_id_error(e)
         return race_id_list
 
 
