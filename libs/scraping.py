@@ -1,5 +1,6 @@
 import re
 import sys
+import warnings
 
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -8,13 +9,15 @@ import requests
 
 # pycache を生成しない
 sys.dont_write_bytecode = True
+# エラー表記をしない
+warnings.simplefilter('ignore')
 
 def scraping_error(e):
     """ エラー時動作を記載する 
         Args:
             e (Exception) : エラー内容 
     """
-    
+
     print(__name__ + ":" + __file__)
     print(f"{e.__class__.__name__}: {e}")
 
@@ -137,9 +140,9 @@ def scrape_race_results(race_id):
         return df_results
     
     except Exception as e:
-        scraping_error(e)
+        # scraping_error(e)
         return pd.DataFrame()
 
 
 if __name__ == "__main__":
-    scrape_race_results(str(202402011211))
+    print(scrape_race_results(str(202402011211)))

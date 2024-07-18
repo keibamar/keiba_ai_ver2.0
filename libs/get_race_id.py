@@ -1,8 +1,7 @@
 import sys
 
-import pandas as pd
 from datetime import date, timedelta
-
+import pandas as pd
 
 # pycache を生成しない
 sys.dont_write_bytecode = True
@@ -15,7 +14,7 @@ def get_race_id_error(e):
         Args:
             e (Exception) : エラー内容 
     """
-    
+
     print(__name__ + ":" + __file__)
     print(f"{e.__class__.__name__}: {e}")
 
@@ -73,7 +72,7 @@ def get_past_year_id(place_id = 0, day = date.today()):
     
     Args:
         place_id (int) : 開催コースid (初期値0=全コース)
-        race_day(Date) : 日（初期値：今日）
+        day(Date) : 日（初期値：今日）
 
     Returns:
         list: 指定した日にちまでの、その年のstr型のrace_idを返す    
