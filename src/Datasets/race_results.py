@@ -48,7 +48,8 @@ def save_race_results_dataset(place_id, year, race_results_df ):
     """
     try:
         if any(race_results_df):
-            # csv/pickleに書き込む 
+            # csv/pickleに書き込む
+            race_results_df = race_results_df.astype(str) 
             race_results_df.to_csv(name_header.DATA_PATH + "RaceResults\\" + name_header.PLACE_LIST[place_id - 1] + '//' + str(year) + '_race_results.csv')
             race_results_df.to_pickle(name_header.DATA_PATH + "RaceResults\\" + name_header.PLACE_LIST[place_id - 1] + '//' + str(year) + '_race_results.pickle')
     except Exception as e:
@@ -92,6 +93,10 @@ def update_race_results_dataset(place_id, day = date.today()):
     if any(new_race_results_df):
         try:
             new_race_results_df = pd.concat([old_race_results_df,new_race_results_df],axis = 0)
+
+            # 重複している内容を消去
+            new_race_results_df = new_race_results_df.drop_duplicates(keep = 'first')
+
             # csv/pickleに書き込む
             save_race_results_dataset(place_id, day.year, new_race_results_df)
         except Exception as e:
