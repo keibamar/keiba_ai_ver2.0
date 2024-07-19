@@ -2,16 +2,18 @@ import os
 import sys
 
 from datetime import date, timedelta
+import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+
+# pycache を生成しない
+sys.dont_write_bytecode = True
 sys.path.append("C:\keiba_ai\keiba_ai_ver2.0\libs")
 import get_race_id
 import name_header
 import scraping
 
-# pycache を生成しない
-sys.dont_write_bytecode = True
 
 def race_returns_error(e):
     """ エラー時動作を記載する 
@@ -49,7 +51,8 @@ def save_race_results_dataset(place_id, year, race_results_df ):
     try:
         if any(race_results_df):
             # csv/pickleに書き込む
-            race_results_df = race_results_df.astype(str) 
+            race_results_df = race_results_df.astype(str)
+            race_results_df.fillna(np.nan)
             race_results_df.to_csv(name_header.DATA_PATH + "RaceResults\\" + name_header.PLACE_LIST[place_id - 1] + '//' + str(year) + '_race_results.csv')
             race_results_df.to_pickle(name_header.DATA_PATH + "RaceResults\\" + name_header.PLACE_LIST[place_id - 1] + '//' + str(year) + '_race_results.pickle')
     except Exception as e:
@@ -66,7 +69,8 @@ def get_race_results_csv(place_id, year):
     # csvを読み込む 
     path = name_header.DATA_PATH + "RaceResults\\" + name_header.PLACE_LIST[place_id - 1] +  '//' + str(year) + '_race_results.csv'
     if os.path.isfile(path):
-        df = pd.read_csv(path, index_col = 0, dtype = str)  
+        df = pd.read_csv(path, index_col = 0, dtype = str)
+        df.fillna(np.nan)  
     else :
         df = pd.DataFrame()
 
