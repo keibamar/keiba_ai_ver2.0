@@ -40,7 +40,28 @@ def scrape_race_results_dataframe(race_id_list):
 
     return race_results_df
 
-def save_race_results_dataset(place_id, year, race_results_df ):
+def format_race_results_dataframe(race_results_df):
+    """ race_resultsのフォーマットを整える 
+        Args:
+            race_results_df（pd.DataFrame） : race_resultデータセット
+
+        Return:
+            race_results_df（pd.DataFrame） : フォーマットされたrace_resultデータセット
+    """
+    # 欠損値をnanで埋める
+    race_results_df.fillna(np.nan)   
+    # "斤量","人気"をfloatに固定
+    race_results_df['人気'] = race_results_df['人気'].astype(float)
+    race_results_df['斤量'] = race_results_df['斤量'].astype(float)
+    # 文字列に変換
+    race_results_df = race_results_df.astype(str)
+    # 重複している内容を消去
+    race_results_df = race_results_df.drop_duplicates(keep = 'first')
+
+    return race_results_df
+
+
+def save_race_results_dataset(place_id, year, race_results_df):
 
     """ race_resultsのDataFrameを保存 
         Args:
@@ -50,9 +71,9 @@ def save_race_results_dataset(place_id, year, race_results_df ):
     """
     try:
         if any(race_results_df):
-            # csv/pickleに書き込む
-            race_results_df = race_results_df.astype(str)
-            race_results_df.fillna(np.nan)
+            # フォーマットを整える
+            race_results_df = format_race_results_dataframe(race_results_df)
+            # csv/pickleに保存
             race_results_df.to_csv(name_header.DATA_PATH + "RaceResults\\" + name_header.PLACE_LIST[place_id - 1] + '//' + str(year) + '_race_results.csv')
             race_results_df.to_pickle(name_header.DATA_PATH + "RaceResults\\" + name_header.PLACE_LIST[place_id - 1] + '//' + str(year) + '_race_results.pickle')
     except Exception as e:
@@ -97,9 +118,6 @@ def update_race_results_dataset(place_id, day = date.today()):
     if any(new_race_results_df):
         try:
             new_race_results_df = pd.concat([old_race_results_df,new_race_results_df],axis = 0)
-
-            # 重複している内容を消去
-            new_race_results_df = new_race_results_df.drop_duplicates(keep = 'first')
 
             # csv/pickleに書き込む
             save_race_results_dataset(place_id, day.year, new_race_results_df)
@@ -174,4 +192,5 @@ def make_all_datset(year = date.today().year):
 
 
 if __name__ == "__main__":
-    make_all_datset()
+    montly_update_dataset()
+    weekly_update_dataset()
