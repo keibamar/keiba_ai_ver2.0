@@ -15,7 +15,7 @@ import name_header
 import scraping
 
 
-def race_returns_error(e):
+def race_results_error(e):
     """ エラー時動作を記載する 
         Args:
             e (Exception) : エラー内容 
@@ -77,7 +77,7 @@ def save_race_results_dataset(place_id, year, race_results_df):
             race_results_df.to_csv(name_header.DATA_PATH + "RaceResults\\" + name_header.PLACE_LIST[place_id - 1] + '//' + str(year) + '_race_results.csv')
             race_results_df.to_pickle(name_header.DATA_PATH + "RaceResults\\" + name_header.PLACE_LIST[place_id - 1] + '//' + str(year) + '_race_results.pickle')
     except Exception as e:
-            race_returns_error(e)
+            race_results_error(e)
 
 
 def get_race_results_csv(place_id, year):
@@ -122,7 +122,7 @@ def update_race_results_dataset(place_id, day = date.today()):
             # csv/pickleに書き込む
             save_race_results_dataset(place_id, day.year, new_race_results_df)
         except Exception as e:
-            race_returns_error(e)
+            race_results_error(e)
 
 
 def make_yearly_race_results_dataset(place_id, year = date.today().year):
@@ -158,7 +158,7 @@ def make_up_to_day_dataset(place_id, day = date.today()):
         # csv/pickleに書き込む
         save_race_results_dataset(place_id, day.year, race_results_df)
     except Exception as e:
-            race_returns_error(e) 
+            race_results_error(e) 
 
 
 def weekly_update_dataset(day = date.today()):
