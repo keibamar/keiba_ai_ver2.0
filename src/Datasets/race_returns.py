@@ -219,6 +219,8 @@ def update_race_returns_dataset(place_id, day = date.today()):
     # 更新するデータセットがあれば更新
     if any(new_race_returns_df):
         try:
+            # columnsをそろえてデータセットを統合
+            new_race_returns_df.columns = old_race_returns_df.columns
             new_race_returns_df = pd.concat([old_race_returns_df,new_race_returns_df],axis = 0)
 
             # csv/pickleに書き込む
@@ -289,5 +291,4 @@ def make_all_datset(year = date.today().year):
             make_yearly_race_returns_dataset(place_id, y)
 
 if __name__ == "__main__":
-    montly_update_dataset()
     weekly_update_dataset()
