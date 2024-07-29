@@ -167,7 +167,7 @@ def weekly_update_dataset(day = date.today()):
         day(Date) : 日（初期値：今日）
  
     """ 
-    for place_id in range(1, 11):
+    for place_id in range(1, len(name_header.PLACE_LIST) + 1):
         print("[WeeklyUpdate]" + name_header.PLACE_LIST[place_id -1] + " RaceResults")
         update_race_results_dataset(place_id, day)
 
@@ -176,7 +176,7 @@ def montly_update_dataset(day = date.today()):
     Args:
     day(Date) : 日（初期値：今日）
     """ 
-    for place_id in range(1, 11):
+    for place_id in range(1, len(name_header.PLACE_LIST) + 1):
         print("[MonthlyUpdate]" + name_header.PLACE_LIST[place_id -1] + " RaceResults")
         make_up_to_day_dataset(place_id, day)
 
@@ -186,7 +186,7 @@ def make_all_datset(year = date.today().year):
         day(Date) : 日（初期値：今日）
     """ 
     for y in range(2019, year + 1):
-        for place_id in range(1, 11):
+        for place_id in range(1, len(name_header.PLACE_LIST) + 1):
             print("[NewMake]" + str(y) + ":" + name_header.PLACE_LIST[place_id -1] + " RaceResults")
             make_yearly_race_results_dataset(place_id, y)
 

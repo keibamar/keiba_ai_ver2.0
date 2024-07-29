@@ -265,7 +265,6 @@ def weekly_update_dataset(day = date.today()):
     """ 指定した日にちから、１週間分のデータセットを更新  
     Args:
         day(Date) : 日（初期値：今日）
- 
     """ 
     for place_id in range(1, 11):
         print("[WeeklyUpdate]" + name_header.PLACE_LIST[place_id -1] + " RaceReturns")
