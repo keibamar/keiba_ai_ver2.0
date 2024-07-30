@@ -143,6 +143,5 @@ def scrape_race_results(race_id):
         # scraping_error(e)
         return pd.DataFrame()
 
-
 if __name__ == "__main__":
     print(scrape_race_results(str(202402011211)))

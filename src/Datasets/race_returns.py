@@ -1,12 +1,10 @@
 import os
 import re
 import sys
-import warnings
 
 from datetime import date, timedelta
 import pandas as pd
 from tqdm import tqdm
-
 
 # pycache を生成しない
 sys.dont_write_bytecode = True
@@ -261,7 +259,7 @@ def make_up_to_day_dataset(place_id, day = date.today()):
     except Exception as e:
             race_returns_error(e) 
 
-def weekly_update_dataset(day = date.today()):
+def weekly_update_race_returns(day = date.today()):
     """ 指定した日にちから、１週間分のデータセットを更新  
     Args:
         day(Date) : 日（初期値：今日）
@@ -270,7 +268,7 @@ def weekly_update_dataset(day = date.today()):
         print("[WeeklyUpdate]" + name_header.PLACE_LIST[place_id -1] + " RaceReturns")
         update_race_returns_dataset(place_id, day)
 
-def montly_update_dataset(day = date.today()):
+def montly_update_race_returns(day = date.today()):
     """ 指定した日にちまでのその年のデータセットを更新  
     Args:
     day(Date) : 日（初期値：今日）
@@ -279,7 +277,7 @@ def montly_update_dataset(day = date.today()):
         print("[MonthlyUpdate]" + name_header.PLACE_LIST[place_id -1] + " RaceReturns")
         make_up_to_day_dataset(place_id, day)
 
-def make_all_datset(year = date.today().year):
+def make_all_race_returns(year = date.today().year):
     """ 指定した年までの、すべてのデータセットを作成 
     Args:
         day(Date) : 日（初期値：今日）
@@ -290,4 +288,4 @@ def make_all_datset(year = date.today().year):
             make_yearly_race_returns_dataset(place_id, y)
 
 if __name__ == "__main__":
-    weekly_update_dataset()
+    weekly_update_race_returns()

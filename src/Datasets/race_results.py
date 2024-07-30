@@ -6,14 +6,12 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-
 # pycache を生成しない
 sys.dont_write_bytecode = True
 sys.path.append("C:\keiba_ai\keiba_ai_ver2.0\libs")
 import get_race_id
 import name_header
 import scraping
-
 
 def race_results_error(e):
     """ エラー時動作を記載する 
@@ -60,7 +58,6 @@ def format_race_results_dataframe(race_results_df):
 
     return race_results_df
 
-
 def save_race_results_dataset(place_id, year, race_results_df):
 
     """ race_resultsのDataFrameを保存 
@@ -78,7 +75,6 @@ def save_race_results_dataset(place_id, year, race_results_df):
             race_results_df.to_pickle(name_header.DATA_PATH + "RaceResults\\" + name_header.PLACE_LIST[place_id - 1] + '//' + str(year) + '_race_results.pickle')
     except Exception as e:
             race_results_error(e)
-
 
 def get_race_results_csv(place_id, year):
 
@@ -124,7 +120,6 @@ def update_race_results_dataset(place_id, day = date.today()):
         except Exception as e:
             race_results_error(e)
 
-
 def make_yearly_race_results_dataset(place_id, year = date.today().year):
     
     """ 開催コースと年を指定して、1年間のrace_resultsデータセットを作成 
@@ -160,8 +155,7 @@ def make_up_to_day_dataset(place_id, day = date.today()):
     except Exception as e:
             race_results_error(e) 
 
-
-def weekly_update_dataset(day = date.today()):
+def weekly_update_race_results(day = date.today()):
     """ 指定した日にちから、１週間分のデータセットを更新  
     Args:
         day(Date) : 日（初期値：今日）
@@ -171,7 +165,7 @@ def weekly_update_dataset(day = date.today()):
         print("[WeeklyUpdate]" + name_header.PLACE_LIST[place_id -1] + " RaceResults")
         update_race_results_dataset(place_id, day)
 
-def montly_update_dataset(day = date.today()):
+def montly_update_race_results(day = date.today()):
     """ 指定した日にちまでのその年のデータセットを更新  
     Args:
     day(Date) : 日（初期値：今日）
@@ -180,7 +174,7 @@ def montly_update_dataset(day = date.today()):
         print("[MonthlyUpdate]" + name_header.PLACE_LIST[place_id -1] + " RaceResults")
         make_up_to_day_dataset(place_id, day)
 
-def make_all_datset(year = date.today().year):
+def make_all_race_results(year = date.today().year):
     """ 指定した年までの、すべてのデータセットを作成 
     Args:
         day(Date) : 日（初期値：今日）
@@ -190,7 +184,6 @@ def make_all_datset(year = date.today().year):
             print("[NewMake]" + str(y) + ":" + name_header.PLACE_LIST[place_id -1] + " RaceResults")
             make_yearly_race_results_dataset(place_id, y)
 
-
 if __name__ == "__main__":
-    montly_update_dataset()
-    weekly_update_dataset()
+    montly_update_race_results()
+    weekly_update_race_results()

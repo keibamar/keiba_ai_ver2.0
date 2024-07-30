@@ -1,4 +1,3 @@
-
 import os
 import sys
 
@@ -149,7 +148,7 @@ def make_past_performance_dataset_from_race_id_list(race_id_list):
     if any(horse_id_list):
         make_past_performanece_datasets(horse_id_list)
 
-def weekly_update(day = date.today()):
+def weekly_update_past_performance(day = date.today()):
     """ 指定した日にちから、１週間分のデータセットを更新  
         Args:
          day(Date) : 日（初期値：今日）
@@ -159,7 +158,7 @@ def weekly_update(day = date.today()):
         race_id_list = get_race_id.get_past_weekly_id(place_id, day)
         make_past_performance_dataset_from_race_id_list(race_id_list)
         
-def monthly_update(day = date.today()):
+def monthly_update_past_performance(day = date.today()):
     """ 指定した日にちまでのその年のデータセットを更新  
         Args:
         day(Date) : 日（初期値：今日）
@@ -169,7 +168,7 @@ def monthly_update(day = date.today()):
         race_id_list = get_race_id.get_past_year_id(place_id, day)
         make_past_performance_dataset_from_race_id_list(race_id_list)
 
-def make_all_dataset(year = date.today().year):
+def make_all_past_performance(year = date.today().year):
     """ 指定した年までの、すべてのデータセットを作成 
     Args:
         day(Date) : 日（初期値：今日）
@@ -181,4 +180,4 @@ def make_all_dataset(year = date.today().year):
             make_past_performance_dataset_from_race_id_list(race_id_list)
 
 if __name__ == "__main__":
-    monthly_update()
+    monthly_update_past_performance()

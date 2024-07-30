@@ -215,7 +215,6 @@ def get_daily_id(place_id = 0, race_day = date.today()):
         get_race_id_error(e)
         return race_id_list
 
-
 if __name__ == "__main__":
     now = date.today() -timedelta(1)
     print(len(get_past_year_id(0,now)))
