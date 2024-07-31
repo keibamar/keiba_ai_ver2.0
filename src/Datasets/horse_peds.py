@@ -4,6 +4,7 @@ import re
 import sys
 
 from datetime import date, timedelta
+import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
@@ -65,6 +66,21 @@ def save_horse_peds_dataset(horse_id, peds_df):
             peds_df.to_pickle(name_header.DATA_PATH + "/HorsePeds/" + str(horse_id) + ".csv")
     except Exception as e:
             peds_dataset_error(e)
+
+def get_horse_peds_csv(horse_id):
+    """ horse_idのhorse_pedsデータcsvを取得 
+        Args:
+            horse_id (int) : horse_id
+    """
+    # csvを読み込む 
+    path = name_header.DATA_PATH + "/HorsePeds/" + str(horse_id) + '.csv'
+    if os.path.isfile(path):
+        df = pd.read_csv(path, index_col = 0, dtype = str)
+        df.fillna(np.nan)  
+    else :
+        df = pd.DataFrame()
+
+    return df
 
 def is_horse_peds_dataset(horse_id):
     """ hotse_idの血統データが既に存在するかをチェックする 
@@ -150,5 +166,5 @@ def make_all_horse_peds(year = date.today().year):
 
 if __name__ == "__main__":
  
-    make_all_horse_peds()
+    monthly_update_horse_peds()
     
