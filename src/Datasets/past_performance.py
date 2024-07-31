@@ -59,7 +59,7 @@ def save_past_performance_dataset(horse_id, past_performance_df):
     """ past_performanceのDataFrameを保存 
         Args:
             horse_id (int) :horse_id
-            past_performance_df.DataFrame） : past_performanceのデータセット
+            past_performance_df(pd.DataFrame） : past_performanceのデータセット
     """
     try:
         if any(past_performance_df):

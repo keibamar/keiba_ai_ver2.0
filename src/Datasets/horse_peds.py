@@ -16,7 +16,7 @@ import name_header
 import scraping
 import past_performance
 
-def peds_dataset_error(e):
+def horse_peds_dataset_error(e):
     """ エラー時動作を記載する 
         Args:
             e (Exception) : エラー内容 
@@ -46,7 +46,7 @@ def make_horse_peds_dataset(horse_id):
         #列名をpeds_0, ..., peds_61にする
         peds_df = ped.reset_index(drop=True).T.add_prefix('peds_')
     except Exception as e:
-        peds_dataset_error(e)
+        horse_peds_dataset_error(e)
         return pd.DataFrame
 
     return peds_df
@@ -65,7 +65,7 @@ def save_horse_peds_dataset(horse_id, peds_df):
             peds_df.to_csv(name_header.DATA_PATH + "/HorsePeds/" + str(horse_id) + ".csv")
             peds_df.to_pickle(name_header.DATA_PATH + "/HorsePeds/" + str(horse_id) + ".csv")
     except Exception as e:
-            peds_dataset_error(e)
+            horse_peds_dataset_error(e)
 
 def get_horse_peds_csv(horse_id):
     """ horse_idのhorse_pedsデータcsvを取得 
@@ -128,7 +128,7 @@ def make_horse_peds_datasets_from_horse_id_list(horse_id_list):
                 peds_df = delete_invalid_strings(peds_df)
                 save_horse_peds_dataset(horse_id, peds_df)
     except Exception as e:
-        peds_dataset_error(e)
+        horse_peds_dataset_error(e)
       
 def weekly_update_horse_peds(day = date.today()):
     """ 指定した日にちから、１週間分のデータセットを更新  
