@@ -88,7 +88,8 @@ def pedsdata_with_race(place_id, year):
         df_result.to_pickle(name_header.DATA_PATH + "/PedsResults/" +  name_header.PLACE_LIST[place_id - 1] + '//' + str(year) + '_peds_data.pickle')
 
 
-def update__peds_dataset(race_id_list, place_id, day = date.today()):
+def update__peds_dataset(place_id, day = date.today()):
+    race_id_list = get_race_id.get_past_weekly_id(place_id, day)
     horse_id_list = past_performance.get_horse_id_list_from_race_id_list(race_id_list)
     if any(horse_id_list):
         new_peds_df = make_peds_dataset_from_horse_id_list(horse_id_list)
@@ -108,8 +109,7 @@ def weekly_update_pedsdata(day = date.today()):
     """ 
     for place_id in range(1, len(name_header.PLACE_LIST) + 1):
         print("[WeeklyUpdate]" + name_header.PLACE_LIST[place_id -1] + " RaceResults")
-        race_id_list = get_race_id.get_past_weekly_id(place_id, day)
-        update__peds_dataset(race_id_list, place_id, day = date.today())
+        update__peds_dataset(place_id, day)
         pedsdata_with_race(place_id, day.year)
 
 def montly_update_pedsdata(day = date.today()):
@@ -119,8 +119,7 @@ def montly_update_pedsdata(day = date.today()):
     """ 
     for place_id in range(1, len(name_header.PLACE_LIST) + 1):
         print("[MonthlyUpdate]" + name_header.PLACE_LIST[place_id -1] + " RaceResults")
-        race_id_list = get_race_id.get_past_year_id(place_id, day)
-        update__peds_dataset(race_id_list, place_id, day = date.today())
+        update__peds_dataset(place_id, day)
         pedsdata_with_race(place_id, day.year)
 
 
