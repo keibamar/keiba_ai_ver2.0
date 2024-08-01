@@ -98,7 +98,7 @@ def scrape_race_results(race_id):
             if "m" in text:
                 df_results["course_len"] = [int(re.findall(r"\d+", text)[-1])] * len(df_results)
             if text in ["2歳新馬","3歳新馬"]:
-                df_results["class"] = ["新馬"] * len(df)
+                df_results["class"] = ["新馬"] * len(df_results)
             if text in ["2歳未勝利","3歳未勝利","障害3歳以上未勝利","障害4歳以上未勝利"]:
                 df_results["class"] = ["未勝利"] * len(df_results)
             if text in ["2歳1勝クラス","3歳1勝クラス","3歳以上1勝クラス","4歳以上1勝クラス"]:

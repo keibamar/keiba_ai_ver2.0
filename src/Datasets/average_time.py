@@ -1,21 +1,15 @@
-import os
-import re
 import sys
 
 import datetime
-from datetime import date, timedelta
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 
 # pycache を生成しない
 sys.dont_write_bytecode = True
 sys.path.append("C:\keiba_ai\keiba_ai_ver2.0\libs")
-import get_race_id
 import name_header
-import scraping
 import race_results
-import past_performance
+
 
 def average_time_dataset_error(e):
     """ エラー時動作を記載する 

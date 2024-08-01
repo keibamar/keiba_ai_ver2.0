@@ -159,10 +159,9 @@ def make_all_pedsdata(year = date.today().year):
     """ 
     for y in range(2019, year + 1):
         for place_id in range(1, len(name_header.PLACE_LIST) + 1):
-            print("[NewMake]" + str(year) + ":" + name_header.PLACE_LIST[place_id -1] + " PedsResults")
+            print("[NewMake]" + str(y) + ":" + name_header.PLACE_LIST[place_id -1] + " PedsResults")
             make_peds_dataset_from_race_results(place_id, y)
             merge_pedsdata_with_race_results(place_id, y)
 
 if __name__ == "__main__":
-   monthly_update_pedsdata()
-   weekly_update_pedsdata()
+   make_all_pedsdata()

@@ -185,5 +185,6 @@ def make_all_race_results(year = date.today().year):
             make_yearly_race_results_dataset(place_id, y)
 
 if __name__ == "__main__":
-    montly_update_race_results()
-    weekly_update_race_results()
+    # montly_update_race_results()
+    # weekly_update_race_results()
+    make_all_race_results()

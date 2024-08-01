@@ -180,4 +180,4 @@ def make_all_past_performance(year = date.today().year):
             make_past_performance_dataset_from_race_id_list(race_id_list)
 
 if __name__ == "__main__":
-    monthly_update_past_performance()
+    make_all_past_performance()
