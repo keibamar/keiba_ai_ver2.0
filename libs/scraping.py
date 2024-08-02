@@ -6,7 +6,6 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import requests
 
-
 # pycache を生成しない
 sys.dont_write_bytecode = True
 # エラー表記をしない
@@ -17,12 +16,10 @@ def scraping_error(e):
         Args:
             e (Exception) : エラー内容 
     """
-
     print(__name__ + ":" + __file__)
     print(f"{e.__class__.__name__}: {e}")
 
 def scrape_df(url):
-
     """ urlからスクレイピングをし、DataFrameを返す 
         Args:
             url (str) : スクレイピングするurl
@@ -47,15 +44,13 @@ def scrape_df(url):
         return pd.DataFrame()
 
 def scrape_race_results(race_id):
-
     """ urlからスクレイピングをし、レース結果、レース情報、horse_idを統合して返す 
-    Args:
-        race_id (str) : スクレイピングするrace_id
+        Args:
+            race_id (str) : スクレイピングするrace_id
 
-    Returns:
-        DataFrame: url先のレース結果をレース情報と、horse_idを統合したDataFrame型で返す    
+        Returns:
+            DataFrame: url先のレース結果をレース情報と、horse_idを統合したDataFrame型で返す    
     """                     
-
     try:
         url = "https://db.netkeiba.com/race/" + str(race_id)
         # urlからスクレイピング

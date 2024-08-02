@@ -1,4 +1,3 @@
-
 import os
 import re
 import sys
@@ -26,10 +25,10 @@ def horse_peds_dataset_error(e):
 
 def make_horse_peds_dataset(horse_id):
     """  過去の結果からhorse_idを抽出
-    Args:
-        horse_id (int) : horse_id
-    Returns:
-        DataFrame: horse_idの血統データ    
+        Args:
+            horse_id (int) : horse_id
+        Returns:
+            DataFrame: horse_idの血統データ    
     """
     # 血統データの取得(スクレイピング)
     url = "https://db.netkeiba.com/horse/ped/" + horse_id
@@ -144,7 +143,7 @@ def weekly_update_horse_peds(day = date.today()):
 def monthly_update_horse_peds(day = date.today()):
     """ 指定した日にちまでのその年のデータセットを更新  
         Args:
-        day(Date) : 日（初期値：今日）
+            day(Date) : 日（初期値：今日）
     """ 
     for place_id in tqdm(range(1, len(name_header.PLACE_LIST) + 1)):
         print("[MonthlyUpdate]" + name_header.PLACE_LIST[place_id -1] + "HorsePeds")
@@ -154,8 +153,8 @@ def monthly_update_horse_peds(day = date.today()):
 
 def make_all_horse_peds(year = date.today().year):
     """ 指定した年までの、すべてのデータセットを作成 
-    Args:
-        day(Date) : 日（初期値：今日）
+        Args:
+            day(Date) : 日（初期値：今日）
     """ 
     for y in range(2019, year + 1):
         for place_id in range(1, len(name_header.PLACE_LIST) + 1):

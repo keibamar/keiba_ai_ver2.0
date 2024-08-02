@@ -18,7 +18,6 @@ def past_performance_error(e):
         Args:
             e (Exception) : エラー内容 
     """
-
     print(__name__ + ":" + __file__)
     print(f"{e.__class__.__name__}: {e}")
 
@@ -26,7 +25,6 @@ def make_past_performance_dataset(horse_id):
     """ hotse_idから、過去成績のDataFrameを作成 
         Args:
             horse_id (str) : horse_id
-
         Returns:
             DataFrame: horse_idの過去成績をDataFrame型で返す    
     """
@@ -133,7 +131,7 @@ def get_horse_id_from_race_id(race_id):
 def make_past_performanece_datasets(horse_id_list):
     """ horse_id_listから過去成績のデータセットを作成  
         Args:
-         horse_id_list : horse_idのリスト
+            horse_id_list : horse_idのリスト
     """ 
     for horse_id in tqdm(horse_id_list):
         horse_results_df = make_past_performance_dataset(str(horse_id))
@@ -142,7 +140,7 @@ def make_past_performanece_datasets(horse_id_list):
 def make_past_performance_dataset_from_race_id_list(race_id_list):
     """ race_id_listから過去成績のデータセットを作成  
         Args:
-         race_id_list : race_idのリスト
+            race_id_list : race_idのリスト
     """ 
     horse_id_list = get_horse_id_list_from_race_id_list(race_id_list)
     if any(horse_id_list):
@@ -151,7 +149,7 @@ def make_past_performance_dataset_from_race_id_list(race_id_list):
 def weekly_update_past_performance(day = date.today()):
     """ 指定した日にちから、１週間分のデータセットを更新  
         Args:
-         day(Date) : 日（初期値：今日）
+            day(Date) : 日（初期値：今日）
     """ 
     for place_id in tqdm(range(1, len(name_header.PLACE_LIST) + 1)):
         print("[WeeklyUpdate]" + name_header.PLACE_LIST[place_id -1] + "PastPerformance")
@@ -161,7 +159,7 @@ def weekly_update_past_performance(day = date.today()):
 def monthly_update_past_performance(day = date.today()):
     """ 指定した日にちまでのその年のデータセットを更新  
         Args:
-        day(Date) : 日（初期値：今日）
+            day(Date) : 日（初期値：今日）
     """ 
     for place_id in tqdm(range(1, len(name_header.PLACE_LIST) + 1)):
         print("[MonthlyUpdate]" + name_header.PLACE_LIST[place_id -1] + "PastPerformance")
@@ -170,8 +168,8 @@ def monthly_update_past_performance(day = date.today()):
 
 def make_all_past_performance(year = date.today().year):
     """ 指定した年までの、すべてのデータセットを作成 
-    Args:
-        day(Date) : 日（初期値：今日）
+        Args:
+            day(Date) : 日（初期値：今日）
     """ 
     for y in range(2019, year + 1):
         for place_id in range(1, len(name_header.PLACE_LIST) + 1):

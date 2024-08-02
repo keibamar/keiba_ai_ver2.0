@@ -22,14 +22,11 @@ def race_results_error(e):
     print(f"{e.__class__.__name__}: {e}")
 
 def scrape_race_results_dataframe(race_id_list):
-
     """ race_id_listのrace_resultsのDataFrameを作成 
         Args:
             race_id_list list(str) : race_idのリスト
-        
         Returns:
-            DataFrame : race_id_listのrace_results
-            
+            DataFrame : race_id_listのrace_results    
     """
     # スクレイピング
     race_results_df = pd.DataFrame()
@@ -42,7 +39,6 @@ def format_race_results_dataframe(race_results_df):
     """ race_resultsのフォーマットを整える 
         Args:
             race_results_df（pd.DataFrame） : race_resultデータセット
-
         Return:
             race_results_df（pd.DataFrame） : フォーマットされたrace_resultデータセット
     """
@@ -59,7 +55,6 @@ def format_race_results_dataframe(race_results_df):
     return race_results_df
 
 def save_race_results_dataset(place_id, year, race_results_df):
-
     """ race_resultsのDataFrameを保存 
         Args:
             place_id (int) : 開催コースid
@@ -77,7 +72,6 @@ def save_race_results_dataset(place_id, year, race_results_df):
             race_results_error(e)
 
 def get_race_results_csv(place_id, year):
-
     """ race_resultsのcsvを取得する 
         Args:
             place_id (int) : 開催コースid
@@ -94,13 +88,11 @@ def get_race_results_csv(place_id, year):
     return df
 
 def update_race_results_dataset(place_id, day = date.today()):
-    
     """ 開催コースと日にちを指定して、過去1週間分のrace_resultsデータセットを更新する 
         Args:
             place_id (int) : 開催コースid
             day(int) : 日（初期値：今日）
     """
-
     # race_id_listの取得
     race_id_list = get_race_id.get_past_weekly_id(place_id, day)
 
@@ -121,7 +113,6 @@ def update_race_results_dataset(place_id, day = date.today()):
             race_results_error(e)
 
 def make_yearly_race_results_dataset(place_id, year = date.today().year):
-    
     """ 開催コースと年を指定して、1年間のrace_resultsデータセットを作成 
         Args:
             place_id (int) : 開催コースid
@@ -137,7 +128,6 @@ def make_yearly_race_results_dataset(place_id, year = date.today().year):
     save_race_results_dataset(place_id, year, race_results_df)
 
 def make_up_to_day_dataset(place_id, day = date.today()):
-
     """ 指定日までの、年間のrace_resultsデータセットを作成 
         Args:
             place_id (int) : 開催コースid
@@ -159,7 +149,6 @@ def weekly_update_race_results(day = date.today()):
     """ 指定した日にちから、１週間分のデータセットを更新  
     Args:
         day(Date) : 日（初期値：今日）
- 
     """ 
     for place_id in range(1, len(name_header.PLACE_LIST) + 1):
         print("[WeeklyUpdate]" + name_header.PLACE_LIST[place_id -1] + " RaceResults")
@@ -168,7 +157,7 @@ def weekly_update_race_results(day = date.today()):
 def montly_update_race_results(day = date.today()):
     """ 指定した日にちまでのその年のデータセットを更新  
     Args:
-    day(Date) : 日（初期値：今日）
+        day(Date) : 日（初期値：今日）
     """ 
     for place_id in range(1, len(name_header.PLACE_LIST) + 1):
         print("[MonthlyUpdate]" + name_header.PLACE_LIST[place_id -1] + " RaceResults")

@@ -14,22 +14,17 @@ def get_race_id_error(e):
         Args:
             e (Exception) : エラー内容 
     """
-
     print(__name__ + ":" + __file__)
     print(f"{e.__class__.__name__}: {e}")
 
 def get_year_id_all(place_id, year = date.today().year):
-
     """ 開催コースと年を指定して、1年間のrace_idを取得 
-    
     Args:
         place_id (int) : 開催コースid
         year(int) : 年（初期値：今年）
-
     Returns:
         list: 指定した、開催コース、年のstr型のrace_idを返す    
     """
-
     race_id_list = []
     for times in range(1, 7, 1): # 開催数(6)
         for day in range(1, 13, 1): #開催日(12)
@@ -39,16 +34,13 @@ def get_year_id_all(place_id, year = date.today().year):
     return race_id_list
 
 def get_year_id_calendar(place_id, year = date.today().year):
-    
     """ 開催コースと年を指定して、1年間のrace_idをレースカレンダーから取得 
         Args:
             place_id (int) : 開催コースid
             year(int) : 年（初期値：今年）
-
         Returns:
             list: 指定した、開催コース、年のstr型のrace_idを返す    
-        """
-    
+    """
     race_id_list = []
     try:
         race_calendar = pd.read_csv(CALENDAR_PATH + str(year) + "_race_calendar.csv", dtype = str)
@@ -67,17 +59,13 @@ def get_year_id_calendar(place_id, year = date.today().year):
         return race_id_list
 
 def get_past_year_id(place_id = 0, day = date.today()):
-    
     """ 指定した日にちまでの、その年のrace_idを取得 
-    
-    Args:
-        place_id (int) : 開催コースid (初期値0=全コース)
-        day(Date) : 日（初期値：今日）
-
-    Returns:
-        list: 指定した日にちまでの、その年のstr型のrace_idを返す    
+        Args:
+            place_id (int) : 開催コースid (初期値0=全コース)
+            day(Date) : 日（初期値：今日）
+        Returns:
+            list: 指定した日にちまでの、その年のstr型のrace_idを返す    
     """
-
     race_id_list = []
     # レースカレンダーを開く
     try:
@@ -116,17 +104,13 @@ def get_past_year_id(place_id = 0, day = date.today()):
         return race_id_list
 
 def get_past_weekly_id(place_id = 0, day = date.today()):
-
     """ 指定した日にちから、1週間前のrace_idを取得 
-    
-    Args:
-        place_id (int) : 開催コースid (初期値0=全コース)
-        day(Date) : 日（初期値：今日）
-
-    Returns:
-        list: 指定した日にちから、1週間前までのstr型のrace_idを返す    
+        Args:
+            place_id (int) : 開催コースid (初期値0=全コース)
+            day(Date) : 日（初期値：今日）
+        Returns:
+            list: 指定した日にちから、1週間前までのstr型のrace_idを返す    
     """
-
     race_id_list = []
     # レースカレンダーを開く
     try:
@@ -144,17 +128,13 @@ def get_past_weekly_id(place_id = 0, day = date.today()):
         return race_id_list
     
 def get_next_weekly_id(place_id = 0, day = date.today()):
-
     """ 指定した日にちから、次の1週間のrace_idを取得 
-
-    Args:
-        place_id (int) : 開催コースid (初期値0=全コース)
-        day(Date) : 日（初期値：今日）
-
-    Returns:
-        list: 指定した日にちから、次の1週間のstr型のrace_idを返す    
+        Args:
+            place_id (int) : 開催コースid (初期値0=全コース)
+            day(Date) : 日（初期値：今日）
+        Returns:
+            list: 指定した日にちから、次の1週間のstr型のrace_idを返す    
     """
-
     race_id_list = []
     # レースカレンダーを開く
     try:
@@ -172,17 +152,13 @@ def get_next_weekly_id(place_id = 0, day = date.today()):
         return race_id_list
 
 def get_daily_id(place_id = 0, race_day = date.today()):
-    
     """ 指定した日にちのrace_idを取得 
-    
-    Args:
-        place_id (int) : 開催コースid (初期値0=全コース)
-        race_day(Date) : 日（初期値：今日）
-
-    Returns:
-        list: 指定した日にちのstr型のrace_idを返す    
+        Args:
+            place_id (int) : 開催コースid (初期値0=全コース)
+            race_day(Date) : 日（初期値：今日）
+        Returns:
+            list: 指定した日にちのstr型のrace_idを返す    
     """
-
     race_id_list = []
     # レースカレンダーを開く
     try:
