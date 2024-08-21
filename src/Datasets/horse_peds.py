@@ -81,6 +81,19 @@ def get_horse_peds_csv(horse_id):
 
     return df
 
+def get_peds_info(horse_id):
+    """血統情報(父・母父)を取得
+        Args:
+            horse_id(int) : horse_id
+        Returns:
+            [父、母父](str) : 父と母父
+    """
+    peds_datas = get_horse_peds_csv(horse_id)
+    if peds_datas.empty:
+        return [np.nan, np.nan]
+    peds_datas = peds_datas[str(horse_id)].tolist()
+    return [peds_datas[0], peds_datas[4]]
+
 def is_horse_peds_dataset(horse_id):
     """ hotse_idの血統データが既に存在するかをチェックする 
         Args:

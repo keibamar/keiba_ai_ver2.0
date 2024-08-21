@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 
 from datetime import date, timedelta
@@ -67,6 +68,21 @@ def save_past_performance_dataset(horse_id, past_performance_df):
     except Exception as e:
             past_performance_error(e)
 
+def get_past_performance_dataset(horse_id):
+    """ past_performanceのデータセットを取得 
+        Args:
+            horse_id (int) :horse_id
+    """
+
+    # csvを読み込む 
+    path = name_header.DATA_PATH + "PastPerformance\\" + str(horse_id) + '.csv'
+    if os.path.isfile(path):
+        df = pd.read_csv(path, index_col = 0, dtype = str)
+    else :
+        df = pd.DataFrame()
+
+    return df
+
 def get_horse_id_from_peds_dataset(place_id, year):
     """  過去の結果からhorse_idを抽出
     Args:
@@ -127,6 +143,94 @@ def get_horse_id_from_race_id(race_id):
     horse_id_list = df.loc[:,"horse_id"].to_list()
 
     return horse_id_list
+
+def get_past_race_id(horse_result):
+    """ 過去の成績をrace_id_listに変換
+        Args:
+            horse_result(pd.DataFrame) : 過去成績のデータセット  
+        Returns:
+            race_id_list : race_idのリスト
+    """
+    # print(len(horse_result))
+    race_id_list = []
+    for i in range(len(horse_result)):
+        # 年の取得
+        date = horse_result.at[i,"日付"]
+        # print(date)
+        year = re.findall(r"\d+", date)[0]
+        # print(year)
+
+        # 開催情報の取得
+        kaisai = horse_result.at[i,"開催"]
+        # print(kaisai)
+        course = re.sub(r"[0-9]+", "", kaisai)
+        course_id = -1
+        for id in range(len(name_header.NAME_LIST)):
+            if course == name_header.NAME_LIST[id]:
+                course_id = id + 1
+                break
+
+        if course_id > 0:
+            times = re.findall(r"\d+", kaisai)[0]
+            day = re.findall(r"\d+", kaisai)[1]
+            race = horse_result.at[i,"R"]
+            race_id = str(year) + str(course_id).zfill(2) + str(times).zfill(2) + str(day).zfill(2) + str(race).zfill(2)
+            
+        else : 
+            race_id = str("nan")    
+        race_id_list.append(race_id)
+    
+    return race_id_list
+
+def get_past_race_info(horse_id, race_id, race_num):
+    """当該レースより過去の指定レース数取得
+        Args:
+            horse_id(int) : horse_id
+            race_id(int) : race_id
+            race_num(int) : 抽出するレース数
+        Returns:
+            horse_result : 指定レース数の過去レース結果
+    """
+    # データセットの取得
+    horse_result = get_past_performance_dataset(horse_id)
+    if horse_result.empty:
+        return horse_result
+
+    # 当該レースより過去のレースを取得
+    horse_result = reset_horse_result(horse_result, race_id)
+    
+    # 指定レース数取得
+    if len(horse_result.index) > race_num:
+        horse_result = horse_result[0:race_num]
+
+    return horse_result
+
+def reset_horse_result(horse_result, race_id):
+    """過去の成績のうちrace_id以降のレースを消去
+        Args:
+            horse_result(pd.DataFrame) : 過去のレース結果
+            race_id(int) : race_id
+        Returns:
+            horse_result : race_id以降の過去レース結果
+    """
+    race_id_list = get_past_race_id(horse_result.reset_index())
+    
+    # race_id　と一致する場所を取得
+    idx = -1
+    for i in range(len(race_id_list)):
+        if str(race_id) == race_id_list[i]:
+            idx = i
+            break
+    
+    # race_id　以降を消去
+    new_horse_results = horse_result
+    if idx > 0:
+        if idx == len(race_id_list):
+            new_horse_results = pd.DataFrame()
+        else:
+            new_horse_results = horse_result[idx + 1:len(race_id_list)]
+    
+    return new_horse_results.reset_index(drop = True)
 
 def make_past_performanece_datasets(horse_id_list):
     """ horse_id_listから過去成績のデータセットを作成  

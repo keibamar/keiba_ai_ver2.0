@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 
 from datetime import date, timedelta
@@ -86,6 +87,75 @@ def get_race_results_csv(place_id, year):
         df = pd.DataFrame()
 
     return df
+
+def get_race_id_result(race_id):
+    """race_idのレース結果の取得
+        Args:
+            race_id(str) : race_id
+        Returns:
+            race_results_df(pd.DataFrame) : レース結果のDataFrame
+    """
+    # race_idからyear, place_idの抽出
+    year = int(str(race_id)[0] + str(race_id)[1] + str(race_id)[2] + str(race_id)[3])
+    place_id = int(str(race_id)[4] + str(race_id)[5])
+
+    # race_resultsの読出し
+    df_results = get_race_results_csv(place_id, year)
+    df_results.index = df_results.index.astype(str)
+    # race_idのデータのみ抽出
+    df_result = df_results[race_id:race_id]
+    df_result = df_result.reset_index(drop = True)
+
+    return df_result
+
+def get_course_info(result):
+    """レース情報を取得
+        Args:
+            result(pd.DataFrame) : race_resultのデータセット
+        Returns:
+            course_info : place_id, race_type, course_len, ground_state, race_class
+    """
+    # 開催競馬場を取得 (JRA以外は-1)
+    place_id = -1
+    course = result["開催"]
+    for i in range(len(name_header.NAME_LIST)):
+        if name_header.NAME_LIST[i] in course:
+            place_id = i + 1
+    if place_id < 0:
+        return[place_id, " "," "," "," "]
+    # レース情報を取得
+    race_info = result["距離"]
+    if "芝" in race_info:
+        race_type = "芝"
+    elif "ダ" in race_info:
+        race_type = "ダート"
+    else:
+        race_type = "障害"
+    course_len = re.sub(r"\D","",race_info)
+
+    # 馬場状態を取得
+    ground_state = result["馬 場"]
+    if ground_state in "稍":
+        ground_state = "稍重"
+    if ground_state in "不":
+        ground_state = "不良"
+
+    # クラスを取得
+    race_name = result["レース名"]
+    if "新馬" in race_name:
+        race_class = "新馬"
+    elif "未勝利" in race_name:
+        race_class = "未勝利"
+    elif "1勝クラス" in race_name or "１勝クラス" in race_name:
+        race_class = "1勝クラス"
+    elif "2勝クラス" in race_name or "２勝クラス" in race_name:
+        race_class = "2勝クラス"
+    elif "3勝クラス" in race_name or "３勝クラス" in race_name:
+        race_class = "3勝クラス"
+    else :
+        race_class = "オープン"
+
+    return [place_id, race_type, course_len, ground_state, race_class]
 
 def update_race_results_dataset(place_id, day = date.today()):
     """ 開催コースと日にちを指定して、過去1週間分のrace_resultsデータセットを更新する 

@@ -77,6 +77,21 @@ def get_peds_dataset_csv(place_id, year):
         df = pd.DataFrame()
     return df
 
+def get_peds_data_dataset_csv(place_id, year):
+    """ peds_dataのcsvを取得する 
+        Args:
+            place_id (int) : 開催コースid
+            year(int) : 開催年
+    """
+    # csvを読み込む 
+    path = name_header.DATA_PATH + "/PedsResults/" +  name_header.PLACE_LIST[place_id - 1] + '//' + str(year) + '_peds_data.csv'
+    if os.path.isfile(path):
+        df = pd.read_csv(path, index_col = 0, dtype = str)
+        df.fillna(np.nan)  
+    else :
+        df = pd.DataFrame()
+    return df
+
 def get_peds_dataset_from_horse_id_list(horse_id_list):
     """ horse_id_listからpeds_datasetのDatasetを作成 
         Args:
@@ -115,7 +130,104 @@ def merge_pedsdata_with_race_results(place_id, year):
         df_result.to_csv(name_header.DATA_PATH + "/PedsResults/" +  name_header.PLACE_LIST[place_id - 1] + '//' + str(year) + '_peds_data.csv')
         df_result.to_pickle(name_header.DATA_PATH + "/PedsResults/" +  name_header.PLACE_LIST[place_id - 1] + '//' + str(year) + '_peds_data.pickle')
 
-def update__peds_dataset(place_id, day = date.today()):
+def calc_peds_placed_rate(peds_data):
+    """データセットから着度数を計算
+        Args: 
+            peds_data(pd.DatatFrame): 血統毎のレース結果データセット
+        Returns:
+            placed_rate(pd.DataFrame):着度数
+    """
+    placed_rate = [peds_data[peds_data['着順'] == '1']['着順'].count(), 
+                        peds_data[peds_data['着順'] == '2']['着順'].count(),
+                        peds_data[peds_data['着順'] == '3']['着順'].count(),
+                        len(peds_data) - (peds_data[peds_data['着順'] == '1']['着順'].count() + peds_data[peds_data['着順'] == '2']['着順'].count() + peds_data[peds_data['着順'] == '3']['着順'].count())]
+    return placed_rate
+
+def calc_peds_data(df_result, course_len, race_class):
+    """血統の着度数を計算
+        Args: 
+            df_result(pd.DatatFrame): 血統毎のレース結果データセット
+            course_len(str) : コースキョリ
+            race_class(sre) : クラス
+        Returns:
+            return_df(pd.DataFrame) : 血統着度数データセット
+    """
+    return_data = []
+    # 同競馬場スコア
+    return_data.append(calc_peds_placed_rate(df_result))
+
+    # 同コース
+    df_result = df_result[df_result['course_len'] == str(course_len)]
+    return_data.append(calc_peds_placed_rate(df_result))
+
+    # 同条件
+    df_result = df_result[df_result['class'] == str(race_class)]
+    return_data.append(calc_peds_placed_rate(df_result))
+
+    # リストのデータフレーム化
+    return_df = pd.DataFrame(zip(*return_data), columns = ["place", "course", "class"])
+
+    return return_df
+
+def get_race_type_data(df_result, race_type, ground_state):
+    """df_resultのレースタイプと馬場状態を抽出
+        Args:
+            df_result(pd.DataFrame) : race_resultデータセット
+            race_type(str) : コースタイプ
+            ground_state(str) : 馬場状態
+        Returns:
+            df_result(pd.DataFrame) : race_result
+    """
+    df_result = df_result[df_result['race_type'] == race_type]
+    df_result = df_result[df_result['ground_state'] == ground_state]
+
+    return df_result
+
+def peds_index(father, mother_father, course_info, year):
+    """血統情報の抽出
+        Args: 
+            father(str) : 父
+            mother_father(str) : 母父
+            course_info : place_id, race_type, course_len, ground_state, race_class
+            year(int) : 年
+        Returns:
+            return_df(pd.DataFrame) : 血統の着度数データ
+    """
+    place_id = course_info[0]
+    race_type = course_info[1]
+    course_len = course_info[2]
+    ground_state = course_info[3]
+    race_class = course_info[4]
+
+    df_peds = pd.DataFrame()
+    # 各年度のデータを抽出
+    for y in range(2019, int(year)):
+        df_peds = pd.concat([df_peds, get_peds_data_dataset_csv(place_id, y)])
+    df_peds = df_peds.reset_index(drop = True)
+    
+    # 着度数を格納
+    return_df = pd.DataFrame()
+    
+    # 父情報を習得
+    peds_data_father = df_peds[df_peds['peds_0'] == father]
+    peds_data_father =  get_race_type_data(peds_data_father, race_type, ground_state)
+    return_df = pd.concat([return_df,calc_peds_data(peds_data_father, course_len, race_class)],axis = 0)
+
+    # 母情報を習得
+    peds_data_mother_father = df_peds[df_peds['peds_4'] == mother_father]
+    peds_data_mother_father =  get_race_type_data(peds_data_mother_father, race_type, ground_state)
+    return_df = pd.concat([return_df,calc_peds_data(peds_data_mother_father, course_len, race_class)],axis = 0)
+    
+    # 父×母父情報を習得
+    peds_data = df_peds[df_peds['peds_0'] == father]
+    peds_data = peds_data[peds_data['peds_4'] == mother_father]
+    peds_data = get_race_type_data(peds_data, race_type, ground_state)
+    return_df = pd.concat([return_df,calc_peds_data(peds_data, course_len, race_class)],axis = 0)
+
+    return return_df
+
+
+def update_peds_dataset(place_id, day = date.today()):
     """ 指定したコースの指定日から、１週間分のデータセットを更新  
     Args:
         place_id (int) : 開催コースid
@@ -139,7 +251,7 @@ def weekly_update_pedsdata(day = date.today()):
     """ 
     for place_id in range(1, len(name_header.PLACE_LIST) + 1):
         print("[WeeklyUpdate]" + name_header.PLACE_LIST[place_id -1] + " RaceResults")
-        update__peds_dataset(place_id, day)
+        update_peds_dataset(place_id, day)
         merge_pedsdata_with_race_results(place_id, day.year)
 
 def monthly_update_pedsdata(day = date.today()):

@@ -1,3 +1,6 @@
+import math
+import os
+import re
 import sys
 
 import datetime
@@ -89,6 +92,37 @@ def save_total_average_datasets(place_id, df_avg_time):
     except Exception as e:
         average_time_dataset_error(e)
 
+def get_anual_average_datasets_csv(place_id, year):
+    """ 年間の平均タイムのDataFrameを取得
+        Args:
+            place_id (int) : 開催コースid
+            year(int) : 開催年
+        Returns:
+            DataFrame : 年間の平均タイムのDataFrame
+    """
+    # csvを読み込む 
+    path = name_header.DATA_PATH + "AverageTimes\\" + name_header.PLACE_LIST[place_id - 1] + '//' + str(year) + '_avg_time.csv'
+    if os.path.isfile(path):
+        df = pd.read_csv(path, index_col = 0, dtype = str)
+    else :
+        df = pd.DataFrame()
+    return df
+
+def get_total_average_datasets_csv(place_id):
+    """ totalの平均タイムのDataFrameを取得
+        Args:
+            place_id (int) : 開催コースid
+        Returns:
+            DataFrame : 年間の平均タイムのDataFrame
+    """
+    # csvを読み込む 
+    path = name_header.DATA_PATH + "AverageTimes\\" + name_header.PLACE_LIST[place_id - 1] + '//total_avg_time.csv'
+    if os.path.isfile(path):
+        df = pd.read_csv(path, index_col = 0, dtype = str)
+    else :
+        df = pd.DataFrame()
+    return df
+
 def get_avg_time_list_from_race_results_df(df_course_race_results):
     """ race_resultsから平均タイムリストを作成するのフォーマットを整える 
         Args:
@@ -157,6 +191,78 @@ def calc_avg_time(time_data):
         return avg_time.astype(int)
     else:
         return np.timedelta64('NaT')
+
+def get_race_time_msec(time_str):
+    """走破時計をmsecに変換
+        Args:
+            time_str(str) : race_resultの走破時計
+        Returns:
+            race_time(int) : race_time(msec)
+    """
+    if type(time_str) is str:
+        # 時間の型変換
+        time_format = '%M%S%f'
+        time_str = re.sub(r"\D","","0" + time_str)
+        race_time = datetime.datetime.strptime(time_str, time_format)
+        return race_time.minute * 60 * 1000 + race_time.second * 1000 + race_time.microsecond / 100000
+    
+    elif math.isnan(time_str):
+        return np.nan
+
+def calc_time_diff(base_time, time):
+    """datetime型の基準タイムとの差分を計算する(msec)
+        Args:
+            base_time(str) : 基準タイム
+            time(int) : 走破タイム
+        Returns:
+            diff_time(float) : 基準との差分タイム
+    """
+    if type(base_time) is str:
+        base_time = int(base_time)
+
+    if math.isnan(base_time) or math.isnan(time):
+        return np.nan
+    else:
+        base_time = int(base_time)
+        return float((base_time - time) / base_time)
+
+def get_time_diff(race_time, course_info):
+    """タイム差を抽出する
+        Args:
+            race_time(str) : 基準タイム
+            course_info : place_id, race_type, course_len, ground_state, race_class
+        Returns:
+            [time_diff(float), time_diff_class(float) : 基準との差分タイム
+    """
+    # コース情報の抽出
+    place_id = course_info[0]
+    race_type = course_info[1]
+    course_len = course_info[2]
+    ground_state = course_info[3]
+    race_class = course_info[4]
+
+    # 平均タイムの取得
+    df_time = get_total_average_datasets_csv(place_id)
+    if df_time.empty:
+        return[0,0]
+    
+    # 同コース・距離・馬場状態の平均タイム取得
+    df_time = df_time[df_time['race_type'] == race_type]
+    df_time = df_time[df_time['course_len'] == course_len]
+    df_time = df_time[df_time['ground_state'] == ground_state]
+
+    # 同コース・距離・馬場状態の平均タイムとの差を計算
+    if not df_time.empty:
+        avg_time = df_time[df_time['class'] == "all"].loc[:,["avg_time"]].reset_index(drop = True).at[0,"avg_time"]
+        time_diff = calc_time_diff(avg_time, race_time) 
+        
+        # 同クラスの平均タイムとの差を計算
+        avg_time_class = df_time[df_time['class'] == race_class].loc[:,["avg_time"]].reset_index(drop = True).at[0,"avg_time"]
+        time_diff_class = calc_time_diff(avg_time_class, race_time) 
+        
+        return [time_diff, time_diff_class]
+    else:
+        return [0, 0]
 
 def make_annual_average_time_datasets(place_id, year = date.today().year):
     """ 指定したコース、年の、年度ごとの平均タイムデータセットを作成 
