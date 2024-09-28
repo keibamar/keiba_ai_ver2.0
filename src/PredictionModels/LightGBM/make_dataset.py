@@ -1,3 +1,4 @@
+import os
 import re
 import sys
 
@@ -68,7 +69,7 @@ def save_LightGBM_dataset_csv(place_id, year, type, length, df_dataset):
     except Exception as e:
             make_dataset_error(e)    
 
-def sava_LightGBM_dataet_flag_csv(place_id, year, type, length, flag_list):
+def sava_LightGBM_dataset_flag_csv(place_id, year, type, length, flag_list):
     """ LightGBM_datasetのDataFrameを保存 
         Args:
             place_id(int) : place_id
@@ -78,7 +79,7 @@ def sava_LightGBM_dataet_flag_csv(place_id, year, type, length, flag_list):
             flag_list(list） : lightGBM用のflagデータセット
     """
     try:
-        if not flag_list:
+        if flag_list:
             df_flag = pd.DataFrame(flag_list)
             df_flag.columns = ["result_flag"]
             flag_path = name_header.DATA_PATH + "/PredictionModels/LightGBM/Datasets/" + name_header.PLACE_LIST[place_id - 1] + '//' + str(year) + "_" + str(type) + str(length)  + '_ai_dataset_flag.csv'
@@ -86,23 +87,60 @@ def sava_LightGBM_dataet_flag_csv(place_id, year, type, length, flag_list):
     except Exception as e:
             make_dataset_error(e)
 
+def get_LightGBM_dataset_csv(place_id, year, type, length):
+    """ LightGBM_datasetのDataFrameを保存 
+        Args:
+            place_id(int) : place_id
+            year (int) : 年
+            type(str) : レースタイプ
+            length(int) : キョリ
+        Returns:
+            df(pd.DataFrame） : lightGBM用のデータセット
+    """
+    # csvを読み込む 
+    path = name_header.DATA_PATH + "/PredictionModels/LightGBM/Datasets/" + name_header.PLACE_LIST[place_id - 1] + '//' + str(year) + "_" + str(type) + str(length) + '_ai_dataset_for_rank.csv'
+    if os.path.isfile(path):
+        df = pd.read_csv(path, index_col = 0, dtype = float)
+    else :
+        df = pd.DataFrame()
+    return df
+
+def get_LightGBM_dataset_flag_csv(place_id, year, type, length):
+    """ LightGBM_datasetのDataFrameを保存 
+        Args:
+            place_id(int) : place_id
+            year (int) : 年
+            type(str) : レースタイプ
+            length(int) : キョリ
+        Returns:
+            df(pd.DataFrame） : lightGBM用のflagデータセット
+    """
+    # csvを読み込む 
+    path = name_header.DATA_PATH + "/PredictionModels/LightGBM/Datasets/" + name_header.PLACE_LIST[place_id - 1] + '//' + str(year) + "_" + str(type) + str(length)  + '_ai_dataset_flag.csv'
+    if os.path.isfile(path):
+        df = pd.read_csv(path, index_col = 0, dtype = int)
+    else :
+        df = pd.DataFrame()
+    return df
+
+
 def is_in_show(df_result, race_id):
     """ df_resultの結果が3着内かチェックする 
         Args:
             df_result(pd.DataFrame） : lightGBM用のデータセット
             race_id(int) : race_id
         Returns:
-            Bool
+            Bool 
     """
     rank = df_result.at[race_id,"着順"]
     if rank.isdigit():
         rank = int(rank)
         if rank <= 3:
-            return True
+            return 1
         else:
-            return False
+            return 0
     else:
-        return False
+        return 0
 
 def get_past_race_info_data(race_info_df):
     """ 過去レースのタイム指数、着順、人気を取得 
@@ -225,11 +263,11 @@ def make_dataset_for_train(place_id, year = date.today().year):
         # csvでデータセットを出力
         save_LightGBM_dataset_csv(place_id, year, type, length, df_dataset)
         # csvでフラグデータセットを出力
-        sava_LightGBM_dataet_flag_csv(place_id, year, type, length, flag_list)
+        sava_LightGBM_dataset_flag_csv(place_id, year, type, length, flag_list)
 
 if __name__ == "__main__":
    print("analysis_datasets")
-   for year in range(2020, 2024):
+   for year in range(2020, 2025):
     for place_id in range(1, len(name_header.PLACE_LIST) + 1):
         print(year, name_header.PLACE_LIST[place_id - 1])
         make_dataset_for_train(place_id, year)
