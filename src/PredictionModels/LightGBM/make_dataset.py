@@ -123,7 +123,6 @@ def get_LightGBM_dataset_flag_csv(place_id, year, type, length):
         df = pd.DataFrame()
     return df
 
-
 def is_in_show(df_result, race_id):
     """ df_resultの結果が3着内かチェックする 
         Args:

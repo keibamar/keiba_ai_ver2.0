@@ -44,7 +44,7 @@ def scrape_df(url):
         return pd.DataFrame()
 
 def scrape_race_results(race_id):
-    """ urlからスクレイピングをし、レース結果、レース情報、horse_idを統合して返す 
+    """ race_idから、レース結果、レース情報、horse_idを統合して返す 
         Args:
             race_id (str) : スクレイピングするrace_id
 
@@ -137,6 +137,172 @@ def scrape_race_results(race_id):
     except Exception as e:
         # scraping_error(e)
         return pd.DataFrame()
+
+# 出馬表情報をスクレイピング
+def scrape_race_card(race_id):
+    try :
+        url = "https://race.netkeiba.com/race/shutuba.html?race_id=" + race_id
+        # スクレイピング
+        html = requests.get(url)
+        html.encoding = "EUC-JP"
+
+        # メインとなるテーブルデータを取得
+        df = pd.read_html(html.text)[0]
+
+        # 列名に半角スペースがあれば除去する
+        df = df.rename(columns=lambda x: x.replace(' ', ''))
+
+        # 後半部分を削除
+        df = df.iloc[:,:8]
+        df = df.drop(columns = '印')
+        # multicolumを解除
+        df.columns = df.columns.droplevel(0)
+
+        # レース情報をスクレイピング
+        soup = BeautifulSoup(html.text, "html.parser")
+        texts = (
+            soup.find("h1", attrs={"class": "RaceName"}).text                              # レース名
+            + " "
+            + soup.find("div", attrs={"class": "RaceData01"}).text                          # 発走時刻
+            + " "
+            + soup.find("div", attrs={"class": "RaceData02"}).find_all("span")[3].text      # 馬齢
+            + " "
+            + soup.find("div", attrs={"class": "RaceData02"}).find_all("span")[4].text      # クラス
+            + " "
+            + soup.find("div", attrs={"class": "RaceData02"}).find_all("span")[5].text      # 種別
+            + " "
+            + soup.find("div", attrs={"class": "RaceData02"}).find_all("span")[6].text      # 斤量
+            + " "
+            + soup.find("div", attrs={"class": "RaceData02"}).find_all("span")[7].text      # 頭数
+        )
+        info = re.findall(r'\w+', texts)
+        # Aコースなどの表記を消去
+        info = [s for s in info if s != 'A' and s != 'B' and s != 'C']
+
+        df_info = pd.DataFrame()
+        for text in info:
+            if text in ["新馬", "未勝利", "1勝クラス","2勝クラス","3勝クラス","オープン", "１勝クラス","２勝クラス","３勝クラス"]:
+                df_info["class"] = text
+            if "芝" in text:
+                df_info["race_type"] = ["芝"]
+            if "ダ" in text:
+                df_info["race_type"] = ["ダート"]
+            if "障" in text:
+                df_info["race_type"] = ["障害"]
+            if "m" in text:
+                df_info["course_len"] = [int(re.findall(r"\d+", text)[-1])]   
+            if text in ["良", "重"]:
+                df_info["ground_state"] = [text]
+            if text in ["稍重","稍"]:
+                df_info["ground_state"] = ["稍重"]
+            if text in ["不良", "不"]:
+                df_info["ground_state"] = ["不良"]
+            if text in ["曇", "晴", "雨", "小雨", "小雪", "雪"]:
+                df_info["weather"] = [text]
+        
+        # 厩舎名と所属を分離
+        local = []
+        for i in range(len(df)):
+            # print(str(df.at[i,"厩舎"]))
+            if "美浦" in str(df.at[i,"厩舎"]):
+                local.append("美浦")
+                temp = str(df.at[i,"厩舎"])
+                temp = temp.replace('美浦', '')
+                df.at[i,"厩舎"] = temp
+            elif "栗東" in str(df.at[i,"厩舎"]):
+                local.append("栗東")
+                temp = str(df.at[i,"厩舎"])
+                temp = temp.replace('栗東', '')
+                df.at[i,"厩舎"] = temp
+            else:
+                local.append(" ")
+        df["所属"] = local
+
+        #馬ID、騎手IDをスクレイピング
+        horse_id_list = []
+        jockey_id_list = []
+        horse_list = soup.find_all("tr", attrs={"class": "HorseList"})
+
+        for horse_infos in horse_list:
+            horse_info = horse_infos.find("span", attrs={"class": "HorseName"}).find("a", attrs = {"href" : re.compile("https")})
+            horse_id = re.findall(r"\d+", horse_info["href"])
+            horse_id_list.append(horse_id[0])
+
+            jockey_info = horse_infos.find("td", attrs={"class": "Jockey"}).find("a", attrs = {"href" : re.compile("https")})
+            jockey_id = re.findall(r"\d+", jockey_info["href"])
+            jockey_id_list.append(jockey_id[0])
+
+        df["horse_id"] = horse_id_list
+        df["jockey_id"] = jockey_id_list
+
+        #インデックスをrace_idにする
+        df.index = [race_id] * len(df)
+        # print(df)
+        return info, df_info, df
+    except Exception as e:
+        scraping_error(e)
+        return info, pd.DataFrame(), pd.DataFrame()
+
+# 馬の過去成績を取得
+def scrape_horse_results(horse_id):
+    try:
+        url = 'https://db.netkeiba.com/horse/' + horse_id
+        # スクレイピング
+        html = requests.get(url)
+        html.encoding = "EUC-JP"
+        # 新馬戦の場合を除外
+        if len(pd.read_html(html.text)) < 4:
+            return pd.DataFrame()
+        
+        df = pd.read_html(html.text)[3]
+        # レースidに変換
+        ### id = [開催年][競馬場][開催][開催日][レース]
+        
+        #受賞歴がある馬の場合、3番目に受賞歴テーブルが来るため、4番目のデータを取得する
+        if df.columns[0]=='受賞歴':
+            df = pd.read_html(html.text)[4]
+
+        df = df.drop(columns = df.columns[5])
+        df = df.drop(columns = df.columns[16 - 1])
+        df = df.drop(columns = df.columns[19 - 2])
+        df = df.drop(columns = df.columns[24 - 3])
+        df = df.drop(columns = df.columns[25 - 4])
+        df = df.drop(columns = df.columns[27 - 5])
+        df.index = [horse_id] * len(df)
+    except IndexError:
+        print("IndexError")
+        df = pd.DataFrame()
+    return df
+
+# 血統情報の取得
+def scrape_peds(horse_id):
+    url = "https://db.netkeiba.com/horse/ped/" + horse_id
+        # スクレイピング
+    html = requests.get(url)
+    html.encoding = "EUC-JP"
+
+    df = pd.read_html(html.text)[0]
+
+    #重複を削除して1列のSeries型データに直す
+    generations = {}
+    for i in reversed(range(5)):
+        generations[i] = df[i]
+        df.drop([i], axis=1, inplace=True)
+        df = df.drop_duplicates()
+    ped = pd.concat([generations[i] for i in range(5)]).rename(horse_id)
+    for i in ped.index:
+        # 生年以降を消去
+        pattern =  re.findall(r'\d+', ped.iat[i]) 
+        if pattern:
+            pos = str(ped.iat[i]).find(pattern[0])
+            temp = str(ped.iat[i][:pos])
+            ped.iat[i] = temp
+    ped = ped.reset_index(drop=True)
+    ped = ped.str.lstrip()
+    # print(ped)
+
+    return ped
+
 
 if __name__ == "__main__":
     print(scrape_race_results(str(202402011211)))

@@ -9,6 +9,8 @@ SRC_PATH = "C:/keiba_ai/keiba_ai_ver2.0/src/"
 DATA_PATH = "C:/keiba_ai/keiba_ai_ver2.0/data/"
 # libフォルダの絶対パス
 LIB_PATH = "C:/keiba_ai/keiba_ai_ver2.0/libs/"
+# textフォルダの絶対パス
+TEXT_PATH = "C:/keiba_ai/keiba_ai_ver2.0/texts/"
 
 # 開催場のidリスト
 PLACE_LIST = ["01_sapporo","02_hakodate","03_fukushima","04_nigata","05_tokyo","06_nakayama","07_chukyo","08_kyoto","09_hanshin","10_kokura"]
