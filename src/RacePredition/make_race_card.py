@@ -82,12 +82,14 @@ def make_race_card(place_id = 0, race_day = date.today()):
             horse_results.append(scraping.scrape_horse_results(horse_id))
             # 血統情報を取得
             horse_peds = pd.concat([horse_peds,scraping.scrape_peds(horse_id)], axis = 1)
-              
+
+        ###################  Todo : LightGBM用になっている  #############################      
         # 枠順、馬番を取得
         waku_df = pd.concat([race_card_df["枠"].reset_index(drop = True),race_card_df["馬番"].reset_index(drop = True)], axis = 1)
         # AI予想
         rank_df = day_race_prediction.rank_prediction(race_id, horse_ids, race_info_df, waku_df)
-        
+        #################################################################################   
+
         # 父，母，母父のみ抽出
         horse_peds_display = get_peds_for_display(horse_peds) 
         # データセットの統合
