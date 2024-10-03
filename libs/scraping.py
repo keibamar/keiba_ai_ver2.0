@@ -138,8 +138,16 @@ def scrape_race_results(race_id):
         # scraping_error(e)
         return pd.DataFrame()
 
-# 出馬表情報をスクレイピング
 def scrape_race_card(race_id):
+    """ race_idから、出馬表情報をスクレイピング
+        Args:
+            race_id (str) : race_id
+
+        Returns:
+            info(list) : レース情報
+            df_info(pd.DataFrame) : レース情報
+            df(pd.DataFrame) : 出馬表
+    """   
     try :
         url = "https://race.netkeiba.com/race/shutuba.html?race_id=" + race_id
         # スクレイピング
@@ -243,8 +251,13 @@ def scrape_race_card(race_id):
         scraping_error(e)
         return info, pd.DataFrame(), pd.DataFrame()
 
-# 馬の過去成績を取得
 def scrape_horse_results(horse_id):
+    """馬の過去成績を取得
+        Args:
+            horse_id(int) : horse_id
+        Returns:
+            df(pd.DataFrame) : 過去成績
+    """
     try:
         url = 'https://db.netkeiba.com/horse/' + horse_id
         # スクレイピング
@@ -253,10 +266,7 @@ def scrape_horse_results(horse_id):
         # 新馬戦の場合を除外
         if len(pd.read_html(html.text)) < 4:
             return pd.DataFrame()
-        
         df = pd.read_html(html.text)[3]
-        # レースidに変換
-        ### id = [開催年][競馬場][開催][開催日][レース]
         
         #受賞歴がある馬の場合、3番目に受賞歴テーブルが来るため、4番目のデータを取得する
         if df.columns[0]=='受賞歴':
@@ -269,39 +279,49 @@ def scrape_horse_results(horse_id):
         df = df.drop(columns = df.columns[25 - 4])
         df = df.drop(columns = df.columns[27 - 5])
         df.index = [horse_id] * len(df)
-    except IndexError:
-        print("IndexError")
-        df = pd.DataFrame()
-    return df
+        return df
+    
+    except Exception as e:
+        scraping_error(e)
+        return pd.DataFrame()
 
-# 血統情報の取得
 def scrape_peds(horse_id):
-    url = "https://db.netkeiba.com/horse/ped/" + horse_id
-        # スクレイピング
-    html = requests.get(url)
-    html.encoding = "EUC-JP"
+    """血統情報の取得
+        Args:
+            horse_id(int) : horse_id
+        Returns:
+            df(pd.DataFrame) : 血統情報
+    """
+    try:
+        url = "https://db.netkeiba.com/horse/ped/" + horse_id
+            # スクレイピング
+        html = requests.get(url)
+        html.encoding = "EUC-JP"
 
-    df = pd.read_html(html.text)[0]
+        df = pd.read_html(html.text)[0]
 
-    #重複を削除して1列のSeries型データに直す
-    generations = {}
-    for i in reversed(range(5)):
-        generations[i] = df[i]
-        df.drop([i], axis=1, inplace=True)
-        df = df.drop_duplicates()
-    ped = pd.concat([generations[i] for i in range(5)]).rename(horse_id)
-    for i in ped.index:
-        # 生年以降を消去
-        pattern =  re.findall(r'\d+', ped.iat[i]) 
-        if pattern:
-            pos = str(ped.iat[i]).find(pattern[0])
-            temp = str(ped.iat[i][:pos])
-            ped.iat[i] = temp
-    ped = ped.reset_index(drop=True)
-    ped = ped.str.lstrip()
-    # print(ped)
+        #重複を削除して1列のSeries型データに直す
+        generations = {}
+        for i in reversed(range(5)):
+            generations[i] = df[i]
+            df.drop([i], axis=1, inplace=True)
+            df = df.drop_duplicates()
+        ped = pd.concat([generations[i] for i in range(5)]).rename(horse_id)
+        for i in ped.index:
+            # 生年以降を消去
+            pattern =  re.findall(r'\d+', ped.iat[i]) 
+            if pattern:
+                pos = str(ped.iat[i]).find(pattern[0])
+                temp = str(ped.iat[i][:pos])
+                ped.iat[i] = temp
+        ped = ped.reset_index(drop=True)
+        ped = ped.str.lstrip()
 
-    return ped
+        return ped
+    
+    except Exception as e:
+        scraping_error(e)
+        return pd.DataFrame()
 
 
 if __name__ == "__main__":

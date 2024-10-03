@@ -59,7 +59,9 @@ def rank_prediction(race_id, horse_ids, race_info_df, waku_df):
     else:
         # datasetを格納するDataFrame
         score = [0] * len(horse_ids)
-        rank = [0] * len(horse_ids)
+        rank = []
+        for i in range(len(horse_ids)) :
+            rank.append(i)
         return pd.concat([pd.DataFrame(score, columns = ["score"]), pd.DataFrame(rank, columns = ["rank"])], axis = 1)
 
 
