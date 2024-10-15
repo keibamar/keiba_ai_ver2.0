@@ -1,13 +1,8 @@
-
 import os
-import re
 import sys
-from datetime import date, timedelta
 
-from bs4 import BeautifulSoup
-from datetime import date
+from datetime import date, timedelta
 import pandas as pd
-import requests
 from tqdm import tqdm
 import warnings
 warnings.simplefilter('ignore')
@@ -43,6 +38,16 @@ def save_race_cards(race_card_df, race_day, race_id):
         race_card_df.to_csv(folder_path + "//" + str(race_id) + ".csv")
     except Exception as e:
         make_race_card_error(e)
+
+def get_race_info(race_id):
+    """レース情報(レース名・発走時刻)を取得
+        Args:
+            race_id(int) : race_id
+        Returns:
+            race_info(list) : レース情報
+    """
+    race_info, race_info_df, shutubahyou_df = scraping.scrape_race_card(race_id)
+    return race_info
 
 def get_race_cards(race_day, race_id):
     """出馬表を取得
@@ -132,7 +137,7 @@ def dayly_race_card(place_id = 0, race_day = date.today()):
         save_race_cards(race_card_df, race_day, race_id)
 
 if __name__ == "__main__":
-    place_id = 6
-    race_day = date.today() - timedelta(5)
+    place_id = 5
+    race_day = date.today() - timedelta(1)
     dayly_race_card(place_id, race_day)
             

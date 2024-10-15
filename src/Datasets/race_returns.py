@@ -97,6 +97,18 @@ def replace_br(string, num):
     
     return result_str_list
 
+def is_bracket_quinella(df_return):
+    """ 買い目に枠連があるかチェック
+        Args : 
+            df_return(pd.DataFrame) : 配当結果
+        Returns :
+            Bool : 買い目に枠連があるか
+    """
+    for kaime in df_return.index:
+        if str(kaime) == "枠連":
+            return True
+    return False
+
 def format_type_returns_dataframe(return_df, type):
     """ 各式別フォーマットの整形
         Args:
