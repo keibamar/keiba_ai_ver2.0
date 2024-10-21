@@ -232,7 +232,7 @@ def get_time_diff(race_time, course_info):
             race_time(str) : 基準タイム
             course_info : place_id, race_type, course_len, ground_state, race_class
         Returns:
-            [time_diff(float), time_diff_class(float) : 基準との差分タイム
+            time_diff(float), time_diff_class(float) : 基準との差分タイム
     """
     # コース情報の抽出
     place_id = course_info[0]
