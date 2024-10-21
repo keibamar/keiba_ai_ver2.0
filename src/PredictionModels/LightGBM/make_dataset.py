@@ -233,24 +233,9 @@ def make_dataset_for_train(place_id, year = date.today().year):
             # レース情報の取得
             course_info = [place_id, df_result.at[race_id,"race_type"], df_result.at[race_id,"course_len"], df_result.at[race_id,"ground_state"],df_result.at[race_id,"class"] ]
             horse_id = df_result.at[race_id, "horse_id"]
-            race_year = re.findall(r"\d+",df_result.at[race_id,"date"])[0]
-                 
-            # 血統情報の取得
-            peds_info = horse_peds.get_peds_info(horse_id)
-            # 血統データの取得
-            df_peds = peds_results.peds_index(peds_info[0], peds_info[1], course_info, race_year)
-            # リストの１次元化
-            df_peds = sum(df_peds.T.values.tolist(), [])
-
-            # 過去レースの情報を取得
-            race_info_df = past_performance.get_past_race_info(horse_id, race_id, race_num = 3)
-            # 過去レース分の人気・着順を取得
-            df_race = get_past_race_info_data(race_info_df)
-            # データセットの結合
-            df_index = df_peds + df_race 
             
-            # データフレームに格納
-            df_index = pd.DataFrame(df_index).T
+            # データセットの作成
+            df_index = make_dataset_for_lightGBM(race_id, course_info, horse_id)
             df_dataset = pd.concat([df_dataset.reset_index(drop = True), df_index.reset_index(drop = True)])
 
         # race_idの結合
@@ -264,6 +249,42 @@ def make_dataset_for_train(place_id, year = date.today().year):
         # csvでフラグデータセットを出力
         sava_LightGBM_dataset_flag_csv(place_id, year, type, length, flag_list)
 
+def make_dataset_for_lightGBM(race_id, course_info, horse_id):
+    """lightGBM用のデータセットを作成
+        Args:
+            race_id(int) : race_id
+            course_info(list) : コース情報(place_id, 芝/ダ, キョリ, 馬場状態, クラス)
+            horse_id(int) : horse_id
+        Returns:
+            df_lightGBM(pd.DataFrame) : lightGBM用データセット
+    """
+    try:
+        race_year = int(str(race_id)[0] + str(race_id)[1] + str(race_id)[2] + str(race_id)[3])
+        # 血統情報の取得
+        peds_info = horse_peds.get_peds_info(horse_id)
+
+        # 血統データの取得
+        df_peds = peds_results.peds_index(peds_info[0], peds_info[1], course_info, race_year)
+        # リストの１次元化
+        df_peds = sum(df_peds.T.values.tolist(), [])
+
+        # 過去3レースの情報を取得
+        race_info = past_performance.get_past_race_info(horse_id, race_id, race_num = 3)
+        # 過去3レース分のタイムデータを取得
+        df_race = get_past_race_info_data(race_info)
+
+        # データセットの結合
+        df_lightGBM = df_peds + df_race
+
+        # データフレームに格納
+        df_lightGBM = pd.DataFrame(df_lightGBM).T
+
+        return df_lightGBM
+    except Exception as e:
+        make_dataset_error(e)
+        return pd.DataFrame()
+
+    
 if __name__ == "__main__":
    print("analysis_datasets")
    for year in range(2020, 2025):

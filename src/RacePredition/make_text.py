@@ -70,46 +70,6 @@ def write_trio_hit_text(race_day, race_id_list, text_file):
     # 上位5頭三連複BOX回収率・的中率・敵流レースを抽出
     trio5_hit_rate, trio5_return_rate, trio5_hit_race = calc_returns.get_trio_box_result(race_day, race_id_list)
     text_file.write("三連複(5頭BOX)回収率:" + str(round(trio5_return_rate, 1)) + "%  " + "(的中レース:" + trio5_hit_race + "R)\n")
-        
-def make_return_text(place_id, race_day = date.today()):
-    """当日の予想結果のテキスト作成
-        Args:
-            place_id(int) : place_id
-            race_day(date) : レース開催日
-    """
-    try:
-        str_day = race_day.strftime("%Y%m%d")
-        # 今日のid_listを取得
-        race_id_list = get_race_id.get_daily_id(place_id, race_day)
-        
-        # 的中率・回収率の計算
-        if race_id_list :
-            # テキストファイルの準備
-            folder_path = name_header.TEXT_PATH + "race_returns/" + str_day
-            if not os.path.isdir(folder_path):
-                os.mkdir(folder_path)
-            text_data_path = folder_path + "//" + name_header.PLACE_LIST[place_id - 1] + "_pred_score.txt"
-            f = open(text_data_path, "w", encoding = "UTF-8")
-
-            # 日付の出力
-            f.write(str(race_day.year) + "/" + str(race_day.month) + "/" + str(race_day.day) + " ")
-            # 開催競馬場の出力
-            f.write(name_header.NAME_LIST[place_id - 1] + "競馬場\n\n" + "MAR競馬予想 回収率\n")
-
-            # 予想結果の出力
-            write_win_hit_text(race_day, race_id_list, f)
-            write_place_hit_text(race_day, race_id_list, f)
-            write_trio_hit_text(race_day, race_id_list, f)     
-            f.write("\n\n")
-
-            # タグの出力
-            f.write("#MAR競馬予想\n")
-            f.write("#競馬予想AI\n")
-            f.write("#競馬 #競馬予想\n")
-            f.write("#" + name_header.NAME_LIST[place_id - 1] + "競馬場\n")
-            f.close()
-    except Exception as e:
-        make_test_error(e)
 
 def make_race_text(race_day, race_id):
     """レースの予想のテキスト作成
@@ -164,6 +124,45 @@ def make_race_text(race_day, race_id):
         f.close()
     except Exception as e:
         make_test_error(e)      
+
+def make_return_text(place_id, race_day = date.today()):
+    """当日の予想結果のテキスト作成
+        Args:
+            place_id(int) : place_id
+            race_day(date) : レース開催日
+    """
+    try:
+        # 今日のid_listを取得
+        race_id_list = get_race_id.get_daily_id(place_id, race_day)
+        
+        # 的中率・回収率の計算
+        if race_id_list :
+            # テキストファイルの準備
+            folder_path = name_header.TEXT_PATH + "race_returns/" + race_day.strftime("%Y%m%d")
+            if not os.path.isdir(folder_path):
+                os.mkdir(folder_path)
+            text_data_path = folder_path + "//" + name_header.PLACE_LIST[place_id - 1] + "_pred_score.txt"
+            f = open(text_data_path, "w", encoding = "UTF-8")
+
+            # 日付の出力
+            f.write(str(race_day.year) + "/" + str(race_day.month) + "/" + str(race_day.day) + " ")
+            # 開催競馬場の出力
+            f.write(name_header.NAME_LIST[place_id - 1] + "競馬場\n\n" + "MAR競馬予想 回収率\n")
+
+            # 予想結果の出力
+            write_win_hit_text(race_day, race_id_list, f)
+            write_place_hit_text(race_day, race_id_list, f)
+            write_trio_hit_text(race_day, race_id_list, f)     
+            f.write("\n\n")
+
+            # タグの出力
+            f.write("#MAR競馬予想\n")
+            f.write("#競馬予想AI\n")
+            f.write("#競馬 #競馬予想\n")
+            f.write("#" + name_header.NAME_LIST[place_id - 1] + "競馬場\n")
+            f.close()
+    except Exception as e:
+        make_test_error(e)
 
 if __name__ == "__main__":
     place_id = 5

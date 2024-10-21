@@ -191,19 +191,26 @@ def get_past_race_info(horse_id, race_id, race_num):
         Returns:
             horse_result : 指定レース数の過去レース結果
     """
-    # データセットの取得
-    horse_result = get_past_performance_dataset(horse_id)
-    if horse_result.empty:
+    try: 
+        # データセットの取得
+        horse_result = get_past_performance_dataset(horse_id)
+        # データセットがない場合は新規作成
+        if horse_result.empty:
+            horse_results_df = make_past_performance_dataset(str(horse_id))
+            save_past_performance_dataset(str(horse_id), horse_results_df)
+            horse_result = get_past_performance_dataset(horse_id)
+
+        # 当該レースより過去のレースを取得
+        horse_result = reset_horse_result(horse_result, race_id)
+        
+        # 指定レース数取得
+        if len(horse_result.index) > race_num:
+            horse_result = horse_result[0:race_num]
+
         return horse_result
-
-    # 当該レースより過去のレースを取得
-    horse_result = reset_horse_result(horse_result, race_id)
-    
-    # 指定レース数取得
-    if len(horse_result.index) > race_num:
-        horse_result = horse_result[0:race_num]
-
-    return horse_result
+    except Exception as e:
+        past_performance_error(e)
+        return pd.DataFrame()
 
 def reset_horse_result(horse_result, race_id):
     """過去の成績のうちrace_id以降のレースを消去

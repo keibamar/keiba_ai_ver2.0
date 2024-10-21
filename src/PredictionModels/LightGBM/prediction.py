@@ -19,6 +19,14 @@ import name_header
 import race_results
 import make_dataset
 
+def prediction_error(e):
+    """ エラー時動作を記載する 
+        Args:
+            e (Exception) : エラー内容 
+    """
+    print(__name__ + ":" + __file__)
+    print(f"{e.__class__.__name__}: {e}")
+
 def get_lightGBM_model(place_id, type, length):
     """ lightGBMモデルの取得
         Args:
@@ -241,7 +249,34 @@ def prediction_rank(place_id, year = date.today().year):
         
         # ranking結果データセットの出力
         save_pred_rank(rank_df, place_id, year, type, length)
+
+def prediction_race_score(place_id, type, length, race_dataset):
+    """レースのスコアを推定
+        Args:
+            place_id (int) : 開催コースid
+            type(str) : 芝/ダート
+            length(int) : キョリ
+            race_dataset(pd.DataFrame)
+    """
+    try:
+        race_dataset = race_dataset.fillna(-1)
+
+        # モデル読み込み
+        model = get_lightGBM_model(place_id, type, length)
+
+        # テストデータの予測
+        y_pred = model.predict(race_dataset, num_iteration = model.best_iteration)
         
+        rank = rank_index(y_pred)
+        # スコアとランキングを結合
+        result_df = pd.concat([pd.DataFrame(y_pred, columns = ["score"]), pd.DataFrame(rank, columns = ["rank"])], axis = 1)
+
+        return result_df
+    except Exception as e:
+        prediction_error(e)
+        return pd.DataFrame()
+
+
 if __name__ == "__main__":
     for place_id in range(1, len(name_header.PLACE_LIST) + 1):
         print(name_header.PLACE_LIST[place_id - 1])

@@ -95,7 +95,7 @@ def get_win_result(race_day, race_id_list):
         if returns_df.empty:
             race_num_diff += 1
             continue
-        
+
         # 1着的中率・回収率
         win_df = returns_df[returns_df[0] == "単勝"].reset_index(drop = True)
         for i in range(len(win_df)):
@@ -192,8 +192,6 @@ def get_trio_box_result(race_day, race_id_list):
     trio5_return_rate = (trio5_return_rate /(len(race_id_list) - race_num_diff)) / 10
 
     return trio5_hit_rate, trio5_return_rate, trio5_hit_race
-
-
 
 # 1日の回収率・的中率を計算
 def calc_day_race_return(place_id, str_day, race_id_list):
@@ -383,7 +381,7 @@ def calc_day_race_return(place_id, str_day, race_id_list):
 def calc_today_race_return(day = date.today()):
     str_day = day.strftime("%Y%m%d")
     # 今日のid_listを取得
-    race_id_list = set_id.get_today_id_list()
+    race_id_list = get_race_id.get_daily_id_list(day)
 
     # 各競馬場ごとにrace_idを分割
     course_list = []

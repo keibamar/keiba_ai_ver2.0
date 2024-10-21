@@ -24,7 +24,7 @@ def horse_peds_dataset_error(e):
     print(f"{e.__class__.__name__}: {e}")
 
 def make_horse_peds_dataset(horse_id):
-    """  過去の結果からhorse_idを抽出
+    """  horse_pedsのDataFrameをscrapingして作成
         Args:
             horse_id (int) : horse_id
         Returns:
@@ -62,7 +62,7 @@ def save_horse_peds_dataset(horse_id, peds_df):
             peds_df = peds_df.astype(str)
             # csv/pickleに保存
             peds_df.to_csv(name_header.DATA_PATH + "/HorsePeds/" + str(horse_id) + ".csv")
-            peds_df.to_pickle(name_header.DATA_PATH + "/HorsePeds/" + str(horse_id) + ".csv")
+            peds_df.to_pickle(name_header.DATA_PATH + "/HorsePeds/" + str(horse_id) + ".pickle")
     except Exception as e:
             horse_peds_dataset_error(e)
 
@@ -88,11 +88,19 @@ def get_peds_info(horse_id):
         Returns:
             [父、母父](str) : 父と母父
     """
-    peds_datas = get_horse_peds_csv(horse_id)
-    if peds_datas.empty:
+    try:
+        peds_datas = get_horse_peds_csv(horse_id)
+        # データセットがない場合は新規に作成
+        if peds_datas.empty:
+            peds_datas = make_horse_peds_dataset(horse_id)
+            peds_datas = delete_invalid_strings(peds_datas)
+            save_horse_peds_dataset(horse_id, peds_datas)
+            peds_datas = get_horse_peds_csv(horse_id)
+        peds_datas = peds_datas[str(horse_id)].tolist()
+        return [peds_datas[0], peds_datas[4]]
+    except Exception as e:
+        horse_peds_dataset_error(e)
         return [np.nan, np.nan]
-    peds_datas = peds_datas[str(horse_id)].tolist()
-    return [peds_datas[0], peds_datas[4]]
 
 def is_horse_peds_dataset(horse_id):
     """ hotse_idの血統データが既に存在するかをチェックする 

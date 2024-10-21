@@ -138,6 +138,6 @@ def dayly_race_card(place_id = 0, race_day = date.today()):
 
 if __name__ == "__main__":
     place_id = 5
-    race_day = date.today() - timedelta(1)
+    race_day = date.today() - timedelta(3)
     dayly_race_card(place_id, race_day)
             
