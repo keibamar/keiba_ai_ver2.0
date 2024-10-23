@@ -14,13 +14,13 @@ import LightGBM.make_dataset  as LightGBM_dataset
 
 if __name__ == "__main__":  
     # データセットの更新
-    race_results.weekly_update_race_results()
-    horse_peds.weekly_update_horse_peds()
-    peds_results.weekly_update_pedsdata()
-    race_returns.weekly_update_race_returns()
+    race_results.montly_update_race_results()
+    horse_peds.monthly_update_horse_peds()
+    peds_results.monthly_update_pedsdata()
+    race_returns.montly_update_race_returns()
     average_time.timedata_update()
-    past_performance.weekly_update_past_performance()
+    past_performance.monthly_update_past_performance()
     
     # 予想スコアの計算
-    LightGBM_dataset.weekly_update_dataset_for_train()
+    LightGBM_dataset.make_annual_dataset()
     

@@ -285,8 +285,8 @@ def make_dataset_for_lightGBM(race_id, course_info, horse_id):
         make_dataset_error(e)
         return pd.DataFrame()
 
-def update_dataset_for_train(day = date.today()):
-    """データセットの更新
+def weekly_update_dataset_for_train(day = date.today()):
+    """１週間に開催のあった開催場のデータセットを更新
         Args:
             day(date) : 日（初期値：今日）
     """
@@ -295,6 +295,18 @@ def update_dataset_for_train(day = date.today()):
         for place_id in place_id_list:
             print("[Update]", name_header.PLACE_LIST[place_id - 1], "LightGBM Dataset")
             make_dataset_for_train(place_id, day.year)
+    except Exception as e:
+        make_dataset_error(e)
+
+def make_annual_dataset(year = date.today().year):
+    """指定年の開催場のデータセットを更新
+        Args:
+            year(int) : 年（初期値：今年）
+    """
+    try:
+        for place_id in range(1, len(name_header.PLACE_LIST) + 1):
+            print("[Make Dataset]", name_header.PLACE_LIST[place_id - 1], "LightGBM Dataset")
+            make_dataset_for_train(place_id, year)
     except Exception as e:
         make_dataset_error(e)
 
