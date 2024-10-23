@@ -259,7 +259,7 @@ def monthly_update_pedsdata(day = date.today()):
         day(Date) : 日（初期値：今日）
     """ 
     for place_id in range(1, len(name_header.PLACE_LIST) + 1):
-        print("[MonthlyUpdate]" + name_header.PLACE_LIST[place_id -1] + " RaceResults")
+        print("[MonthlyUpdate]" + name_header.PLACE_LIST[place_id -1] + " PedsResults")
         make_peds_dataset_from_race_results(place_id, day.year)
         merge_pedsdata_with_race_results(place_id, day.year)
 
