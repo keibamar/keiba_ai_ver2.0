@@ -2,7 +2,6 @@ import os
 import sys
 
 from datetime import date, timedelta
-from tqdm import tqdm
 import warnings
 warnings.simplefilter('ignore')
 

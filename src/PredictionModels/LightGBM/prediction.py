@@ -277,7 +277,6 @@ def prediction_race_score(place_id, type, length, race_dataset):
         prediction_error(e)
         return pd.DataFrame()
 
-
 if __name__ == "__main__":
     for place_id in range(1, len(name_header.PLACE_LIST) + 1):
         print(name_header.PLACE_LIST[place_id - 1])

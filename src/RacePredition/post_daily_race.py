@@ -36,7 +36,6 @@ def post_pred_return(place_id, race_day):
     text_path = name_header.TEXT_PATH + "race_returns/" + race_day.strftime("%Y%m%d") + "//" + name_header.PLACE_LIST[place_id - 1] + "_pred_score.txt"
     post_text.post_text(text_path)
 
-
 def get_race_time(race_id):
     """ 発走時間に取得
         Args:

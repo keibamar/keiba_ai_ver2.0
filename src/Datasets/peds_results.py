@@ -226,7 +226,6 @@ def peds_index(father, mother_father, course_info, year):
 
     return return_df
 
-
 def update_peds_dataset(place_id, day = date.today()):
     """ 指定したコースの指定日から、１週間分のデータセットを更新  
     Args:

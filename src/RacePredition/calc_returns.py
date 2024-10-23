@@ -5,7 +5,6 @@ import sys
 
 from datetime import date, timedelta
 import pandas as pd
-from tqdm import tqdm
 import warnings
 warnings.simplefilter('ignore')
 
