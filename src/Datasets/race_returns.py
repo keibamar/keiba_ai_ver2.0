@@ -117,18 +117,17 @@ def format_type_returns_dataframe(return_df, type):
         Returns:
             return_df : 指定式別のフォーマットを整理したDataFrame 
     """
-
     try:
+        temp = return_df[type:type].reset_index().T
         # 各式別毎に馬番を分割
         if type == "枠連" or type == "馬連" or type == "ワイド" or type == "馬単":
-            return_df.iloc[1,:] = replace_br(return_df.iloc[1,:].values, 2)
-        elif type == "三連複" or type == "三連単":
-            return_df.iloc[1,:] = replace_br(return_df.iloc[1,:].values, 3)
-       
+            temp.iloc[1,:] = replace_br(temp.iloc[1,:].values, 2)
+        elif type == "3連複" or type == "3連単" or type == "三連複" or type == "三連単":
+            temp.iloc[1,:] = replace_br(temp.iloc[1,:].values, 3)
         # 各式別の数分割する(同着の場合複数)
         split_results = pd.DataFrame()
         for i in range(1, 4):
-            split_results = pd.concat([split_results, return_df.iloc[i,:].str.split('br', expand = True)])
+            split_results = pd.concat([split_results, temp.iloc[i,:].str.split('br', expand = True)])
 
         # 分割数に応じて列を追加
         type_result = pd.DataFrame()
@@ -182,7 +181,7 @@ def scrape_race_returns_dataframe(race_id_list):
             # 各式別のフォーマットを整形
             for type in name_header.BETTING_TYPE_LIST:
                 if type_check(race_return_df, type):
-                    format_race_return_df = pd.concat([format_race_return_df, format_type_returns_dataframe(race_return_df[type:type].reset_index().T, type).set_index(0)])
+                    format_race_return_df = pd.concat([format_race_return_df, format_type_returns_dataframe(race_return_df, type).set_index(0)])
             # race_idをインデックスにする
             format_race_return_df = format_race_return_df.reset_index()
             format_race_return_df.index = [race_id] * len(format_race_return_df)

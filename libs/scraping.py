@@ -157,12 +157,6 @@ def scrape_day_race_returns(race_id):
         # ワイド、馬単、三連複、三連単のデータ
         df2 = pd.read_html(html.text)[2]
         df_return = pd.concat([df1,df2]).reset_index(drop = True)
-        for i in range(len(df_return.index)):
-            df_return.at[i,1] = df_return.at[i,1].replace(' ', 'br')
-            df_return.at[i,2] = df_return.at[i,2].replace(' ', 'br')
-            df_return.at[i,2] = df_return.at[i,2].replace('円', '')
-            df_return.at[i,2] = df_return.at[i,2].replace(',', '')
-        df_return = df_return.set_index(0)
         return df_return
     
     except Exception as e:
