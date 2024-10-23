@@ -490,10 +490,7 @@ def calc_day_race_return_all(race_day = date.today()):
         calc_day_race_return(place_id, race_day, race_id_list)
 
 if __name__ =="__main__":
-    place_id = 5
-    race_day = date.today() - timedelta(3)
-    # race_id_list = get_race_id.get_daily_id(place_id, race_day)
-    # calc_day_race_return(place_id, race_day, race_id_list)
+    race_day = date.today()
     calc_day_race_return_all(race_day)
 
 

@@ -191,8 +191,48 @@ def get_daily_id(place_id = 0, race_day = date.today()):
         get_race_id_error(e)
         return race_id_list
 
+def get_place_id_list_from_race_id_list(race_id_list):
+    """race_id_listからplace_id_listを抽出する
+        Args:
+            race_id_list(list) : race_idのリスト
+        Returns:
+            race_id_list(list) : race_idのリスト
+    """
+    place_id_list = []
+    for i in range(len(race_id_list)):
+        place_id = int(str(race_id_list[i])[4] + str(race_id_list[i])[5])
+        place_id_list.append(place_id)
+    place_id_list = list(set(place_id_list))
+    place_id_list.sort()
+
+    return place_id_list
+
+
+def get_past_weekly_place_id(race_day = date.today()):
+    """指定日から1週間前までの開催場のplace_idを取得
+        Args:
+            race_day(Date) : 日（初期値：今日）
+        Returns :
+            place_id_list(list) : 開催場のplace_id
+    """
+    race_id_list = get_past_weekly_id(day = race_day)
+    place_id_list = get_place_id_list_from_race_id_list(race_id_list)
+    return place_id_list
+
+def get_dayly_place_id(race_day = date.today()):
+    """指定日の開催場のplace_idを取得
+        Args:
+            race_day(Date) : 日（初期値：今日）
+        Returns :
+            place_id_list(list) : 開催場のplace_id
+    """
+    race_id_list = get_daily_id(day = race_day)
+    place_id_list = get_place_id_list_from_race_id_list(race_id_list)
+    return place_id_list
+
+
 if __name__ == "__main__":
     now = date.today() -timedelta(1)
-    print(len(get_past_year_id(0,now)))
+    print(get_past_weekly_place_id())
         
 

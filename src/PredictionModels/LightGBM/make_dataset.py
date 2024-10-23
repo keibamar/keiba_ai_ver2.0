@@ -12,6 +12,7 @@ sys.dont_write_bytecode = True
 sys.path.append("C:\keiba_ai\keiba_ai_ver2.0\libs")
 sys.path.append("C:\keiba_ai\keiba_ai_ver2.0\src\Datasets")
 import name_header
+import get_race_id
 
 import horse_peds
 import race_results
@@ -283,6 +284,19 @@ def make_dataset_for_lightGBM(race_id, course_info, horse_id):
     except Exception as e:
         make_dataset_error(e)
         return pd.DataFrame()
+
+def update_dataset_for_train(day = date.today()):
+    """データセットの更新
+        Args:
+            day(date) : 日（初期値：今日）
+    """
+    try:
+        place_id_list = get_race_id.get_past_weekly_place_id(day)
+        for place_id in place_id_list:
+            print("[Update]", name_header.PLACE_LIST[place_id - 1], "LightGBM Dataset")
+            make_dataset_for_train(place_id, day.year)
+    except Exception as e:
+        make_dataset_error(e)
 
     
 if __name__ == "__main__":
