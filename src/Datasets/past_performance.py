@@ -263,7 +263,7 @@ def weekly_update_past_performance(day = date.today()):
             day(Date) : 日（初期値：今日）
     """ 
     for place_id in tqdm(range(1, len(name_header.PLACE_LIST) + 1)):
-        print("[WeeklyUpdate]" + name_header.PLACE_LIST[place_id -1] + "PastPerformance")
+        print("[WeeklyUpdate]", name_header.PLACE_LIST[place_id -1] , "PastPerformance")
         race_id_list = get_race_id.get_past_weekly_id(place_id, day)
         make_past_performance_dataset_from_race_id_list(race_id_list)
         
@@ -273,7 +273,7 @@ def monthly_update_past_performance(day = date.today()):
             day(Date) : 日（初期値：今日）
     """ 
     for place_id in tqdm(range(1, len(name_header.PLACE_LIST) + 1)):
-        print("[MonthlyUpdate]" + name_header.PLACE_LIST[place_id -1] + "PastPerformance")
+        print("[MonthlyUpdate]", name_header.PLACE_LIST[place_id -1],  "PastPerformance")
         race_id_list = get_race_id.get_past_year_id(place_id, day)
         make_past_performance_dataset_from_race_id_list(race_id_list)
 
