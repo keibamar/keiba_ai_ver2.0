@@ -27,9 +27,9 @@ def get_year_id_all(place_id, year = date.today().year):
     """
     race_id_list = []
     for times in range(1, 7, 1): # 開催数(6)
-        for day in range(1, 13, 1): #開催日(12)
+        for race_day in range(1, 13, 1): #開催日(12)
             for race in range(1, 13, 1): #レース数(12)
-                race_id = str(year) + str(place_id).zfill(2) + str(times).zfill(2) + str(day).zfill(2) + str(race).zfill(2)
+                race_id = str(year) + str(place_id).zfill(2) + str(times).zfill(2) + str(race_day).zfill(2) + str(race).zfill(2)
                 race_id_list.append(race_id)
     return race_id_list
 
@@ -58,26 +58,26 @@ def get_year_id_calendar(place_id, year = date.today().year):
         get_race_id_error(e)
         return race_id_list
 
-def get_past_year_id(place_id = 0, day = date.today()):
+def get_past_year_id(place_id = 0, race_day = date.today()):
     """ 指定した日にちまでの、その年のrace_idを取得 
         Args:
             place_id (int) : 開催コースid (初期値0=全コース)
-            day(Date) : 日（初期値：今日）
+            race_day(Date) : 日（初期値：今日）
         Returns:
             list: 指定した日にちまでの、その年のstr型のrace_idを返す    
     """
     race_id_list = []
     # レースカレンダーを開く
     try:
-        race_calendar = pd.read_csv(CALENDAR_PATH + str(day.year) + "_race_calendar.csv", dtype = str)
+        race_calendar = pd.read_csv(CALENDAR_PATH + str(race_day.year) + "_race_calendar.csv", dtype = str)
     
         today_races = []
         # 指定日までのレースIDを取得
-        for m in range(1, day.month + 1):
-            if m < day.month:
+        for m in range(1, race_day.month + 1):
+            if m < race_day.month:
                 last_day = 31
             else :
-                last_day = day.day
+                last_day = race_day.day
             for d in range(1, last_day + 1):
                 temp = race_calendar[race_calendar['month'] == str(m)]
                 temp = temp[temp['day'] == str(str(d))]
@@ -95,7 +95,7 @@ def get_past_year_id(place_id = 0, day = date.today()):
         for race_data in today_races:
             if not race_data.empty:
                 for race in range(1, 13):  
-                    id = str(day.year) + str(race_data.at[0,"course"]).zfill(2) + str(race_data.at[0,"times"]).zfill(2) + str(race_data.at[0,"days"]).zfill(2) + str(race).zfill(2)
+                    id = str(race_day.year) + str(race_data.at[0,"course"]).zfill(2) + str(race_data.at[0,"times"]).zfill(2) + str(race_data.at[0,"days"]).zfill(2) + str(race).zfill(2)
                     race_id_list.append(id)
         return race_id_list
     # エラー時　エラー内容を出力
@@ -103,11 +103,11 @@ def get_past_year_id(place_id = 0, day = date.today()):
         get_race_id_error(e)
         return race_id_list
 
-def get_past_weekly_id(place_id = 0, day = date.today()):
+def get_past_weekly_id(place_id = 0, race_day = date.today()):
     """ 指定した日にちから、1週間前のrace_idを取得 
         Args:
             place_id (int) : 開催コースid (初期値0=全コース)
-            day(Date) : 日（初期値：今日）
+            race_day(Date) : 日（初期値：今日）
         Returns:
             list: 指定した日にちから、1週間前までのstr型のrace_idを返す    
     """
@@ -116,7 +116,7 @@ def get_past_weekly_id(place_id = 0, day = date.today()):
     try:
         # 1週間分の開催日を取得
         for i in range(7):
-            race_day = day - timedelta(days = (8 - i))
+            race_day = race_day - timedelta(days = (8 - i))
             # 今日のレースIDを取得
             race_id_list.append(get_daily_id(place_id, race_day))
         # リストの一次元化
@@ -127,11 +127,11 @@ def get_past_weekly_id(place_id = 0, day = date.today()):
         get_race_id_error(e)
         return race_id_list
     
-def get_next_weekly_id(place_id = 0, day = date.today()):
+def get_next_weekly_id(place_id = 0, race_day = date.today()):
     """ 指定した日にちから、次の1週間のrace_idを取得 
         Args:
             place_id (int) : 開催コースid (初期値0=全コース)
-            day(Date) : 日（初期値：今日）
+            race_day(Date) : 日（初期値：今日）
         Returns:
             list: 指定した日にちから、次の1週間のstr型のrace_idを返す    
     """
@@ -140,7 +140,7 @@ def get_next_weekly_id(place_id = 0, day = date.today()):
     try:
         # 1週間分の開催日を取得
         for i in range(7):
-            race_day = day + timedelta(days = (i))
+            race_day = race_day + timedelta(days = (i))
             # 今日のレースIDを取得
             race_id_list.append(get_daily_id(place_id, race_day))
         # リストの一次元化
@@ -215,18 +215,18 @@ def get_past_weekly_place_id(race_day = date.today()):
         Returns :
             place_id_list(list) : 開催場のplace_id
     """
-    race_id_list = get_past_weekly_id(day = race_day)
+    race_id_list = get_past_weekly_id(race_day = race_day)
     place_id_list = get_place_id_list_from_race_id_list(race_id_list)
     return place_id_list
 
-def get_dayly_place_id(race_day = date.today()):
+def get_daily_place_id(race_day = date.today()):
     """指定日の開催場のplace_idを取得
         Args:
             race_day(Date) : 日（初期値：今日）
         Returns :
             place_id_list(list) : 開催場のplace_id
     """
-    race_id_list = get_daily_id(day = race_day)
+    race_id_list = get_daily_id(race_day = race_day)
     place_id_list = get_place_id_list_from_race_id_list(race_id_list)
     return place_id_list
 

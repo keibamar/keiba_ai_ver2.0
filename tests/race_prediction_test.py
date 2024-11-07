@@ -79,7 +79,7 @@ if __name__ == "__main__":
 
     while(1):
         print("[0]予想のみ/[1]予想+配当結果")
-        test_type = input(":")
+        test_type = input(">")
         if (not test_type == "0") and (not test_type == "1") :
             format_error(test_type)
             continue
@@ -90,23 +90,24 @@ if __name__ == "__main__":
         while(1):
             print("日付を指定してください。[yyyymmdd]")
             print("複数の日付を指定する場合は「,」で区切って入力してください。")
-            str_race_day_input = input(":")
+            str_race_day_input = input(">")
             str_race_day_input = str_race_day_input.replace(" ", "")
             str_race_day_list = str_race_day_input.split(",")
+
             for str_race_day in str_race_day_list :
                 if not is_valid_date_format(str_race_day):
                     reset_day_flag = 1
                     break
-                race_day = format_datetime(str_race_day)
-                race_id_list = get_race_id.get_daily_id(race_day)
+                race_id_list = get_race_id.get_daily_id(race_day = format_datetime(str_race_day))
                 if not any(race_id_list):
                     print(str_race_day, "に開催されたレースはありません。")
+                    str_race_day_list.remove(str_race_day)
                 else:
                     race_id_lists.append(race_id_list)
             
             if reset_day_flag == 1 :
                 print("再度日付を指定しますか。[y/n]")
-                reset_day= input(":")
+                reset_day= input(">")
                 if reset_day == "y" or reset_day == "Y":
                     race_id_lists = []
                     reset_day_flag = 0
@@ -119,11 +120,30 @@ if __name__ == "__main__":
         if reset_day_flag == 1 :
             break
         
+        for str_race_day in str_race_day_list:
+            print(str_race_day, "の開催場は以下になります。どの開催場の予想を出力しますか。")
+            place_id_list = get_race_id.get_daily_place_id(race_day = format_datetime(str_race_day))
+            while(1):
+                print("[0] 全ての競馬場")
+                for i, place_id, in enumerate(place_id_list):
+                    print(f"[{i + 1}] {name_header.NAME_LIST[place_id - 1]}競馬場")
+                
+                pred_course = input(">")
+                if not( "0" <= pred_course <=f"{len(place_id_list)}") :
+                    format_error(pred_course)
+                    continue
+                break
 
-        print("の開催場は以下になります。どの開催場の予想を出力しますか。")
-        course_type = input(":")
 
         print("予想するレースを指定してください。")
-        race_type = input(":")
+        print("[0] 全レース予想")
+        print("[1] 芝のレース")
+        print("[2] ダートのレース")
+        print("[3] 午前のレース")
+        print("[4] 午後のレース")
+        print("[5] レースを指定する")
+        race_type = input(">")
+
+        break
 
     
