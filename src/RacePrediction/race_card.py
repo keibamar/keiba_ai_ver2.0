@@ -94,7 +94,9 @@ def make_race_card(race_id):
     """
     # 出馬表を取得
     race_info, race_info_df, race_card_df = scraping.scrape_race_card(race_id)
-
+    if race_info_df.empty or race_card_df.empty:
+        print("Miss Make Race card")
+        return pd.DataFrame()
     # 出走馬の過去成績と血統情報を取得
     horse_results = []
     horse_peds = pd.DataFrame()
@@ -137,6 +139,6 @@ def dayly_race_card(place_id = 0, race_day = date.today()):
         save_race_cards(race_card_df, race_day, race_id)
 
 if __name__ == "__main__":
-    race_day = date.today()
+    race_day = date.today() - timedelta(days = 6)
     dayly_race_card(race_day = race_day)
             

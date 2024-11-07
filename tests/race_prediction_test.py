@@ -78,11 +78,11 @@ def format_datetime(date_string):
 if __name__ == "__main__":
 
     while(1):
-        print("[0]予想のみ/[1]予想+配当結果")
-        test_type = input(">")
-        if (not test_type == "0") and (not test_type == "1") :
-            format_error(test_type)
-            continue
+        # print("[0]予想のみ/[1]予想+配当結果")
+        # test_type = input(">")
+        # if (not test_type == "0") and (not test_type == "1") :
+        #     format_error(test_type)
+        #     continue
 
         # 日付の取得
         reset_day_flag = 0
@@ -120,7 +120,7 @@ if __name__ == "__main__":
         if reset_day_flag == 1 :
             break
         
-        for str_race_day in str_race_day_list:
+        for id, str_race_day in enumerate(str_race_day_list):
             print(str_race_day, "の開催場は以下になります。どの開催場の予想を出力しますか。")
             place_id_list = get_race_id.get_daily_place_id(race_day = format_datetime(str_race_day))
             while(1):
@@ -133,16 +133,44 @@ if __name__ == "__main__":
                     format_error(pred_course)
                     continue
                 break
+            
+            # すべての競馬場指定時は全レース予想
+            if pred_course == "0":
+                race_card.dayly_race_card(place_id = 0, race_day = format_datetime(str_race_day))
+            else :
+                place_id = place_id_list[int(pred_course) - 1]
+                print("予想するレースを指定してください。")            
+                while(1):
+                    print("[0] 全レース予想")
+                    print("[1] レースを指定する")
+                    race_type = input(">")
+                    if not( "0" <= race_type <= "1") :
+                        format_error(pred_course)
+                        continue
+                    break
+
+                if race_type == "0":
+                    race_card.dayly_race_card(place_id = place_id, race_day = format_datetime(str_race_day))
+                elif race_type == "1":
+                    print("レースを指定してください。[1~12]")
+                    print("複数の日付を指定する場合は「,」で区切って入力してください。")
+                    race_num_inupt = input(">")
+                    race_num_inupt = race_num_inupt.replace(" ", "")
+                    race_num_list = race_num_inupt.split(",")
+                    
+                    # レースidの取得
+                    race_id_list = race_id_lists[id]
+                    for race_num in race_num_list:
+                        print(type(race_num))
+                        if not( 1 <= int(race_num) <= 12) :
+                            format_error(race_num)
+                            continue
+                        print("Make Race Card", race_id_list[12 * ( int(pred_course) - 1 ) + int(race_num) - 1])
+                        race_card.make_race_card(race_id = race_id_list[12 * ( int(pred_course) - 1 ) + int(race_num) - 1])
 
 
-        print("予想するレースを指定してください。")
-        print("[0] 全レース予想")
-        print("[1] 芝のレース")
-        print("[2] ダートのレース")
-        print("[3] 午前のレース")
-        print("[4] 午後のレース")
-        print("[5] レースを指定する")
-        race_type = input(">")
+
+
 
         break
 

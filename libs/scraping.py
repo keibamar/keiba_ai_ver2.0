@@ -174,7 +174,8 @@ def scrape_race_card(race_id):
             df(pd.DataFrame) : 出馬表
     """   
     try :
-        url = "https://race.netkeiba.com/race/shutuba.html?race_id=" + race_id
+        info =[]
+        url = "https://race.netkeiba.com/race/shutuba.html?race_id=" + str(race_id)
         # スクレイピング
         html = requests.get(url)
         html.encoding = "EUC-JP"
