@@ -139,6 +139,6 @@ def dayly_race_card(place_id = 0, race_day = date.today()):
         save_race_cards(race_card_df, race_day, race_id)
 
 if __name__ == "__main__":
-    race_day = date.today() - timedelta(days = 6)
+    race_day = date.today()
     dayly_race_card(race_day = race_day)
             
