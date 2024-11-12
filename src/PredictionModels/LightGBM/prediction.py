@@ -53,12 +53,15 @@ def save_lightGBM_model(model, place_id, type, length):
             type(str) : レースタイプ
             length(int) : キョリ
     """
-    if type == "芝":
-            type = "turf"
-    else :
-        type = "dirt"
-    model_path = name_header.DATA_PATH + "/PredictionModels/LightGBM/Models/" + name_header.PLACE_LIST[place_id - 1] + '//' + str(type) + str(length) + "_lambdarank_model.txt"
-    model.booster_.save_model(model_path)
+    try:
+        if type == "芝":
+                type = "turf"
+        else :
+            type = "dirt"
+        model_path = name_header.DATA_PATH + "/PredictionModels/LightGBM/Models/" + name_header.PLACE_LIST[place_id - 1] + '//' + str(type) + str(length) + "_lambdarank_model.txt"
+        model.booster_.save_model(model_path)
+    except Exception as e:
+        prediction_error(e)
 
 def save_pred_rank(rank_df, place_id, year, type, length):
     """予想結果の保存
