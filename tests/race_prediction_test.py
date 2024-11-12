@@ -8,11 +8,11 @@ import warnings
 warnings.simplefilter('ignore')
 
 sys.dont_write_bytecode = True
-sys.path.append("C:\keiba_ai\keiba_ai_ver2.0\libs")
+sys.path.append(r"C:\keiba_ai\keiba_ai_ver2.0\libs")
 import get_race_id
 import name_header
 import post_text
-sys.path.append("C:\keiba_ai\keiba_ai_ver2.0\src\RacePrediction")
+sys.path.append(r"C:\keiba_ai\keiba_ai_ver2.0\src\RacePrediction")
 import make_text
 import race_card
 import day_race_prediction

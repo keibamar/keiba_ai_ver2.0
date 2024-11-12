@@ -9,12 +9,12 @@ import warnings
 warnings.simplefilter('ignore')
 
 sys.dont_write_bytecode = True
-sys.path.append("C:\keiba_ai\keiba_ai_ver2.0\libs")
+sys.path.append(r"C:\keiba_ai\keiba_ai_ver2.0\libs")
 import get_race_id
 import name_header
 import scraping
 
-sys.path.append("C:\keiba_ai\keiba_ai_ver2.0\src\Datasets")
+sys.path.append(r"C:\keiba_ai\keiba_ai_ver2.0\src\Datasets")
 import race_card
 import race_returns
 

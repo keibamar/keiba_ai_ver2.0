@@ -12,10 +12,10 @@ from tqdm import tqdm
 
 # pycache を生成しない
 sys.dont_write_bytecode = True
-sys.path.append("C:\keiba_ai\keiba_ai_ver2.0\libs")
+sys.path.append(r"C:\keiba_ai\keiba_ai_ver2.0\libs")
 import name_header
 
-sys.path.append("C:\keiba_ai\keiba_ai_ver2.0\src\Datasets")
+sys.path.append(r"C:\keiba_ai\keiba_ai_ver2.0\src\Datasets")
 import race_results
 
 import make_dataset

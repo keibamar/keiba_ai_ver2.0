@@ -1,5 +1,5 @@
 import sys
-sys.path.append("C:\\keiba_ai\\keiba_ai_ver2.0\\src\\Datasets")
+sys.path.append(r"C:\\keiba_ai\\keiba_ai_ver2.0\\src\\Datasets")
 sys.dont_write_bytecode = True
 import threading
 import time
@@ -11,7 +11,7 @@ import horse_peds
 import peds_results
 import past_performance
 
-sys.path.append("C:\\keiba_ai\\keiba_ai_ver2.0\\src\\PredictionModels")
+sys.path.append(r"C:\\keiba_ai\\keiba_ai_ver2.0\\src\\PredictionModels")
 import LightGBM.make_dataset  as LightGBM_dataset
 
 def timer(timeout, event):

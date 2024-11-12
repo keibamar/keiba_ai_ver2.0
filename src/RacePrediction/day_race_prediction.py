@@ -6,8 +6,8 @@ import warnings
 warnings.simplefilter('ignore')
 
 sys.dont_write_bytecode = True
-sys.path.append("C:\keiba_ai\keiba_ai_ver2.0\libs")
-sys.path.append("C:\keiba_ai\keiba_ai_ver2.0\src\PredictionModels\LightGBM")
+sys.path.append(r"C:\keiba_ai\keiba_ai_ver2.0\libs")
+sys.path.append(r"C:\keiba_ai\keiba_ai_ver2.0\src\PredictionModels\LightGBM")
 import make_dataset
 import prediction
 
