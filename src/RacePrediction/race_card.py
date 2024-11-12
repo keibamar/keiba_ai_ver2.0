@@ -141,4 +141,5 @@ def dayly_race_card(place_id = 0, race_day = date.today()):
 if __name__ == "__main__":
     race_day = date.today()
     dayly_race_card(race_day = race_day)
+    # make_race_card("202408060304")
             
