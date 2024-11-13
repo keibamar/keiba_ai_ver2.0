@@ -103,11 +103,11 @@ def get_past_year_id(place_id = 0, race_day = date.today()):
         get_race_id_error(e)
         return race_id_list
 
-def get_past_weekly_id(place_id = 0, race_day = date.today()):
+def get_past_weekly_id(place_id = 0, base_day = date.today()):
     """ 指定した日にちから、1週間前のrace_idを取得 
         Args:
             place_id (int) : 開催コースid (初期値0=全コース)
-            race_day(Date) : 日（初期値：今日）
+            base_day(Date) : 日（初期値：今日）
         Returns:
             list: 指定した日にちから、1週間前までのstr型のrace_idを返す    
     """
@@ -116,7 +116,7 @@ def get_past_weekly_id(place_id = 0, race_day = date.today()):
     try:
         # 1週間分の開催日を取得
         for i in range(7):
-            race_day = race_day - timedelta(days = (8 - i))
+            race_day = base_day - timedelta(days = (7 - i))
             # 今日のレースIDを取得
             race_id_list.append(get_daily_id(place_id, race_day))
         # リストの一次元化
@@ -215,7 +215,7 @@ def get_past_weekly_place_id(race_day = date.today()):
         Returns :
             place_id_list(list) : 開催場のplace_id
     """
-    race_id_list = get_past_weekly_id(race_day = race_day)
+    race_id_list = get_past_weekly_id(base_day = race_day)
     place_id_list = get_place_id_list_from_race_id_list(race_id_list)
     return place_id_list
 
