@@ -12,6 +12,7 @@ sys.path.append(r"C:\keiba_ai\keiba_ai_ver2.0\libs")
 import get_race_id
 import name_header
 import post_text
+import string_format
 sys.path.append(r"C:\keiba_ai\keiba_ai_ver2.0\src\RacePrediction")
 import make_text
 import race_card
@@ -23,41 +24,6 @@ def make_race_card_test():
 
 def calc_race_return_test():
     return
-
-def format_error(date_string):
-    print(date_string, "はフォーマットで無効です。")
-    print("指定されたフォーマットで入力指定ください。")
-    return
-
-def is_valid_date_format(date_string):
-    """有効な日付のフォーマットになっているかチェックする
-        Args:
-            date_string(str) : 文字列
-        Return:
-            True / False
-    """
-    # 正規表現でフォーマットチェック
-    pattern = re.compile(r"^\d{4}\d{2}\d{2}$")
-    if pattern.match(date_string):
-        try:
-            # 年、月、日を抽出
-            year = int(date_string[:4])
-            month = int(date_string[4:6])
-            day = int(date_string[6:8])
-            # 月と日が範囲内にあるか確認
-            if not (1 <= month <= 12):
-                print("月が無効です。")
-                return False
-            if not (1 <= day <= 31):
-                print("日が無効です。")
-                return False
-            return True
-        except ValueError:
-            print(date_string, "を数値に変換できません。")
-            return False
-    else:
-        format_error(date_string)
-        return False
 
 def format_datetime(date_string):
     """レース開催日かチェックする
@@ -81,7 +47,7 @@ if __name__ == "__main__":
         # print("[0]予想のみ/[1]予想+配当結果")
         # test_type = input(">")
         # if (not test_type == "0") and (not test_type == "1") :
-        #     format_error(test_type)
+        #     string_format.format_error(test_type)
         #     continue
 
         # 日付の取得
@@ -95,7 +61,7 @@ if __name__ == "__main__":
             str_race_day_list = str_race_day_input.split(",")
 
             for str_race_day in str_race_day_list :
-                if not is_valid_date_format(str_race_day):
+                if not string_format.is_valid_date_format(str_race_day):
                     reset_day_flag = 1
                     break
                 race_id_list = get_race_id.get_daily_id(race_day = format_datetime(str_race_day))
@@ -130,13 +96,13 @@ if __name__ == "__main__":
                 
                 pred_course = input(">")
                 if not( "0" <= pred_course <=f"{len(place_id_list)}") :
-                    format_error(pred_course)
+                    string_format.format_error(pred_course)
                     continue
                 break
             
             # すべての競馬場指定時は全レース予想
             if pred_course == "0":
-                race_card.dayly_race_card(place_id = 0, race_day = format_datetime(str_race_day))
+                race_card.daily_race_card(place_id = 0, race_day = format_datetime(str_race_day))
             else :
                 place_id = place_id_list[int(pred_course) - 1]
                 print("予想するレースを指定してください。")            
@@ -145,12 +111,12 @@ if __name__ == "__main__":
                     print("[1] レースを指定する")
                     race_type = input(">")
                     if not( "0" <= race_type <= "1") :
-                        format_error(pred_course)
+                        string_format.format_error(pred_course)
                         continue
                     break
 
                 if race_type == "0":
-                    race_card.dayly_race_card(place_id = place_id, race_day = format_datetime(str_race_day))
+                    race_card.daily_race_card(place_id = place_id, race_day = format_datetime(str_race_day))
                 elif race_type == "1":
                     print("レースを指定してください。[1~12]")
                     print("複数の日付を指定する場合は「,」で区切って入力してください。")
@@ -163,7 +129,7 @@ if __name__ == "__main__":
                     for race_num in race_num_list:
                         print(type(race_num))
                         if not( 1 <= int(race_num) <= 12) :
-                            format_error(race_num)
+                            string_format.format_error(race_num)
                             continue
                         print("Make Race Card", race_id_list[12 * ( int(pred_course) - 1 ) + int(race_num) - 1])
                         race_card.make_race_card(race_id = race_id_list[12 * ( int(pred_course) - 1 ) + int(race_num) - 1])

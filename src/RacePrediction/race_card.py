@@ -1,7 +1,8 @@
+import argparse
 import os
 import sys
 
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 import pandas as pd
 from tqdm import tqdm
 import warnings
@@ -12,6 +13,7 @@ sys.path.append(r"C:\keiba_ai\keiba_ai_ver2.0\libs")
 import get_race_id
 import name_header
 import scraping
+import string_format
 
 import day_race_prediction
 
@@ -122,7 +124,7 @@ def make_race_card(race_id):
     
     return race_card_df
 
-def dayly_race_card(place_id = 0, race_day = date.today()):
+def daily_race_card(place_id = 0, race_day = date.today()):
     """出馬表を出力
         Args:
             place_id (int) : 開催コースid (初期値0=全コース)
@@ -139,7 +141,31 @@ def dayly_race_card(place_id = 0, race_day = date.today()):
         save_race_cards(race_card_df, race_day, race_id)
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='指定日の予想を作成')
+    parser.add_argument('number', nargs='?', default='A')
+
+    args = parser.parse_args()
     race_day = date.today()
-    dayly_race_card(race_day = race_day)
-    # make_race_card("202408060304")
-            
+
+    # デフォルト(今日)
+    if args.number == 'A':
+        race_day = date.today()
+        print("本日の予想結果を出力します。")
+    # 日付指定（〇日後)
+    elif string_format.is_valid_date_format(args.number):
+         # 年、月、日を抽出
+        year = int(args.number[:4])
+        month = int(args.number[4:6])
+        day = int(args.number[6:8])
+        race_day = datetime(year, month, day)
+        print(args.number, "の予想結果を出力します。")
+    # 数字指定（〇日後/1週間以内)
+    elif args.number.isdigit() and  0 < int(args.number) < 8:
+        race_day = date.today() + timedelta(days = int(args.number))
+        print(args.number, "日後の予想結果を出力します。")
+    else:
+        string_format.format_error(args.number)
+        print("本日の予想結果を出力します。")
+
+    daily_race_card(race_day = race_day)
+
