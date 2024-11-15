@@ -14,6 +14,7 @@ import get_race_id
 import name_header
 import horse_peds
 import race_results
+import scraping
 import past_performance
 
 def peds_dataset_error(e):
@@ -123,9 +124,29 @@ def merge_pedsdata_with_race_results(place_id, year):
 
         # 血統データの取得
         df_peds = get_peds_dataset_csv(place_id, year)    
-        # 血統情報を結合
-        df_result = pd.concat([df_result.reset_index(), df_peds.reset_index(drop = True)], axis = 1).set_index('index')
+        # horse_idに一致する血統情報を抽出
+        df_peds_result =pd.DataFrame()
+        for id in range(len(df_result.index)):
+            num = df_course.iloc[id,:]
+            num = int(num['horse_id'])
+            if num in df_peds.index:
+                df_peds_result = pd.concat([df_peds_result,df_peds.loc[num,:]], axis=1)
+            else :
+                horse_peds_data = horse_peds.get_horse_peds_csv(str(num))
+                if horse_peds_data.empty:
+                    horse_peds_data = pd.DataFrame( np.nan, index=df_peds_result.index, columns = [num])
+                df_peds_result = pd.concat([df_peds_result,horse_peds_data], axis=1)
+       
+        df_peds_result = df_peds_result.reset_index(drop = True).T
 
+        # index/columnsの整理
+        df_peds_result = df_peds_result.reset_index(drop = True)
+        df_peds_result.columns = [f'peds_{i}' for i in range(len(df_peds_result.columns))]
+        # 血統情報を結合
+        df_result = pd.concat([df_result.reset_index(drop = True), df_peds_result], axis = 1)
+        df_result.index = df_course.index
+        df_result.index.name = "index"
+        
         # データセットの保存
         df_result.to_csv(name_header.DATA_PATH + "/PedsResults/" +  name_header.PLACE_LIST[place_id - 1] + '//' + str(year) + '_peds_data.csv')
         df_result.to_pickle(name_header.DATA_PATH + "/PedsResults/" +  name_header.PLACE_LIST[place_id - 1] + '//' + str(year) + '_peds_data.pickle')

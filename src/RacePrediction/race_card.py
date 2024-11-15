@@ -11,6 +11,7 @@ warnings.simplefilter('ignore')
 sys.dont_write_bytecode = True
 sys.path.append(r"C:\keiba_ai\keiba_ai_ver2.0\libs")
 import get_race_id
+import horse_peds
 import name_header
 import scraping
 import string_format
@@ -101,13 +102,17 @@ def make_race_card(race_id):
         return pd.DataFrame()
     # 出走馬の過去成績と血統情報を取得
     horse_results = []
-    horse_peds = pd.DataFrame()
+    horse_ped = pd.DataFrame()
     horse_ids = race_card_df.at[str(race_id),"horse_id"]
     for horse_id in horse_ids:
         # 過去成績を取得
-        horse_results.append(scraping.scrape_horse_results(horse_id))
+        horse_result = horse_peds.get_horse_peds_csv(horse_id)
+        if horse_result.empty:
+            horse_result = scraping.scrape_horse_results(horse_id)
+            horse_peds.save_horse_peds_dataset(horse_id,horse_result)
+        horse_results.append(horse_result)
         # 血統情報を取得
-        horse_peds = pd.concat([horse_peds,scraping.scrape_peds(horse_id)], axis = 1)
+        horse_ped = pd.concat([horse_ped,scraping.scrape_peds(horse_id)], axis = 1)
 
     ###################  Todo : LightGBM用になっている  #############################      
     # 枠順、馬番を取得
