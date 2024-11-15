@@ -11,10 +11,11 @@ warnings.simplefilter('ignore')
 sys.dont_write_bytecode = True
 sys.path.append(r"C:\keiba_ai\keiba_ai_ver2.0\libs")
 import get_race_id
-import horse_peds
 import name_header
 import scraping
 import string_format
+sys.path.append(r"C:\keiba_ai\keiba_ai_ver2.0\src\Datasets")
+import horse_peds
 
 import day_race_prediction
 
@@ -110,6 +111,7 @@ def make_race_card(race_id):
         if horse_result.empty:
             horse_result = scraping.scrape_horse_results(horse_id)
             horse_peds.save_horse_peds_dataset(horse_id,horse_result)
+            horse_result = horse_peds.get_horse_peds_csv(horse_id)
         horse_results.append(horse_result)
         # 血統情報を取得
         horse_ped = pd.concat([horse_ped,scraping.scrape_peds(horse_id)], axis = 1)
@@ -122,7 +124,7 @@ def make_race_card(race_id):
     #################################################################################   
 
     # 父，母，母父のみ抽出
-    horse_peds_display = extract_peds_for_display(horse_peds) 
+    horse_peds_display = extract_peds_for_display(horse_ped) 
     # データセットの統合
     race_card_df = pd.concat([race_card_df.reset_index(drop = True), horse_peds_display.T.reset_index(drop = True)], axis = 1)
     race_card_df = pd.concat([race_card_df, rank_df.reset_index(drop=True)], axis = 1)
@@ -173,4 +175,9 @@ if __name__ == "__main__":
         print("本日の予想結果を出力します。")
 
     daily_race_card(race_day = race_day)
+
+    # race_id = "202405050511"
+    # race_card_df = make_race_card(race_id)
+    # # csvファイルで出力
+    # save_race_cards(race_card_df, date.today(), race_id)
 
