@@ -23,8 +23,9 @@ def post_race_pred(race_id, race_day):
             race_day(date) : レース開催日
     """
     # テキストファイルの読み込み
-    text_path = name_header.TEXT_PATH + "race_prediction/" + race_day.strftime("%Y%m%d") + "//" + str(race_id) + ".txt"
-    post_text.post_text(text_path)
+    text_path = name_header.TEXT_PATH + "race_prediction/" + race_day.strftime("%Y%m%d") + "/" + str(race_id) + ".txt"
+    print(text_path)
+    post_text.post_text_data(text_path)
 
 def post_pred_return(place_id, race_day):
     """予想結果の配当のポスト
@@ -33,8 +34,8 @@ def post_pred_return(place_id, race_day):
             race_day(date) : レース開催日
     """
     # テキストファイルの読み込み
-    text_path = name_header.TEXT_PATH + "race_returns/" + race_day.strftime("%Y%m%d") + "//" + name_header.PLACE_LIST[place_id - 1] + "_pred_score.txt"
-    post_text.post_text(text_path)
+    text_path = name_header.TEXT_PATH + "race_returns/" + race_day.strftime("%Y%m%d") + "/" + name_header.PLACE_LIST[place_id - 1] + "_pred_score.txt"
+    post_text.post_text_data(text_path)
 
 def get_race_time(race_id):
     """ 発走時間に取得
@@ -73,7 +74,7 @@ def make_time_id_list(race_day = date.today()):
             time_id_list(list) : レース開催日の[race_time, race_id]のリスト
     """
     time_id_list = []
-    race_id_list = get_race_id.get_today_id_list(race_day)
+    race_id_list = get_race_id.get_daily_id(race_day = race_day)
     for race_id in race_id_list:
         race_time = get_race_time(race_id)
         time_id_list.append([race_time, race_id])
@@ -90,24 +91,31 @@ def post_daily_race_pred(race_day = date.today()):
     """
     time_id_list = make_time_id_list(race_day)
 
+    # 3場開催の場合は、午後のみ
+    if len(time_id_list) > 24:
+        for i in range(0, 12):
+            time_id_list.pop(0)
+
     while(any(time_id_list)):
         # レース10分前に投稿
-        comp_time = datetime.now() + timedelta(minutes=10)
+        comp_time = datetime.datetime.now() + timedelta(minutes=10)
         str_comp_time = str(comp_time.hour).zfill(2) + str(comp_time.minute).zfill(2)
-
+        race_time = time_id_list[0][0]
         # 実行時間を過ぎていたら投稿を実行
-        if(int(time_id_list[0][0]) <= (int(str_comp_time))):
+        if(int(race_time) <= (int(str_comp_time))):
            race_id = time_id_list[0][1]
            try:
                 # 予想の更新
-                race_card.make_race_card(race_id)
+                race_card_df = race_card.make_race_card(race_id)
+                # csvファイルで出力
+                race_card.save_race_cards(race_card_df, race_day, race_id)
                 # textの作成
-                make_text.make_race_text(race_id, race_day)
+                make_text.make_race_text(race_day, race_id)
                 # textのpost
                 post_race_pred(race_id, race_day)
-                print("post:" + str(time_id_list[0][0] + ":" + str(time_id_list[0][1] )))
+                print("post:" + str(race_time + ":" + str(race_id)))
            except :
-               print("post_error:" + str(time_id_list[0][0] + ":" + str(time_id_list[0][1] )))
+               print("post_error:" + str(race_time + ":" + str(race_id)))
                print(sys.exc_info())
           
            time_id_list.pop(0)
