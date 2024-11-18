@@ -91,11 +91,6 @@ def post_daily_race_pred(race_day = date.today()):
     """
     time_id_list = make_time_id_list(race_day)
 
-    # 3場開催の場合は、午後のみ
-    if len(time_id_list) > 24:
-        for i in range(0, 12):
-            time_id_list.pop(0)
-
     while(any(time_id_list)):
         # レース10分前に投稿
         comp_time = datetime.datetime.now() + timedelta(minutes=10)
@@ -111,9 +106,12 @@ def post_daily_race_pred(race_day = date.today()):
                 race_card.save_race_cards(race_card_df, race_day, race_id)
                 # textの作成
                 make_text.make_race_text(race_day, race_id)
-                # textのpost
-                post_race_pred(race_id, race_day)
-                print("post:" + str(race_time + ":" + str(race_id)))
+                # API対策で計12レースのみ投稿
+                if (len(time_id_list) <= 12):
+                    post_race_pred(race_id, race_day)
+                    print("post:" + str(race_time + ":" + str(race_id)))
+                else :
+                    print("no post for API restricctinos")
            except :
                print("post_error:" + str(race_time + ":" + str(race_id)))
                print(sys.exc_info())
