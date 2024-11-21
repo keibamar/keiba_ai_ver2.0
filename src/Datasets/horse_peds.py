@@ -185,6 +185,8 @@ def make_all_horse_peds(year = date.today().year):
             make_horse_peds_datasets_from_horse_id_list(horse_id_list)
 
 if __name__ == "__main__":
- 
-    monthly_update_horse_peds()
+
+    race_id_list = get_race_id.get_year_id_all(8,2024)
+    horse_id_list = past_performance.get_horse_id_list_from_race_id_list(race_id_list)
+    make_horse_peds_datasets_from_horse_id_list(horse_id_list)
     

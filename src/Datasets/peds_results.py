@@ -104,6 +104,7 @@ def get_peds_dataset_from_horse_id_list(horse_id_list):
     peds_df = pd.DataFrame()
     for horse_id in horse_id_list:
         peds_df = pd.concat([peds_df,horse_peds.get_horse_peds_csv(horse_id).T],axis = 0)
+        print(peds_df)
     return peds_df
 
 def merge_pedsdata_with_race_results(place_id, year):
@@ -261,7 +262,9 @@ def update_peds_dataset(place_id, day = date.today()):
         # 既存のデータセットを取得
         old_peds_df = get_peds_dataset_csv(place_id, day.year)
         # 新しいデータセットを統合
+        print(old_peds_df)
         new_peds_df = pd.concat([old_peds_df,new_peds_df],axis = 0)
+        print(new_peds_df)
         save_peds_dataset(new_peds_df, place_id, day.year)
 
 def weekly_update_pedsdata(day = date.today()):
@@ -296,4 +299,9 @@ def make_all_pedsdata(year = date.today().year):
             merge_pedsdata_with_race_results(place_id, y)
 
 if __name__ == "__main__":
-   make_all_pedsdata()
+#    make_peds_dataset_from_race_results(3, 2024)
+#    make_peds_dataset_from_race_results(5, 2024)
+   make_peds_dataset_from_race_results(8, 2024)
+#    for place_id in range(1, len(name_header.PLACE_LIST) + 1):
+#        update_peds_dataset(place_id)
+#    make_all_pedsdata()

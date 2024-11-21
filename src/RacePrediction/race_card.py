@@ -16,6 +16,7 @@ import scraping
 import string_format
 sys.path.append(r"C:\keiba_ai\keiba_ai_ver2.0\src\Datasets")
 import horse_peds
+import past_performance
 
 import day_race_prediction
 
@@ -110,7 +111,7 @@ def make_race_card(race_id):
         horse_result = horse_peds.get_horse_peds_csv(horse_id)
         if horse_result.empty:
             horse_result = scraping.scrape_horse_results(horse_id)
-            horse_peds.save_horse_peds_dataset(horse_id,horse_result)
+            past_performance.save_past_performance_dataset(horse_id,horse_result)
             horse_result = horse_peds.get_horse_peds_csv(horse_id)
         horse_results.append(horse_result)
         # 血統情報を取得

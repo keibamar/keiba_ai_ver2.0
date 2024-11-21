@@ -32,27 +32,32 @@ def make_past_performance_dataset(horse_id):
     url = 'https://db.netkeiba.com/horse/' + horse_id
     # スクレイピング
     horse_results_df = scraping.scrape_df(url)
-    # 新馬戦の場合を除外
-    if len(horse_results_df) < 4:
-        return pd.DataFrame()
-    
-    # 過去のレース結果テーブルを取得
-    df = horse_results_df[3]
-    
-    #受賞歴がある馬の場合、3番目に受賞歴テーブルが来るため、4番目のデータを取得する
-    if df.columns[0]=='受賞歴':
-        df = horse_results_df[4]
+    try:
+        # 新馬戦の場合を除外
+        if len(horse_results_df) < 4:
+            return pd.DataFrame()
+        
+        # 過去のレース結果テーブルを取得
+        df = horse_results_df[3]
+        
+        #受賞歴がある馬の場合、3番目に受賞歴テーブルが来るため、4番目のデータを取得する
+        if df.columns[0]=='受賞歴':
+            df = horse_results_df[4]
 
-    # 不要な要素を消去する
-    df = df.drop(columns = df.columns[5])
-    df = df.drop(columns = df.columns[16 - 1])
-    df = df.drop(columns = df.columns[19 - 2])
-    df = df.drop(columns = df.columns[24 - 3])
-    df = df.drop(columns = df.columns[25 - 4])
-    df = df.drop(columns = df.columns[27 - 5])
-    df = df.reset_index(drop = True)
+        # 不要な要素を消去する
+        df = df.drop(columns = df.columns[5])
+        df = df.drop(columns = df.columns[16 - 1])
+        df = df.drop(columns = df.columns[19 - 2])
+        df = df.drop(columns = df.columns[24 - 3])
+        df = df.drop(columns = df.columns[25 - 4])
+        df = df.drop(columns = df.columns[27 - 5])
+        df = df.reset_index(drop = True)
 
-    return df
+        return df
+    except Exception as e:
+        print("error id:", horse_id)
+        past_performance_error(e)
+        return pd.DataFrame
 
 def save_past_performance_dataset(horse_id, past_performance_df):
     """ past_performanceのDataFrameを保存 
@@ -245,8 +250,12 @@ def make_past_performanece_datasets(horse_id_list):
             horse_id_list : horse_idのリスト
     """ 
     for horse_id in tqdm(horse_id_list):
-        horse_results_df = make_past_performance_dataset(str(horse_id))
-        save_past_performance_dataset(str(horse_id), horse_results_df)
+        # データセットの取得
+        horse_result = get_past_performance_dataset(horse_id)
+        # データセットがない場合は新規作成
+        if horse_result.empty:
+            horse_results_df = make_past_performance_dataset(str(horse_id))
+            save_past_performance_dataset(str(horse_id), horse_results_df)
 
 def make_past_performance_dataset_from_race_id_list(race_id_list):
     """ race_id_listから過去成績のデータセットを作成  
@@ -289,4 +298,4 @@ def make_all_past_performance(year = date.today().year):
             make_past_performance_dataset_from_race_id_list(race_id_list)
 
 if __name__ == "__main__":
-    make_all_past_performance()
+    monthly_update_past_performance()
