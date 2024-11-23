@@ -131,9 +131,11 @@ if __name__ == "__main__":
                         if not( 1 <= int(race_num) <= 12) :
                             string_format.format_error(race_num)
                             continue
-                        print("Make Race Card", race_id_list[12 * ( int(pred_course) - 1 ) + int(race_num) - 1])
-                        race_card.make_race_card(race_id = race_id_list[12 * ( int(pred_course) - 1 ) + int(race_num) - 1])
-
+                        race_id = race_id_list[12 * ( int(pred_course) - 1 ) + int(race_num) - 1]
+                        print("Make Race Card", race_id)
+                        race_card_df = race_card.make_race_card(race_id = race_id)
+                        # csvファイルで出力
+                        race_card.save_race_cards(race_card_df, race_day = format_datetime(str_race_day), race_id = race_id)
 
 
 
