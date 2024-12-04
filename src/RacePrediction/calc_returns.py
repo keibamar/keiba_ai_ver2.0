@@ -12,11 +12,14 @@ sys.dont_write_bytecode = True
 sys.path.append(r"C:\keiba_ai\keiba_ai_ver2.0\libs")
 import get_race_id
 import name_header
+import post_text
 import scraping
 
 sys.path.append(r"C:\keiba_ai\keiba_ai_ver2.0\src\Datasets")
 import race_card
 import race_returns
+
+import make_text
 
 def calc_returns_error(e):
     """ エラー時動作を記載する 
@@ -489,8 +492,23 @@ def calc_day_race_return_all(race_day = date.today()):
         place_id = int(str(race_id_list[0])[4] + str(race_id_list[0])[5])
         calc_day_race_return(place_id, race_day, race_id_list)
 
+
+def post_race_rerurns(place_id, race_day):
+    """レースの配当結果をポスト
+        Args:
+            place_id(int) : place_id
+            race_day(date) : レース開催日
+    """
+    # テキストファイルの読み込み
+    text_data_path =  name_header.TEXT_PATH + "race_returns/" + race_day.strftime("%Y%m%d") + "//" + name_header.PLACE_LIST[place_id - 1] + "_pred_score.txt"
+    post_text.post_text_data(text_data_path)
+
 if __name__ =="__main__":
     race_day = date.today()
     calc_day_race_return_all(race_day)
+   
+    for place_id in get_race_id.get_day_place_id(race_day):
+        make_text.make_return_text(place_id, race_day)
+        post_race_rerurns(place_id, race_day)
 
 
