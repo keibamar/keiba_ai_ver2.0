@@ -67,7 +67,7 @@ def write_trio_hit_text(race_day, race_id_list, text_file):
             text_file(file) : テキストファイル
     """
     # 上位5頭三連複BOX回収率・的中率・敵流レースを抽出
-    trio5_hit_rate, trio5_return_rate, trio5_hit_race = calc_returns.get_trio_box_result(race_day, race_id_list)
+    trio5_hit_rate, trio5_return_rate, trio5_hit_race = calc_returns.get_trio_box_result(race_day, race_id_list, box_num = 5)
     text_file.write("三連複(5頭BOX)回収率:" + str(round(trio5_return_rate, 1)) + "%  " + "(的中レース:" + trio5_hit_race + "R)\n")
 
 def make_race_text(race_day, race_id):

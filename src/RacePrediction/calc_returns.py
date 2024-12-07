@@ -507,7 +507,7 @@ if __name__ =="__main__":
     race_day = date.today()
     calc_day_race_return_all(race_day)
    
-    for place_id in get_race_id.get_day_place_id(race_day):
+    for place_id in get_race_id.get_daily_place_id(race_day):
         make_text.make_return_text(place_id, race_day)
         post_race_rerurns(place_id, race_day)
 
