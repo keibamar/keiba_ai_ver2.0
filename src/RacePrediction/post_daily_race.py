@@ -90,6 +90,8 @@ def post_daily_race_pred(race_day = date.today()):
             race_day(date) : レース開催日(初期値:今日)
     """
     time_id_list = make_time_id_list(race_day)
+    for i in range(15):
+        time_id_list.pop(0)
 
     while(any(time_id_list)):
         print("len time id list : ", len(time_id_list))
