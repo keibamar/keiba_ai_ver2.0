@@ -119,7 +119,7 @@ if __name__ == "__main__":
                     race_card.daily_race_card(place_id = place_id, race_day = format_datetime(str_race_day))
                 elif race_type == "1":
                     print("レースを指定してください。[1~12]")
-                    print("複数の日付を指定する場合は「,」で区切って入力してください。")
+                    print("複数のレースを指定する場合は「,」で区切って入力してください。")
                     race_num_inupt = input(">")
                     race_num_inupt = race_num_inupt.replace(" ", "")
                     race_num_list = race_num_inupt.split(",")
@@ -127,7 +127,6 @@ if __name__ == "__main__":
                     # レースidの取得
                     race_id_list = race_id_lists[id]
                     for race_num in race_num_list:
-                        print(type(race_num))
                         if not( 1 <= int(race_num) <= 12) :
                             string_format.format_error(race_num)
                             continue
