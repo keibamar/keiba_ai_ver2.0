@@ -90,11 +90,8 @@ def post_daily_race_pred(race_day = date.today()):
             race_day(date) : レース開催日(初期値:今日)
     """
     time_id_list = make_time_id_list(race_day)
-    for i in range(15):
-        time_id_list.pop(0)
 
     while(any(time_id_list)):
-        print("len time id list : ", len(time_id_list))
         # レース10分前に投稿
         comp_time = datetime.datetime.now() + timedelta(minutes=10)
         str_comp_time = str(comp_time.hour).zfill(2) + str(comp_time.minute).zfill(2)
@@ -109,8 +106,8 @@ def post_daily_race_pred(race_day = date.today()):
                 race_card.save_race_cards(race_card_df, race_day, race_id)
                 # textの作成
                 make_text.make_race_text(race_day, race_id)
-                # API対策で計24レースのみ投稿
-                if len(time_id_list) <= 24:
+                # API対策で計12レースのみ投稿
+                if len(time_id_list) <= 12:
                     post_race_pred(race_id, race_day)
                     print("post:" + str(race_time + ":" + str(race_id)))
                 else :
