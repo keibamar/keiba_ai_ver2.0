@@ -116,9 +116,9 @@ def make_race_text(race_day, race_id):
         f.write("#競馬 #競馬予想\n")
         f.write("#" + name_header.NAME_LIST[place_id - 1] + "競馬場\n")
 
-        # 9~12レースのみ名前を取得
-        if str(race_num) == "9" or str(race_num) == "10" or str(race_num) == "11" or str(race_num) == "12" :
-            f.write("#" + race_name + "\n")
+        # # 9~12レースのみ名前を取得
+        # if str(race_num) == "9" or str(race_num) == "10" or str(race_num) == "11" or str(race_num) == "12" :
+        #     f.write("#" + race_name + "\n")
     
         f.close()
     except Exception as e:
