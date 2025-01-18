@@ -196,7 +196,6 @@ def scrape_race_card(race_id):
         df = df.drop(columns = '印')
         # multicolumを解除
         df.columns = df.columns.droplevel(0)
-
         # レース情報をスクレイピング
         soup = BeautifulSoup(html.text, "html.parser")
         texts = (
@@ -217,6 +216,7 @@ def scrape_race_card(race_id):
         info = re.findall(r'\w+', texts)
         # Aコースなどの表記を消去
         info = [s for s in info if s != 'A' and s != 'B' and s != 'C']
+        horse_numbers = int(re.findall(r'\d+', info[-1])[0])
 
         df_info = pd.DataFrame()
         for text in info:
@@ -261,7 +261,7 @@ def scrape_race_card(race_id):
         horse_id_list = []
         jockey_id_list = []
         horse_list = soup.find_all("tr", attrs={"class": "HorseList"})
-
+        horse_count = 0
         for horse_infos in horse_list:
             horse_info = horse_infos.find("span", attrs={"class": "HorseName"}).find("a", attrs = {"href" : re.compile("https")})
             horse_id = re.findall(r"\d+", horse_info["href"])
@@ -270,6 +270,9 @@ def scrape_race_card(race_id):
             jockey_info = horse_infos.find("td", attrs={"class": "Jockey"}).find("a", attrs = {"href" : re.compile("https")})
             jockey_id = re.findall(r"\d+", jockey_info["href"])
             jockey_id_list.append(jockey_id[0])
+            horse_count += 1
+            if(horse_count >=horse_numbers):
+                break
 
         df["horse_id"] = horse_id_list
         df["jockey_id"] = jockey_id_list
