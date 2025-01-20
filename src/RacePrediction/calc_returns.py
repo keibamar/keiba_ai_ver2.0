@@ -504,7 +504,7 @@ def post_race_rerurns(place_id, race_day):
     post_text.post_text_data(text_data_path)
 
 if __name__ =="__main__":
-    race_day = date.today() - timedelta(days = 1)
+    race_day = date.today()
     calc_day_race_return_all(race_day)
    
     for place_id in get_race_id.get_daily_place_id(race_day):
