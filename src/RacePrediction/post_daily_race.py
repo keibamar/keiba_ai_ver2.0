@@ -1,4 +1,4 @@
-import re
+
 import sys
 
 import datetime
@@ -9,10 +9,10 @@ warnings.simplefilter('ignore')
 
 sys.dont_write_bytecode = True
 sys.path.append(r"C:\keiba_ai\keiba_ai_ver2.0\libs")
-import get_race_id
 import name_header
 import post_text
 
+import make_time_id_list
 import make_text
 import race_card
 
@@ -37,59 +37,13 @@ def post_pred_return(place_id, race_day):
     text_path = name_header.TEXT_PATH + "race_returns/" + race_day.strftime("%Y%m%d") + "/" + name_header.PLACE_LIST[place_id - 1] + "_pred_score.txt"
     post_text.post_text_data(text_path)
 
-def get_race_time(race_id):
-    """ 発走時間に取得
-        Args:
-            race_id(int) : race_id
-        Returns:
-            race_time(str) : 発走時間
-    """
-    race_info = race_card.get_race_info(race_id)
-    race_time =  str(race_info[1]) + str(race_info[2][0]) + str(race_info[2][1])
-    race_time = re.findall(r'\d+', race_time)  # 文字列から数字にマッチするものをリストとして取得
-    race_time = ''.join(race_time)
-    return race_time
-
-def sort_time(time_id_list):
-    """発走時間リストを発走時間順にソート(コース順から発走時間順へソート)
-        Args:
-            time_id_list(list) : [race_time, race_id]
-        Returns:
-            time_id_list(list) : ソートされたtime_id_list
-    """
-    for i in range(len(time_id_list)):
-        for l in range(i + 1, len(time_id_list)):
-            if (int(time_id_list[i][0]) > int(time_id_list[l][0])):
-               temp = time_id_list[i]
-               time_id_list[i] = time_id_list[l]
-               time_id_list[l] = temp
-    
-    return time_id_list
-
-def make_time_id_list(race_day = date.today()):
-    """time_id_listの作成
-        Args:
-            race_day(date) : レース開催日(初期値:今日)
-        Returns:
-            time_id_list(list) : レース開催日の[race_time, race_id]のリスト
-    """
-    time_id_list = []
-    race_id_list = get_race_id.get_daily_id(race_day = race_day)
-    for race_id in race_id_list:
-        race_time = get_race_time(race_id)
-        time_id_list.append([race_time, race_id])
-    
-    time_id_list = sort_time(time_id_list)
-    print(time_id_list)
-
-    return time_id_list
 
 def post_daily_race_pred(race_day = date.today()):
     """一日のレースの予想をポスト
         Args:
             race_day(date) : レース開催日(初期値:今日)
     """
-    time_id_list = make_time_id_list(race_day)
+    time_id_list = make_time_id_list.get_time_id_list(race_day)
 
     while(any(time_id_list)):
         # レース10分前に投稿
