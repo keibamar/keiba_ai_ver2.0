@@ -37,6 +37,20 @@ def post_pred_return(place_id, race_day):
     text_path = name_header.TEXT_PATH + "race_returns/" + race_day.strftime("%Y%m%d") + "/" + name_header.PLACE_LIST[place_id - 1] + "_pred_score.txt"
     post_text.post_text_data(text_path)
 
+def is_post_race(race_id):
+    """ポストするレースか判定する
+        Args:
+            race_id: race_id
+        Returns:
+            bool : ポストするか否か
+    """
+    place_id = int(str(race_id)[4] + str(race_id)[5])
+    race_num = int(str(race_id)[10] + str(race_id)[11])
+    for post_race_num in name_header.POST_RACE_LIST[place_id - 1]:
+        if race_num == post_race_num:
+            return True
+    return False
+
 
 def post_daily_race_pred(race_day = date.today()):
     """一日のレースの予想をポスト
@@ -61,7 +75,8 @@ def post_daily_race_pred(race_day = date.today()):
                 # textの作成
                 make_text.make_race_text(race_day, race_id)
                 # API対策で計12レースのみ投稿
-                if len(time_id_list) <= 12:
+                # if len(time_id_list) <= 12:
+                if is_post_race(race_id):
                     post_race_pred(race_id, race_day)
                     print("post:" + str(race_time + ":" + str(race_id)))
                 else :
