@@ -11,6 +11,7 @@ sys.dont_write_bytecode = True
 sys.path.append(r"C:\keiba_ai\keiba_ai_ver2.0\libs")
 import name_header
 import post_text
+import mail_api
 
 import make_time_id_list
 import make_text
@@ -81,6 +82,8 @@ def post_daily_race_pred(race_day = date.today()):
                     print("post:" + str(race_time + ":" + str(race_id)))
                 else :
                     print("no post for API restricctinos")
+                # mail送信
+                mail_api.send_race_pred(race_day, race_id)
            except :
                print("post_error:" + str(race_time + ":" + str(race_id)))
                print(sys.exc_info())
