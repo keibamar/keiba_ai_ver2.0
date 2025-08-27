@@ -76,8 +76,8 @@ def post_daily_race_pred(race_day = date.today()):
                 # textの作成
                 make_text.make_race_text(race_day, race_id)
                 # API対策で計12レースのみ投稿
-                # if len(time_id_list) <= 12:
-                if is_post_race(race_id):
+                if len(time_id_list) <= 12:
+                # if is_post_race(race_id):
                     post_race_pred(race_id, race_day)
                     print("post:" + str(race_time + ":" + str(race_id)))
                 else :
