@@ -236,47 +236,61 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id,  max_races)
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html_content)
 
-
-
 def make_index_page(date_str, output_dir, files_info_list):
-    """
-    開催日の index.html を生成する。
-    開催コースごとに、レース一覧を表示する。
-    """
     date_display = format_date(date_str)
 
-    # place_id ごとにレースをまとめる
-    place_dict = {}
-    for info in files_info_list:
-        pid = info["place_id"]
-        race_num = info["race_num"]
-        if pid not in place_dict:
-            place_dict[pid] = []
-        place_dict[pid].append(race_num)
+    # place_id ごとにレース番号をグルーピング
+    place_races = {}
+    for file_info in files_info_list:
+        place_id = file_info['place_id']
+        place_key = name_header.PLACE_LIST[place_id - 1]   # 英語キー (リンク用)
+        place_name = name_header.NAME_LIST[place_id - 1]   # 日本語名 (表示用)
+        race_num = file_info['race_num']
 
-    # HTMLを組み立て
-    content = f"<h1>{date_display} 開催コース一覧</h1>\n"
-    for pid, races in sorted(place_dict.items()):
-        place_name = name_header.PLACE_LIST[pid - 1]
-        content += f"<h2>{name_header.NAME_LIST[pid - 1]}競馬場</h2>\n<ul>\n"
-        for r in sorted(races):
-            content += f'  <li><a href="{place_name}R{r}.html">第{r}レース</a></li>\n'
-        content += "</ul>\n"
+        if place_key not in place_races:
+            place_races[place_key] = {"display": place_name, "races": []}
+        place_races[place_key]["races"].append(race_num)
 
+    # 横軸 = 開催場、縦軸 = レース番号 の表を構築
+    place_keys = sorted(place_races.keys())
+    max_races = max(len(data["races"]) for data in place_races.values())
+
+    table_rows = ""
+    for race_num in range(1, max_races + 1):
+        row_cells = f"<th>{race_num}R</th>"
+        for place_key in place_keys:
+            races = place_races[place_key]["races"]
+            if race_num in races:
+                row_cells += f'<td><a href="{place_key}R{race_num}.html">{race_num}R</a></td>'
+            else:
+                row_cells += "<td>-</td>"
+        table_rows += f"<tr>{row_cells}</tr>\n"
+
+    # HTML生成
     html = f"""
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>{date_display} 開催コース一覧</title>
-  <link rel="stylesheet" href="../css/style.css">
+  <title>{date_display} レース一覧</title>
+  <link rel="stylesheet" href="../css/styles.css">
 </head>
 <body>
-  {content}
-  <p><a href="../index.html">開催日一覧に戻る</a></p>
+  <div class="nav"><a href="../index.html">開催日一覧に戻る</a></div>
+  <h1>{date_display} レース一覧</h1>
+  <table border="1">
+    <thead>
+      <tr><th>レース</th>{''.join(f'<th>{place_races[k]["display"]}競馬場</th>' for k in place_keys)}</tr>
+    </thead>
+    <tbody>
+      {table_rows}
+    </tbody>
+  </table>
 </body>
 </html>
 """
+
+    os.makedirs(output_dir, exist_ok=True)
     with open(os.path.join(output_dir, "index.html"), "w", encoding="utf-8") as f:
         f.write(html)
 
@@ -346,43 +360,92 @@ def make_global_index(output_dir="output"):
         f.write(html)
     print(f"✅ index.html を生成しました: {output_dir}")
 
-def make_race_days_js(dates, output_dir="output"):
+def add_race_day(js_file, new_day):
     """
-    dates: list of 開催日文字列 (例: ["20250922", "20250923"])
+    racedays.js に日付を追加する関数
+    - js_file: racedays.js のファイルパス
+    - new_day: 追加する日付 (例 "20250927")
     """
-    # 重複削除 & ソート
-    unique_dates = sorted(set(dates))
-    mapping = {d: f"{d}/index.html" for d in unique_dates}
 
-    js_content = "const raceDays = " + str(mapping).replace("'", '"') + ";"
+    # ファイルが存在しない場合 → 新規作成
+    if not os.path.exists(js_file):
+        with open(js_file, "w", encoding="utf-8") as f:
+            f.write(f'window.racedays = [\n  "{new_day}"\n];\n')
+        print(f"新規作成: {new_day} を追加しました")
+        return
 
-    os.makedirs(output_dir, exist_ok=True)
-    with open(os.path.join(output_dir, "raceDays.js"), "w", encoding="utf-8") as f:
-        f.write(js_content)
+    # 既存内容を読み込み
+    with open(js_file, "r", encoding="utf-8") as f:
+        content = f.read()
 
+    # raceDays の配列を探す
+    if "window.racedays" not in content:
+        raise ValueError("racedays.js に raceDays 配列が見つかりません")
 
+    # すでに存在する場合は追加しない
+    if new_day in content:
+        print(f"{new_day} は既に登録済みです")
+        return
+
+    # 最後の "]" の直前に追加
+    lines = content.strip().splitlines()
+    new_content = []
+    added = False
+    for line in lines:
+        if line.strip().startswith("]") and not added:
+            # 前の要素の末尾に , がなければ追加
+            if not new_content[-1].strip().endswith(","):
+                new_content[-1] = new_content[-1] + ","
+            new_content.append(f'  "{new_day}"')
+            new_content.append("];")
+            added = True
+        else:
+            new_content.append(line)
+
+    # 書き戻し
+    with open(js_file, "w", encoding="utf-8") as f:
+        f.write("\n".join(new_content) + "\n")
+
+    print(f"{new_day} を追加しました")
+
+import os
+
+def get_subfolders(path):
+    """
+    指定したフォルダ内にあるフォルダ名一覧を取得する関数
+    :param path: 親フォルダのパス
+    :return: サブフォルダ名のリスト
+    """
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"指定されたパスが存在しません: {path}")
+    
+    return [name for name in os.listdir(path) if os.path.isdir(os.path.join(path, name))]
+
+# 使用例
 if __name__ == "__main__":
-    race_day = date.today() - timedelta(days=(7))
-    day_str =  race_day.strftime("%Y%m%d")
-    print(day_str)
-    input_dir = f"../data/RaceCards/{day_str}"
-    output_dir = f"races/{day_str}"
+    base_path = "../data/RaceCards/"  # 例: racesフォルダ配下の一覧を取得
+    folders = get_subfolders(base_path)
+    print(folders)
+    for day_str in folders:
+        print(day_str)
+        input_dir = f"../data/RaceCards/{day_str}"
+        output_dir = f"races/{day_str}"
 
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
 
-    files_info_list = list_files_and_parse(input_dir)
-    # print(files_info_list)
-    # 各日ごとにHTML生成
-    for file_info in files_info_list:
-        csv_path = input_dir + "/" + str(file_info['file']) + ".csv"
-        csv_to_html(csv_path, os.path.join(output_dir, f"{name_header.PLACE_LIST[file_info['place_id'] - 1]}R{file_info['race_num']}.html"), str(day_str), file_info['race_num'], file_info['place_id'] , max_races=12 )
-    make_index_page(day_str, output_dir, files_info_list)
+        files_info_list = list_files_and_parse(input_dir)
+        # print(files_info_list)
+        # 各日ごとにHTML生成
+        for file_info in files_info_list:
+            csv_path = input_dir + "/" + str(file_info['file']) + ".csv"
+            csv_to_html(csv_path, os.path.join(output_dir, f"{name_header.PLACE_LIST[file_info['place_id'] - 1]}R{file_info['race_num']}.html"), str(day_str), file_info['race_num'], file_info['place_id'] , max_races=12 )
+        make_index_page(day_str, output_dir, files_info_list)
 
-    # # 開催日全体の index.html
-    global_index_dir = "races"
-    make_global_index( global_index_dir )
-    js_dir = "js"
-    make_race_days_js(day_str,js_dir)
+        # # 開催日全体の index.html
+        # global_index_dir = "races"
+        # make_global_index( global_index_dir )
+        js_path = "js/raceDays.js"
+        add_race_day(js_path, day_str)
 
 
