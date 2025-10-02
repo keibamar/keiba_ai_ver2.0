@@ -192,7 +192,7 @@ def scrape_race_card(race_id):
         df = df.rename(columns=lambda x: x.replace(' ', ''))
 
         # 後半部分を削除
-        df = df.iloc[:,:8]
+        df = df.iloc[:,:9]
         df = df.drop(columns = '印')
         # multicolumを解除
         df.columns = df.columns.droplevel(0)
