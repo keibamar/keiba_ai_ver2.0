@@ -28,7 +28,7 @@ def save_time_id_list(race_day = date.today(), time_id_list = list()):
             os.mkdir(folder_path)
         if any(time_id_list):
             # DataFrameを作成
-            time_id_list_df = pd.DataFrame(time_id_list, columns=["race_time", "race_id"])
+            time_id_list_df = pd.DataFrame(time_id_list, columns=["race_time", "race_id", "race_name"])
             time_id_list_df.to_csv(folder_path + "//" + str(str_day) + ".csv")
     except Exception as e:
         make_time_id_list_error(e)
@@ -64,18 +64,27 @@ def make_time_id_list_error(e):
     print(__name__ + ":" + __file__)
     print(f"{e.__class__.__name__}: {e}")
 
-def get_race_time(race_id):
+def get_race_time(race_info):
     """ 発走時間に取得
         Args:
-            race_id(int) : race_id
+            race_info(list) : レース情報
         Returns:
             race_time(str) : 発走時間
     """
-    race_info = race_card.get_race_info(race_id)
     race_time =  str(race_info[1]) + str(race_info[2][0]) + str(race_info[2][1])
     race_time = re.findall(r'\d+', race_time)  # 文字列から数字にマッチするものをリストとして取得
     race_time = ''.join(race_time)
     return race_time
+
+def get_race_name(race_info):
+    """ 発走時間に取得
+        Args:
+            race_info(list) : レース情報
+        Returns:
+            race_name(str) : レース名
+    """
+    race_name =  str(race_info[0])
+    return race_name
 
 def sort_time(time_id_list):
     """発走時間リストを発走時間順にソート(コース順から発走時間順へソート)
@@ -105,8 +114,10 @@ def make_time_id_list(race_day = date.today()):
     time_id_list = []
     race_id_list = get_race_id.get_daily_id(race_day = race_day)
     for race_id in race_id_list:
-        race_time = get_race_time(race_id)
-        time_id_list.append([race_time, race_id])
+        race_info = race_card.get_race_info(race_id)
+        race_time = get_race_time(race_info)
+        race_name = get_race_name(race_info)
+        time_id_list.append([race_time, race_id, race_name])
     
     time_id_list = sort_time(time_id_list)
     print(time_id_list)
