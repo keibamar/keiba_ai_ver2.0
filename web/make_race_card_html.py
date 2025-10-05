@@ -22,7 +22,7 @@ def parse_filename(filename: str):
       DD   = 開催日（2桁）
       RR   = レース番号（2桁）
     """
-    print(filename)
+    # print(filename)
     base = os.path.splitext(os.path.basename(filename))[0]  # 拡張子を除いた部分
     if not re.match(r"^\d{12}$", base):
         raise ValueError(f"ファイル名の形式が不正です: {filename}")
@@ -61,9 +61,11 @@ def format_date(date_str):
     dt = f"{date_str[:4]}/{date_str[4:6]}/{date_str[6:]}"
     return dt
 
-def csv_to_html(csv_path, output_path, date_str, race_num, place_id,  max_races):
+def csv_to_html(csv_path, output_path, date_str, race_num, place_id, max_races):
     date_display = format_date(date_str)
-    print(csv_path)
+    target_id = str(file_info["file"])
+
+    # --- CSV読込 ---
     try:
         df = pd.read_csv(csv_path)
         df = df[["枠", "馬番", "馬名", "性齢", "斤量", "騎手", "score", "rank"]]
@@ -71,7 +73,19 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id,  max_races)
         print(e)
         return
 
-    # --- HTMLのtbody部分を手動で構築 ---
+    # --- レース情報（race_time, race_name）を別CSVから取得 ---
+    race_info_path = os.path.join(f"../texts/race_calendar/race_time_id_list/{date_str}.csv")
+    race_name = ""
+    race_time = ""
+    
+    if os.path.exists(race_info_path):
+        df_info = pd.read_csv(race_info_path, dtype = str)
+        match = df_info[df_info["race_id"].astype(str) == target_id]
+        if not match.empty:
+            race_name = str(match.iloc[0]["race_name"])
+            race_time = str(match.iloc[0]["race_time"])
+    print("Name:", race_name, race_time)
+    # --- HTMLテーブル構築 ---
     table_rows = ""
     for _, row in df.iterrows():
         table_rows += f"""
@@ -87,24 +101,54 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id,  max_races)
         </tr>
         """
 
-    # ナビゲーション
-    nav_links = []
-    nav_links.append(f'<a href="index.html">この日の一覧に戻る</a>')
-    if race_num > 1:
-        nav_links.append(f'<a href="{name_header.PLACE_LIST[place_id - 1]}R{race_num-1}.html">前のレースへ</a>')
-    if race_num < max_races:
-        nav_links.append(f'<a href="{name_header.PLACE_LIST[place_id - 1]}R{race_num+1}.html">次のレースへ</a>')
-    nav_html = " | ".join(nav_links)
+    # --- 前後レース情報取得 ---
+    prev_link = ""
+    next_link = ""
 
-    html_content = f"""
+    if os.path.exists(race_info_path):
+        df_info = pd.read_csv(race_info_path)
+        df_info = df_info[df_info["race_id"].astype(str).str.startswith(target_id[:10])]
+        df_info = df_info.sort_values("race_id").reset_index(drop=True)
+        race_ids = df_info["race_id"].astype(str).tolist()
+        if target_id in race_ids:
+            idx = race_ids.index(target_id)
+            # 前のレース
+            if idx > 0:
+                prev = df_info.iloc[idx - 1]
+                prev_name = str(prev["race_name"])
+                prev_num = int(str(prev["race_id"])[-2:])
+                prev_link = f'<a href="{name_header.PLACE_LIST[place_id - 1]}R{prev_num}.html">← 前のレース（{prev_name}）</a>'
+                print(prev_name, prev_num)
+            # 次のレース
+            if idx < len(df_info) - 1:
+                nxt = df_info.iloc[idx + 1]
+                nxt_name = str(nxt["race_name"])
+                nxt_num = int(str(nxt["race_id"])[-2:])
+                next_link = f'<a href="{name_header.PLACE_LIST[place_id - 1]}R{nxt_num}.html">次のレース（{nxt_name}） →</a>'
+                print(nxt_name, nxt_num)
+
+    # --- ナビゲーション ---
+    nav_html = f"""
+    <div class="nav">
+      <a href="index.html">この日の一覧に戻る</a><br>
+      <div class="subnav">
+        {prev_link if prev_link else '<span class="disabled">← 前のレースなし</span>'}
+        {next_link if next_link else '<span class="disabled">次のレースなし →</span>'}
+      </div>
+    </div>
+    """
+
+    # --- HTML本体 ---
+    html_content = """
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>{date_display} {name_header.NAME_LIST[place_id - 1]}競馬場 第{race_num}レース</title>
+  <title>{date_display} {place_name}競馬場 第{race_num}R {race_name}</title>
   <style>
     body {{
       font-family: sans-serif;
+      margin: 20px;
     }}
     .nav {{
       margin: 10px 0;
@@ -115,6 +159,17 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id,  max_races)
       margin: 0 8px;
       text-decoration: none;
       color: blue;
+      font-weight: bold;
+    }}
+    .subnav {{
+      margin-top: 5px;
+    }}
+    .subnav a {{
+      margin-right: 10px;
+    }}
+    .disabled {{
+      color: #aaa;
+      margin-right: 10px;
     }}
     table {{
       border-collapse: collapse;
@@ -146,10 +201,11 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id,  max_races)
   </style>
 </head>
 <body>
-  <div class="nav">{nav_html}</div>
-
-  <h2>{date_display} {name_header.NAME_LIST[place_id - 1]}競馬場 第{race_num}レース</h2>
-
+  {nav_html}
+  <h2>{date_display} </h2>
+  <h2>{place_name}競馬場 第{race_num}R </h2>
+  <h2>{race_name}</h2>
+  <p>発走時刻: {race_time_display}</p>
   <table id="raceTable">
     <thead>
       <tr>
@@ -167,89 +223,175 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id,  max_races)
       {table_rows}
     </tbody>
   </table>
-
   <script>
-    // 枠色・rank色・score色を反映
-    document.addEventListener("DOMContentLoaded", () => {{
-      const rows = document.querySelectorAll("#raceTable tbody tr");
-      rows.forEach(row => {{
-        const waku = parseInt(row.children[0].innerText);
-        row.children[0].classList.add(`waku-${{waku}}`);
-        row.children[1].classList.add(`waku-${{waku}}`);
-
-        const rank = parseInt(row.children[7].innerText);
-        if (rank === 1) row.children[7].classList.add("rank-1");
-        if (rank === 2) row.children[7].classList.add("rank-2");
-        if (rank === 3) row.children[7].classList.add("rank-3");
-
-        const score = parseFloat(row.children[6].innerText);
-        if (score >= 0.1) row.children[6].classList.add("score-high");
-        if (score < 0 && score >= -1) row.children[6].classList.add("score-low");
-        if (score < -1) row.children[6].classList.add("score-verylow");
-      }});
+  document.addEventListener("DOMContentLoaded", () => {{
+    // ======== スタイル設定部分 ========
+    const rows = document.querySelectorAll("#raceTable tbody tr");
+    rows.forEach(row => {{
+      const waku = parseInt(row.children[0].innerText);
+      row.children[0].classList.add(`waku-${{waku}}`);
+      row.children[1].classList.add(`waku-${{waku}}`);
+      const rank = parseInt(row.children[7].innerText);
+      if (rank === 1) row.children[7].classList.add("rank-1");
+      if (rank === 2) row.children[7].classList.add("rank-2");
+      if (rank === 3) row.children[7].classList.add("rank-3");
+      const score = parseFloat(row.children[6].innerText);
+      if (score >= 0.1) row.children[6].classList.add("score-high");
+      if (score < 0 && score >= -1) row.children[6].classList.add("score-low");
+      if (score < -1) row.children[6].classList.add("score-verylow");
     }});
+    // ======== ソート機能部分 ========
+    const table = document.getElementById("raceTable");
+    const headers = table.querySelectorAll("th");
 
-    // ソート関数
-    function sortTable(n) {{
-      const table = document.getElementById("raceTable");
-      let switching = true;
-      let dir = "asc";
-      let switchcount = 0;
-      while (switching) {{
-        switching = false;
-        let rows = table.rows;
-        for (let i = 1; i < (rows.length - 1); i++) {{
-          let shouldSwitch = false;
-          let x = rows[i].getElementsByTagName("TD")[n];
-          let y = rows[i + 1].getElementsByTagName("TD")[n];
-          if (dir === "asc") {{
-            if (Number(x.innerText) > Number(y.innerText)) {{
-              shouldSwitch = true;
-            }}
-          }} else if (dir === "desc") {{
-            if (Number(x.innerText) < Number(y.innerText)) {{
-              shouldSwitch = true;
-            }}
-          }}
-          if (shouldSwitch) {{
-            rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
-            switching = true;
-            switchcount++;
-            break;
-          }}
-        }}
-        if (!switching && switchcount === 0 && dir === "asc") {{
-          dir = "desc";
-          switching = true;
-        }}
-      }}
+    function getCellValue(tr, idx) {{
+      const val = tr.children[idx].innerText.trim();
+      return isNaN(val) ? val : Number(val);
     }}
 
-    // ヘッダークリックでソート
-    document.querySelectorAll("th")[1].onclick = () => sortTable(1);
-    document.querySelectorAll("th")[7].onclick = () => sortTable(7);
+    function clearSortIndicators() {{
+      headers.forEach(th => {{
+        const ind = th.querySelector(".sort-ind");
+        if (ind) ind.textContent = "";
+      }});
+    }}
+
+    function sortTable(colIndex, th) {{
+      const tbody = table.tBodies[0];
+      const rowsArray = Array.from(tbody.querySelectorAll("tr"));
+
+      // 前回の状態を取得（デフォルト asc）
+      const currentDir = th.dataset.sortDir === "asc" ? "desc" : "asc";
+      th.dataset.sortDir = currentDir;
+
+      // 他ヘッダの矢印をリセット
+      headers.forEach(header => {{
+        if (header !== th) header.dataset.sortDir = "";
+      }});
+
+      // ソート方向アイコン
+      clearSortIndicators();
+      let indicator = th.querySelector(".sort-ind");
+      if (!indicator) {{
+        indicator = document.createElement("span");
+        indicator.classList.add("sort-ind");
+        indicator.style.marginLeft = "6px";
+        th.appendChild(indicator);
+      }}
+      // indicator.textContent = currentDir === "asc" ? "▲" : "▼";
+
+      // ソート処理
+      rowsArray.sort((a, b) => {{
+        const A = getCellValue(a, colIndex);
+        const B = getCellValue(b, colIndex);
+        if (typeof A === "number" && typeof B === "number") {{
+          return currentDir === "asc" ? A - B : B - A;
+        }} else {{
+          return currentDir === "asc"
+            ? A.toString().localeCompare(B)
+            : B.toString().localeCompare(A);
+        }}
+      }});
+
+      // 並び替え反映
+      rowsArray.forEach(r => tbody.appendChild(r));
+    }}
+
+    // ======== 対象列にクリックイベントを追加 ========
+    [1, 7].forEach(idx => {{
+      const th = headers[idx];
+      if (th) {{
+        th.style.cursor = "pointer";
+        const indicator = document.createElement("span");
+        indicator.classList.add("sort-ind");
+        indicator.style.marginLeft = "6px";
+        th.appendChild(indicator);
+        th.addEventListener("click", () => sortTable(idx, th));
+      }}
+    }});
+  }});
   </script>
 </body>
 </html>
-"""
+""".format(
+    date_display=date_display,
+    place_name=name_header.NAME_LIST[place_id - 1],
+    race_num=race_num,
+    race_name=race_name,
+    race_time_display=f"{race_time[:2]}:{race_time[2:]}" if race_time else "",
+    nav_html=nav_html,
+    table_rows=table_rows
+)
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html_content)
 
+
 def make_index_page(date_str, output_dir, files_info_list):
     date_display = format_date(date_str)
+    base_dir="races"
+    # === 📁 全開催日フォルダの一覧を取得してソート ===
+    all_days = [
+        d for d in os.listdir(base_dir)
+        if os.path.isdir(os.path.join(base_dir, d)) and d.isdigit()
+    ]
+    all_days = sorted(all_days)
 
-    # place_id ごとにレース番号をグルーピング
+    prev_day = None
+    next_day = None
+    if date_str in all_days:
+        idx = all_days.index(date_str)
+        if idx > 0:
+            prev_day = all_days[idx - 1]
+        if idx < len(all_days) - 1:
+            next_day = all_days[idx + 1]
+
+    # === 📅 前後の日付表示を整形 ===
+    def format_date_display(date_str):
+        if not date_str:
+            return ""
+        return f"{date_str[:4]}/{date_str[4:6]}/{date_str[6:8]}"
+    
+    prev_day_display = format_date_display(prev_day)
+    next_day_display = format_date_display(next_day)
+
+    # CSVを読み込んでレース名と発走時刻を取得
+    race_info_path = os.path.join(f"../texts/race_calendar/race_time_id_list/{date_str}.csv")
+    race_info_dict = {}
+    if os.path.exists(race_info_path):
+        df_info = pd.read_csv(race_info_path)
+        for _, row in df_info.iterrows():
+            race_info_dict[str(row["race_id"])] = {
+                "race_time": str(row["race_time"]),
+                "race_name": str(row["race_name"]),
+            }
+    else:
+        print(f"警告: レース情報ファイルが存在しません: {race_info_path}")
+
+    # place_id ごとにレース番号と詳細情報をグルーピング
     place_races = {}
     for file_info in files_info_list:
         place_id = file_info['place_id']
         place_key = name_header.PLACE_LIST[place_id - 1]   # 英語キー (リンク用)
         place_name = name_header.NAME_LIST[place_id - 1]   # 日本語名 (表示用)
-        race_num = file_info['race_num']
+        race_num = file_info['race_num'] 
+        race_id = str(file_info["file"])
 
+        # レース名と発走時刻を取得
+        race_name = ""
+        race_time = ""
+        if race_id in race_info_dict:
+            race_name = race_info_dict[race_id]["race_name"]
+            race_time = race_info_dict[race_id]["race_time"]       
+
+        # 情報を格納
         if place_key not in place_races:
             place_races[place_key] = {"display": place_name, "races": []}
-        place_races[place_key]["races"].append(race_num)
+        place_races[place_key]["races"].append({
+            "race_num": race_num,
+            "race_name": race_name,
+            "race_time": race_time,
+        })
 
     # 横軸 = 開催場、縦軸 = レース番号 の表を構築
     place_keys = sorted(place_races.keys())
@@ -260,12 +402,45 @@ def make_index_page(date_str, output_dir, files_info_list):
         row_cells = f"<th>{race_num}R</th>"
         for place_key in place_keys:
             races = place_races[place_key]["races"]
-            if race_num in races:
-                row_cells += f'<td><a href="{place_key}R{race_num}.html">{race_num}R</a></td>'
+            race_info = next((r for r in races if r["race_num"] == race_num), None)
+            if race_info:
+                race_name_disp = race_info['race_name'] if race_info['race_name'] else f"{race_num}R"
+
+                # === 発走時刻の整形===
+                race_time_disp = ""
+                if race_info["race_time"]:
+                    t = race_info["race_time"].zfill(4)
+                    race_time_disp = f"発走時刻: {t[:2]}:{t[2:]}"
+
+                # === HTML構成を縦並びにする ===
+                row_cells += (
+                    f'<td>'
+                    f'<a href="{place_key}R{race_num}.html">'
+                    f'{race_name_disp}</a><br>'
+                    f'{race_time_disp}'
+                    f'</td>'
+                )
             else:
                 row_cells += "<td>-</td>"
         table_rows += f"<tr>{row_cells}</tr>\n"
 
+    # === 🔗 ナビゲーションHTML作成 ===
+    nav_links = '<div class="nav">'
+    nav_links += '<a href="../index.html">開催日一覧に戻る</a><br>'  # 一覧リンクを上段に
+    nav_links += '<div class="subnav">'  # 下段に前/次リンクを配置
+
+    if prev_day:
+        nav_links += f'<a href="../{prev_day}/index.html">← 前の日</a> ({prev_day_display}) '
+    else:
+        nav_links += '<span class="disabled">← 前の日</span> '
+
+    if next_day:
+        nav_links += f'<a href="../{next_day}/index.html">→ 次の日</a> ({next_day_display})'
+    else:
+        nav_links += '<span class="disabled">→ 次の日</span>'
+
+    nav_links += '</div></div>'
+    
     # HTML生成
     html = f"""
 <!DOCTYPE html>
@@ -274,13 +449,70 @@ def make_index_page(date_str, output_dir, files_info_list):
   <meta charset="UTF-8">
   <title>{date_display} レース一覧</title>
   <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    body {{
+      font-family: sans-serif;
+      margin: 20px;
+    }}
+    h1 {{
+      border-bottom: 2px solid #555;
+      padding-bottom: 5px;
+    }}
+    table {{
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 15px;
+    }}
+    th, td {{
+      border: 1px solid #ccc;
+      padding: 6px;
+      text-align: center;
+    }}
+    th {{
+      background-color: #f2f2f2;
+    }}
+    td a {{
+      display: block;          /* ← 追加: レース名を独立行に */
+      font-weight: bold;
+      color: #0044cc;
+      text-decoration: none;
+      margin-bottom: 3px;      /* ← 追加: 発走時刻との間に余白 */
+    }}
+    td a:hover {{
+      text-decoration: underline;
+    }}
+    .nav {{
+      margin-bottom: 10px;
+    }}
+    .nav {{
+      margin-bottom: 15px;
+    }}
+    .nav a {{
+      text-decoration: none;
+      color: blue;
+      font-weight: bold;
+    }}
+    .subnav {{
+      margin-top: 5px;
+    }}
+    .subnav a {{
+      margin-right: 15px;
+    }}
+    .nav .disabled {{
+      color: #aaa;
+      margin-right: 10px;
+    }}
+  </style>
 </head>
 <body>
-  <div class="nav"><a href="../index.html">開催日一覧に戻る</a></div>
+  {nav_links}
   <h1>{date_display} レース一覧</h1>
-  <table border="1">
+  <table>
     <thead>
-      <tr><th>レース</th>{''.join(f'<th>{place_races[k]["display"]}競馬場</th>' for k in place_keys)}</tr>
+      <tr>
+        <th>レース</th>
+        {''.join(f'<th>{place_races[k]["display"]}競馬場</th>' for k in place_keys)}
+      </tr>
     </thead>
     <tbody>
       {table_rows}
@@ -425,7 +657,7 @@ def get_subfolders(path):
 if __name__ == "__main__":
     base_path = "../data/RaceCards/"  # 例: racesフォルダ配下の一覧を取得
     folders = get_subfolders(base_path)
-    print(folders)
+    # print(folders)
     for day_str in folders:
         print(day_str)
         input_dir = f"../data/RaceCards/{day_str}"
