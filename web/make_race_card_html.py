@@ -22,7 +22,7 @@ def parse_filename(filename: str):
       DD   = 開催日（2桁）
       RR   = レース番号（2桁）
     """
-    print(filename)
+    # print(filename)
     base = os.path.splitext(os.path.basename(filename))[0]  # 拡張子を除いた部分
     if not re.match(r"^\d{12}$", base):
         raise ValueError(f"ファイル名の形式が不正です: {filename}")
@@ -63,7 +63,7 @@ def format_date(date_str):
 
 def csv_to_html(csv_path, output_path, date_str, race_num, place_id,  max_races):
     date_display = format_date(date_str)
-    print(csv_path)
+    # print(csv_path)
     try:
         df = pd.read_csv(csv_path)
         df = df[["枠", "馬番", "馬名", "性齢", "斤量", "騎手", "score", "rank"]]
@@ -238,18 +238,69 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id,  max_races)
 
 def make_index_page(date_str, output_dir, files_info_list):
     date_display = format_date(date_str)
+    base_dir="races"
+    # === 📁 全開催日フォルダの一覧を取得してソート ===
+    all_days = [
+        d for d in os.listdir(base_dir)
+        if os.path.isdir(os.path.join(base_dir, d)) and d.isdigit()
+    ]
+    all_days = sorted(all_days)
 
-    # place_id ごとにレース番号をグルーピング
+    prev_day = None
+    next_day = None
+    if date_str in all_days:
+        idx = all_days.index(date_str)
+        if idx > 0:
+            prev_day = all_days[idx - 1]
+        if idx < len(all_days) - 1:
+            next_day = all_days[idx + 1]
+
+    # === 📅 前後の日付表示を整形 ===
+    def format_date_display(date_str):
+        if not date_str:
+            return ""
+        return f"{date_str[:4]}/{date_str[4:6]}/{date_str[6:8]}"
+    
+    prev_day_display = format_date_display(prev_day)
+    next_day_display = format_date_display(next_day)
+
+    # CSVを読み込んでレース名と発走時刻を取得
+    race_info_path = os.path.join(f"../texts/race_calendar/race_time_id_list/{date_str}.csv")
+    race_info_dict = {}
+    if os.path.exists(race_info_path):
+        df_info = pd.read_csv(race_info_path)
+        for _, row in df_info.iterrows():
+            race_info_dict[str(row["race_id"])] = {
+                "race_time": str(row["race_time"]),
+                "race_name": str(row["race_name"]),
+            }
+    else:
+        print(f"警告: レース情報ファイルが存在しません: {race_info_path}")
+
+    # place_id ごとにレース番号と詳細情報をグルーピング
     place_races = {}
     for file_info in files_info_list:
         place_id = file_info['place_id']
         place_key = name_header.PLACE_LIST[place_id - 1]   # 英語キー (リンク用)
         place_name = name_header.NAME_LIST[place_id - 1]   # 日本語名 (表示用)
-        race_num = file_info['race_num']
+        race_num = file_info['race_num'] 
+        race_id = str(file_info["file"])
 
+        # レース名と発走時刻を取得
+        race_name = ""
+        race_time = ""
+        if race_id in race_info_dict:
+            race_name = race_info_dict[race_id]["race_name"]
+            race_time = race_info_dict[race_id]["race_time"]       
+
+        # 情報を格納
         if place_key not in place_races:
             place_races[place_key] = {"display": place_name, "races": []}
-        place_races[place_key]["races"].append(race_num)
+        place_races[place_key]["races"].append({
+            "race_num": race_num,
+            "race_name": race_name,
+            "race_time": race_time,
+        })
 
     # 横軸 = 開催場、縦軸 = レース番号 の表を構築
     place_keys = sorted(place_races.keys())
@@ -260,12 +311,45 @@ def make_index_page(date_str, output_dir, files_info_list):
         row_cells = f"<th>{race_num}R</th>"
         for place_key in place_keys:
             races = place_races[place_key]["races"]
-            if race_num in races:
-                row_cells += f'<td><a href="{place_key}R{race_num}.html">{race_num}R</a></td>'
+            race_info = next((r for r in races if r["race_num"] == race_num), None)
+            if race_info:
+                race_name_disp = race_info['race_name'] if race_info['race_name'] else f"{race_num}R"
+
+                # === 発走時刻の整形===
+                race_time_disp = ""
+                if race_info["race_time"]:
+                    t = race_info["race_time"].zfill(4)
+                    race_time_disp = f"発走時刻: {t[:2]}:{t[2:]}"
+
+                # === HTML構成を縦並びにする ===
+                row_cells += (
+                    f'<td>'
+                    f'<a href="{place_key}R{race_num}.html">'
+                    f'{race_name_disp}</a><br>'
+                    f'{race_time_disp}'
+                    f'</td>'
+                )
             else:
                 row_cells += "<td>-</td>"
         table_rows += f"<tr>{row_cells}</tr>\n"
 
+    # === 🔗 ナビゲーションHTML作成 ===
+    nav_links = '<div class="nav">'
+    nav_links += '<a href="../index.html">開催日一覧に戻る</a><br>'  # 一覧リンクを上段に
+    nav_links += '<div class="subnav">'  # 下段に前/次リンクを配置
+
+    if prev_day:
+        nav_links += f'<a href="../{prev_day}/index.html">← 前の日</a> ({prev_day_display}) '
+    else:
+        nav_links += '<span class="disabled">← 前の日</span> '
+
+    if next_day:
+        nav_links += f'<a href="../{next_day}/index.html">→ 次の日</a> ({next_day_display})'
+    else:
+        nav_links += '<span class="disabled">→ 次の日</span>'
+
+    nav_links += '</div></div>'
+    
     # HTML生成
     html = f"""
 <!DOCTYPE html>
@@ -274,13 +358,70 @@ def make_index_page(date_str, output_dir, files_info_list):
   <meta charset="UTF-8">
   <title>{date_display} レース一覧</title>
   <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    body {{
+      font-family: sans-serif;
+      margin: 20px;
+    }}
+    h1 {{
+      border-bottom: 2px solid #555;
+      padding-bottom: 5px;
+    }}
+    table {{
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 15px;
+    }}
+    th, td {{
+      border: 1px solid #ccc;
+      padding: 6px;
+      text-align: center;
+    }}
+    th {{
+      background-color: #f2f2f2;
+    }}
+    td a {{
+      display: block;          /* ← 追加: レース名を独立行に */
+      font-weight: bold;
+      color: #0044cc;
+      text-decoration: none;
+      margin-bottom: 3px;      /* ← 追加: 発走時刻との間に余白 */
+    }}
+    td a:hover {{
+      text-decoration: underline;
+    }}
+    .nav {{
+      margin-bottom: 10px;
+    }}
+    .nav {{
+      margin-bottom: 15px;
+    }}
+    .nav a {{
+      text-decoration: none;
+      color: blue;
+      font-weight: bold;
+    }}
+    .subnav {{
+      margin-top: 5px;
+    }}
+    .subnav a {{
+      margin-right: 15px;
+    }}
+    .nav .disabled {{
+      color: #aaa;
+      margin-right: 10px;
+    }}
+  </style>
 </head>
 <body>
-  <div class="nav"><a href="../index.html">開催日一覧に戻る</a></div>
+  {nav_links}
   <h1>{date_display} レース一覧</h1>
-  <table border="1">
+  <table>
     <thead>
-      <tr><th>レース</th>{''.join(f'<th>{place_races[k]["display"]}競馬場</th>' for k in place_keys)}</tr>
+      <tr>
+        <th>レース</th>
+        {''.join(f'<th>{place_races[k]["display"]}競馬場</th>' for k in place_keys)}
+      </tr>
     </thead>
     <tbody>
       {table_rows}
@@ -425,7 +566,7 @@ def get_subfolders(path):
 if __name__ == "__main__":
     base_path = "../data/RaceCards/"  # 例: racesフォルダ配下の一覧を取得
     folders = get_subfolders(base_path)
-    print(folders)
+    # print(folders)
     for day_str in folders:
         print(day_str)
         input_dir = f"../data/RaceCards/{day_str}"
