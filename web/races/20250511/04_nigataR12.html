@@ -3,10 +3,11 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>2025/05/11 新潟競馬場 第12レース</title>
+  <title>2025/05/11 新潟競馬場 第12R 4歳以上1勝クラス</title>
   <style>
     body {
       font-family: sans-serif;
+      margin: 20px;
     }
     .nav {
       margin: 10px 0;
@@ -17,6 +18,17 @@
       margin: 0 8px;
       text-decoration: none;
       color: blue;
+      font-weight: bold;
+    }
+    .subnav {
+      margin-top: 5px;
+    }
+    .subnav a {
+      margin-right: 10px;
+    }
+    .disabled {
+      color: #aaa;
+      margin-right: 10px;
     }
     table {
       border-collapse: collapse;
@@ -48,9 +60,21 @@
   </style>
 </head>
 <body>
-  <div class="nav"><a href="index.html">この日の一覧に戻る</a> | <a href="04_nigataR11.html">前のレースへ</a></div>
 
-  <h2>2025/05/11 新潟競馬場 第12レース</h2>
+  
+    <div class="nav">
+      <a href="index.html">この日の一覧に戻る</a><br>
+      <div class="subnav">
+        <a href="04_nigataR11.html">← 前のレース（谷川岳S）</a>
+        <span class="disabled">次のレースなし →</span>
+      </div>
+    </div>
+    
+
+  <h2>2025/05/11 </h2>
+  <h2>新潟競馬場 第12R </h2>
+  <h2>4歳以上1勝クラス</h2>
+  <p>発走時刻: 16:01</p>
 
   <table id="raceTable">
     <thead>
@@ -247,7 +271,6 @@
   </table>
 
   <script>
-    // 枠色・rank色・score色を反映
     document.addEventListener("DOMContentLoaded", () => {
       const rows = document.querySelectorAll("#raceTable tbody tr");
       rows.forEach(row => {
@@ -267,12 +290,10 @@
       });
     });
 
-    // ソート関数
     function sortTable(n) {
       const table = document.getElementById("raceTable");
       let switching = true;
       let dir = "asc";
-      let switchcount = 0;
       while (switching) {
         switching = false;
         let rows = table.rows;
@@ -280,30 +301,21 @@
           let shouldSwitch = false;
           let x = rows[i].getElementsByTagName("TD")[n];
           let y = rows[i + 1].getElementsByTagName("TD")[n];
-          if (dir === "asc") {
-            if (Number(x.innerText) > Number(y.innerText)) {
-              shouldSwitch = true;
-            }
-          } else if (dir === "desc") {
-            if (Number(x.innerText) < Number(y.innerText)) {
-              shouldSwitch = true;
-            }
-          }
+          if (dir === "asc" && Number(x.innerText) > Number(y.innerText)) shouldSwitch = true;
+          else if (dir === "desc" && Number(x.innerText) < Number(y.innerText)) shouldSwitch = true;
           if (shouldSwitch) {
             rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
             switching = true;
-            switchcount++;
             break;
           }
         }
-        if (!switching && switchcount === 0 && dir === "asc") {
+        if (!switching && dir === "asc") {
           dir = "desc";
           switching = true;
         }
       }
     }
 
-    // ヘッダークリックでソート
     document.querySelectorAll("th")[1].onclick = () => sortTable(1);
     document.querySelectorAll("th")[7].onclick = () => sortTable(7);
   </script>

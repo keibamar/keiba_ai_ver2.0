@@ -61,9 +61,11 @@ def format_date(date_str):
     dt = f"{date_str[:4]}/{date_str[4:6]}/{date_str[6:]}"
     return dt
 
-def csv_to_html(csv_path, output_path, date_str, race_num, place_id,  max_races):
+def csv_to_html(csv_path, output_path, date_str, race_num, place_id, max_races):
     date_display = format_date(date_str)
-    # print(csv_path)
+    target_id = str(file_info["file"])
+
+    # --- CSV読込 ---
     try:
         df = pd.read_csv(csv_path)
         df = df[["枠", "馬番", "馬名", "性齢", "斤量", "騎手", "score", "rank"]]
@@ -71,7 +73,19 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id,  max_races)
         print(e)
         return
 
-    # --- HTMLのtbody部分を手動で構築 ---
+    # --- レース情報（race_time, race_name）を別CSVから取得 ---
+    race_info_path = os.path.join(f"../texts/race_calendar/race_time_id_list/{date_str}.csv")
+    race_name = ""
+    race_time = ""
+    
+    if os.path.exists(race_info_path):
+        df_info = pd.read_csv(race_info_path, dtype = str)
+        match = df_info[df_info["race_id"].astype(str) == target_id]
+        if not match.empty:
+            race_name = str(match.iloc[0]["race_name"])
+            race_time = str(match.iloc[0]["race_time"])
+    print("Name:", race_name, race_time)
+    # --- HTMLテーブル構築 ---
     table_rows = ""
     for _, row in df.iterrows():
         table_rows += f"""
@@ -87,24 +101,54 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id,  max_races)
         </tr>
         """
 
-    # ナビゲーション
-    nav_links = []
-    nav_links.append(f'<a href="index.html">この日の一覧に戻る</a>')
-    if race_num > 1:
-        nav_links.append(f'<a href="{name_header.PLACE_LIST[place_id - 1]}R{race_num-1}.html">前のレースへ</a>')
-    if race_num < max_races:
-        nav_links.append(f'<a href="{name_header.PLACE_LIST[place_id - 1]}R{race_num+1}.html">次のレースへ</a>')
-    nav_html = " | ".join(nav_links)
+    # --- 前後レース情報取得 ---
+    prev_link = ""
+    next_link = ""
 
+    if os.path.exists(race_info_path):
+        df_info = pd.read_csv(race_info_path)
+        df_info = df_info[df_info["race_id"].astype(str).str.startswith(target_id[:10])]
+        df_info = df_info.sort_values("race_id").reset_index(drop=True)
+        race_ids = df_info["race_id"].astype(str).tolist()
+        if target_id in race_ids:
+            idx = race_ids.index(target_id)
+            # 前のレース
+            if idx > 0:
+                prev = df_info.iloc[idx - 1]
+                prev_name = str(prev["race_name"])
+                prev_num = int(str(prev["race_id"])[-2:])
+                prev_link = f'<a href="{name_header.PLACE_LIST[place_id - 1]}R{prev_num}.html">← 前のレース（{prev_name}）</a>'
+                print(prev_name, prev_num)
+            # 次のレース
+            if idx < len(df_info) - 1:
+                nxt = df_info.iloc[idx + 1]
+                nxt_name = str(nxt["race_name"])
+                nxt_num = int(str(nxt["race_id"])[-2:])
+                next_link = f'<a href="{name_header.PLACE_LIST[place_id - 1]}R{nxt_num}.html">次のレース（{nxt_name}） →</a>'
+                print(nxt_name, nxt_num)
+
+    # --- ナビゲーション ---
+    nav_html = f"""
+    <div class="nav">
+      <a href="index.html">この日の一覧に戻る</a><br>
+      <div class="subnav">
+        {prev_link if prev_link else '<span class="disabled">← 前のレースなし</span>'}
+        {next_link if next_link else '<span class="disabled">次のレースなし →</span>'}
+      </div>
+    </div>
+    """
+
+    # --- HTML本体 ---
     html_content = f"""
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>{date_display} {name_header.NAME_LIST[place_id - 1]}競馬場 第{race_num}レース</title>
+  <title>{date_display} {name_header.NAME_LIST[place_id - 1]}競馬場 第{race_num}R {race_name}</title>
   <style>
     body {{
       font-family: sans-serif;
+      margin: 20px;
     }}
     .nav {{
       margin: 10px 0;
@@ -115,6 +159,17 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id,  max_races)
       margin: 0 8px;
       text-decoration: none;
       color: blue;
+      font-weight: bold;
+    }}
+    .subnav {{
+      margin-top: 5px;
+    }}
+    .subnav a {{
+      margin-right: 10px;
+    }}
+    .disabled {{
+      color: #aaa;
+      margin-right: 10px;
     }}
     table {{
       border-collapse: collapse;
@@ -146,9 +201,13 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id,  max_races)
   </style>
 </head>
 <body>
-  <div class="nav">{nav_html}</div>
 
-  <h2>{date_display} {name_header.NAME_LIST[place_id - 1]}競馬場 第{race_num}レース</h2>
+  {nav_html}
+
+  <h2>{date_display} </h2>
+  <h2>{name_header.NAME_LIST[place_id - 1]}競馬場 第{race_num}R </h2>
+  <h2>{race_name}</h2>
+  <p>発走時刻: {race_time[:2]}:{race_time[2:] if race_time else ''}</p>
 
   <table id="raceTable">
     <thead>
@@ -169,7 +228,6 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id,  max_races)
   </table>
 
   <script>
-    // 枠色・rank色・score色を反映
     document.addEventListener("DOMContentLoaded", () => {{
       const rows = document.querySelectorAll("#raceTable tbody tr");
       rows.forEach(row => {{
@@ -189,12 +247,10 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id,  max_races)
       }});
     }});
 
-    // ソート関数
     function sortTable(n) {{
       const table = document.getElementById("raceTable");
       let switching = true;
       let dir = "asc";
-      let switchcount = 0;
       while (switching) {{
         switching = false;
         let rows = table.rows;
@@ -202,30 +258,21 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id,  max_races)
           let shouldSwitch = false;
           let x = rows[i].getElementsByTagName("TD")[n];
           let y = rows[i + 1].getElementsByTagName("TD")[n];
-          if (dir === "asc") {{
-            if (Number(x.innerText) > Number(y.innerText)) {{
-              shouldSwitch = true;
-            }}
-          }} else if (dir === "desc") {{
-            if (Number(x.innerText) < Number(y.innerText)) {{
-              shouldSwitch = true;
-            }}
-          }}
+          if (dir === "asc" && Number(x.innerText) > Number(y.innerText)) shouldSwitch = true;
+          else if (dir === "desc" && Number(x.innerText) < Number(y.innerText)) shouldSwitch = true;
           if (shouldSwitch) {{
             rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
             switching = true;
-            switchcount++;
             break;
           }}
         }}
-        if (!switching && switchcount === 0 && dir === "asc") {{
+        if (!switching && dir === "asc") {{
           dir = "desc";
           switching = true;
         }}
       }}
     }}
 
-    // ヘッダークリックでソート
     document.querySelectorAll("th")[1].onclick = () => sortTable(1);
     document.querySelectorAll("th")[7].onclick = () => sortTable(7);
   </script>
@@ -235,6 +282,7 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id,  max_races)
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html_content)
+
 
 def make_index_page(date_str, output_dir, files_info_list):
     date_display = format_date(date_str)
