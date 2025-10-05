@@ -124,7 +124,55 @@ def make_time_id_list(race_day = date.today()):
 
     return time_id_list
 
+def extract_race_info(text):
+    # 地名＋レース番号（例: "東京1R"）とレース名（例: "2歳未勝利"）の抽出
+    race_info_match = re.search(r'(\S+?\d+R)\s+(.*?)\s+\d{2}:\d{2}', text)
+    race_code = race_info_match.group(1) if race_info_match else None
+    race_name = race_info_match.group(2) if race_info_match else None
+
+    # 発送時刻の抽出（hhmm形式）
+    time_match = re.search(r'(\d{2}):(\d{2})発走', text)
+    time_str = f"{time_match.group(1)}{time_match.group(2)}" if time_match else None
+
+    return race_code, race_name, time_str
+
+def make_time_id_list_from_prediction_txt(race_day):
+    print(race_day)
+    time_id_list = []
+    race_id_list = get_race_id.get_daily_id(race_day = race_day)
+    formatted_date = race_day.strftime("%Y%m%d")
+    for race_id in race_id_list:
+        txt_path = "../../texts/race_prediction/" + str(formatted_date) + "/" + str(race_id) +  ".txt"
+        try:
+            with open(txt_path, 'r', encoding='utf-8') as f:
+                text = f.read()
+        except FileNotFoundError:
+            print(f"ファイルが見つかりませんでした: {txt_path}")
+            continue
+        race_code, race_name, race_time = extract_race_info(text)
+        if race_name is not None and race_time is not None:
+            time_id_list.append([race_time, race_id, race_name])
+    print(time_id_list)
+    time_id_list = sort_time(time_id_list)
+    print(time_id_list)
+
+    return time_id_list
+
+# 指定日から今日までの日付を順に処理する関数
+def run_from_date_to_today(start_date):
+    today = date.today()
+    race_day = start_date
+
+    while race_day <= today:
+        print("Execute:" + str(race_day))
+        time_id_list = make_time_id_list_from_prediction_txt(race_day)
+        if any(time_id_list):
+            save_time_id_list(race_day, time_id_list)
+        race_day += timedelta(days=1)
+
+
 if __name__ == '__main__':
+
     base_day = date.today()
     # 先、1週間分の開催日を取得
     for i in range(7):
