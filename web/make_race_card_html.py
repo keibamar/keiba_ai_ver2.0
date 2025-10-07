@@ -5,6 +5,7 @@ from glob import glob
 import re
 from datetime import date,datetime, timedelta
 import calendar
+import html
 
 # pycache を生成しない
 sys.dont_write_bytecode = True
@@ -77,6 +78,12 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id, max_races):
     race_info_path = os.path.join(f"../texts/race_calendar/race_time_id_list/{date_str}.csv")
     race_name = ""
     race_time = ""
+
+    # === レース結果HTML生成 ===
+    result_df = get_result_table(date_str, place_id, target_id)
+    if not result_df.empty:
+        result_df = merge_rank_score(result_df, df)
+    result_table_html = generate_result_table(result_df)
     
     if os.path.exists(race_info_path):
         df_info = pd.read_csv(race_info_path, dtype = str)
@@ -84,7 +91,7 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id, max_races):
         if not match.empty:
             race_name = str(match.iloc[0]["race_name"])
             race_time = str(match.iloc[0]["race_time"])
-    print("Name:", race_name, race_time)
+    # print("Name:", race_name, race_time)
     # --- HTMLテーブル構築 ---
     table_rows = ""
     for _, row in df.iterrows():
@@ -118,14 +125,14 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id, max_races):
                 prev_name = str(prev["race_name"])
                 prev_num = int(str(prev["race_id"])[-2:])
                 prev_link = f'<a href="{name_header.PLACE_LIST[place_id - 1]}R{prev_num}.html">← 前のレース（{prev_name}）</a>'
-                print(prev_name, prev_num)
+                # print(prev_name, prev_num)
             # 次のレース
             if idx < len(df_info) - 1:
                 nxt = df_info.iloc[idx + 1]
                 nxt_name = str(nxt["race_name"])
                 nxt_num = int(str(nxt["race_id"])[-2:])
                 next_link = f'<a href="{name_header.PLACE_LIST[place_id - 1]}R{nxt_num}.html">次のレース（{nxt_name}） →</a>'
-                print(nxt_name, nxt_num)
+                # print(nxt_name, nxt_num)
 
     # --- ナビゲーション ---
     nav_html = f"""
@@ -223,6 +230,7 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id, max_races):
       {table_rows}
     </tbody>
   </table>
+  {result_table_html}
   <script>
   document.addEventListener("DOMContentLoaded", () => {{
     // ======== スタイル設定部分 ========
@@ -320,12 +328,137 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id, max_races):
     race_name=race_name,
     race_time_display=f"{race_time[:2]}:{race_time[2:]}" if race_time else "",
     nav_html=nav_html,
-    table_rows=table_rows
+    table_rows=table_rows,
+    result_table_html=result_table_html 
 )
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html_content)
 
+# ---------------------------
+# レース結果HTML生成関数
+# ---------------------------
+def get_result_table(date_str, place_id, target_id) :
+    year = date_str[:4]
+    result_csv = os.path.join(f"../data/RaceResults/{name_header.PLACE_LIST[place_id - 1]}/{year}_race_results.csv")
+    if not os.path.exists(result_csv):
+        print(f"警告: レース結果ファイルが存在しません: {result_csv}")
+        return pd.DataFrame()
+
+    df = pd.read_csv(result_csv, dtype=str, index_col=0)
+    df_race = df.loc[df.index == int(target_id)]
+
+    if df_race.empty:
+        print(f"警告: 指定レースの結果データが存在しません: {target_id}")
+        return pd.DataFrame()
+    
+    return df_race.copy()
+
+def merge_rank_score(df_race, df_analysis):
+    # 数値型に揃える
+    df_race["馬番"] = df_race["馬番"].astype(str)
+    df_analysis["馬番"] = df_analysis["馬番"].astype(str)
+
+    # 必要列だけ抽出
+    entry_sub = df_analysis[["馬番", "rank", "score"]].copy()
+
+    # 結合
+    merged = pd.merge(df_race, entry_sub, on="馬番", how="left")
+    return merged
+
+WAKU_COLORS = {
+    "1": "white",  # 白
+    "2": "black",  # 黒
+    "3": "red",  # 赤
+    "4": "blue",  # 青
+    "5": "yellow",  # 黄
+    "6": "green",  # 緑
+    "7": "orange",  # 橙
+    "8": "pink",  # 桃
+}
+
+RANK_COLORS = {
+    "1": "yellow",  # 白
+    "2": "lightblue",  # 黒
+    "3": "orange",  # 赤
+}
+
+def generate_result_table(df) :
+    if df.empty:
+        return "<p>レース結果データが見つかりません。</p>"
+    
+    result_rows = ""
+    for _, row in df.iterrows():
+        rank = row["着順"]
+        waku = row["枠番"]
+        umaban = row["馬番"]
+        horse = html.escape(str(row["馬名"]))
+        jockey = html.escape(str(row["騎手"]))
+        time = row["タイム"]
+        diff = row["着差"] if pd.notna(row["着差"]) else ""
+        pop = str(int(float(row["人気"]))) if pd.notna(row["人気"]) else ""
+        odds = row["単勝"]
+        score = row.get("score", "")
+        pred_rank = row.get("rank", "")
+
+        #  # --- 着順上位3頭色付け ---
+        # rank_color = RANK_COLORS.get(rank, "#ffffff")
+        # rank_style = f'background-color:{rank_color};'
+
+        # --- 枠順背景色 ---
+        waku_color = WAKU_COLORS.get(waku, "#ffffff")
+        waku_style = f'background-color:{waku_color}; color:{"#fff" if waku in ["2","3","4","7"] else "#000"};'
+
+        # --- 人気上位3頭色付け ---
+        pop_color = RANK_COLORS.get(pop, "#ffffff")
+        pop_style = f'background-color:{pop_color};'
+
+         # --- Rank上位3頭色付け ---
+        pred_rank_color = RANK_COLORS.get(str(pred_rank), "#ffffff")
+        pred_rank_style = f'background-color:{pred_rank_color};'
+
+        # --- score色付け ---
+        score_color = "black"
+        if (score >= 0.1):
+            score_color = "red"
+        if (score < 0 and score >= -1):
+            score_color = "blue"
+        if (score < -1):
+            score_color = "dark_blue"
+        score_style = f'color:{score_color};'
+
+        result_rows += f"""
+        <tr>
+            <td>{rank}</td>
+            <td style="{waku_style}">{waku}</td>
+            <td style="{waku_style}">{umaban}</td>
+            <td>{horse}</td>
+            <td>{jockey}</td>
+            <td>{time}</td>
+            <td>{diff}</td>
+            <td style="{pop_style}">{pop}</td>
+            <td>{odds}</td>
+            <td style="{score_style}">{score:.3f}</td>
+            <td style="{pred_rank_style}">{pred_rank}</td>
+        </tr>
+        """
+
+    result_table = f"""
+    <h2>レース結果</h2>
+    <table id="resultTable">
+      <thead>
+        <tr>
+          <th>着順</th><th>枠</th><th>馬番</th><th>馬名</th>
+          <th>騎手</th><th>タイム</th><th>着差</th>
+          <th>人気</th><th>単勝オッズ</th><th>score</th><th>Rank</th>
+        </tr>
+      </thead>
+      <tbody>
+        {result_rows}
+      </tbody>
+    </table>
+    """
+    return result_table
 
 def make_index_page(date_str, output_dir, files_info_list):
     date_display = format_date(date_str)
@@ -526,7 +659,6 @@ def make_index_page(date_str, output_dir, files_info_list):
     with open(os.path.join(output_dir, "index.html"), "w", encoding="utf-8") as f:
         f.write(html)
 
-
 def make_global_index(output_dir="output"):
     """
     開催日一覧をカレンダー形式で表示する index.html を作成。
@@ -639,8 +771,6 @@ def add_race_day(js_file, new_day):
         f.write("\n".join(new_content) + "\n")
 
     print(f"{new_day} を追加しました")
-
-import os
 
 def get_subfolders(path):
     """
