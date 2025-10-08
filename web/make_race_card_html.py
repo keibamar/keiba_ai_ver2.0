@@ -92,6 +92,11 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id, max_races):
             race_name = str(match.iloc[0]["race_name"])
             race_time = str(match.iloc[0]["race_time"])
     # print("Name:", race_name, race_time)
+
+    # --- 配当結果HTML生成 ---
+    returns_df =  get_returns_table(date_str, place_id, target_id)
+    payout_table_html = generate_payout_table_html(returns_df)
+    
     # --- HTMLテーブル構築 ---
     table_rows = ""
     for _, row in df.iterrows():
@@ -205,6 +210,11 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id, max_races):
     .score-high {{ color: red; }}
     .score-low {{ color: blue; }}
     .score-verylow {{ color: darkblue; }}
+    #payoutTable td.num {{
+      text-align: right;
+      padding-right: 10px;
+      white-space: nowrap;
+    }}
   </style>
 </head>
 <body>
@@ -231,6 +241,7 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id, max_races):
     </tbody>
   </table>
   {result_table_html}
+  {payout_table_html}
   <script>
   document.addEventListener("DOMContentLoaded", () => {{
     // ======== スタイル設定部分 ========
@@ -329,15 +340,13 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id, max_races):
     race_time_display=f"{race_time[:2]}:{race_time[2:]}" if race_time else "",
     nav_html=nav_html,
     table_rows=table_rows,
-    result_table_html=result_table_html 
-)
+    result_table_html=result_table_html,
+    payout_table_html=payout_table_html,
+    )
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html_content)
 
-# ---------------------------
-# レース結果HTML生成関数
-# ---------------------------
 def get_result_table(date_str, place_id, target_id) :
     year = date_str[:4]
     result_csv = os.path.join(f"../data/RaceResults/{name_header.PLACE_LIST[place_id - 1]}/{year}_race_results.csv")
@@ -350,6 +359,23 @@ def get_result_table(date_str, place_id, target_id) :
 
     if df_race.empty:
         print(f"警告: 指定レースの結果データが存在しません: {target_id}")
+        return pd.DataFrame()
+    
+    return df_race.copy()
+
+def get_returns_table(date_str, place_id, target_id) :
+    year = date_str[:4]
+    result_csv = os.path.join(f"../data/RaceReturns/{name_header.PLACE_LIST[place_id - 1]}/{year}_race_returns.csv")
+    if not os.path.exists(result_csv):
+        print(f"警告: 配当結果ファイルが存在しません: {result_csv}")
+        return pd.DataFrame()
+
+    df = pd.read_csv(result_csv, dtype=str, index_col=0)
+    df_race = df.loc[df.index == int(target_id)]
+    df_race.columns = ["式別", "馬番", "配当", "人気"]
+    # print(df_race)
+    if df_race.empty:
+        print(f"警告: 指定レースの配当結果データが存在しません: {target_id}")
         return pd.DataFrame()
     
     return df_race.copy()
@@ -459,6 +485,59 @@ def generate_result_table(df) :
     </table>
     """
     return result_table
+
+def generate_payout_table_html(df):
+    """
+    指定されたレースIDに対応する配当結果テーブルをHTML化して返す
+    """
+    if df.empty:
+        return "<p>レース結果データが見つかりません。</p>"
+    
+    # # --- 配当金額を3桁区切りに整形 ---
+    df["配当"] = df["配当"].apply(lambda x: f"{int(x):,}円")
+    
+     # --- 同じ式別でまとめる ---
+    grouped = (
+        df.groupby("式別", sort=False)
+        .apply(
+            lambda g: pd.Series({
+                "馬番": "<br>".join(g["馬番"].astype(str)),
+                "配当": "<br>".join(g["配当"].astype(str)),
+                "人気": "<br>".join(g["人気"].astype(int).astype(str))
+            })
+        )
+        .reset_index()
+    )
+
+     # --- HTML構築 ---
+    rows_html = ""
+    for _, row in grouped.iterrows():
+        rows_html += f"""
+        <tr>
+          <td>{row['式別']}</td>
+          <td>{row['馬番']}</td>
+          <td class="num">{row['配当']}</td>
+          <td>{row['人気']}</td>
+        </tr>
+        """
+    payout_html = f"""
+    <h2>配当結果</h2>
+    <table id="payoutTable">
+      <thead>
+        <tr>
+          <th>式別</th>
+          <th>馬番</th>
+          <th>配当</th>
+          <th>人気</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows_html}
+      </tbody>
+    </table>
+    """
+
+    return payout_html
 
 def make_index_page(date_str, output_dir, files_info_list):
     date_display = format_date(date_str)
