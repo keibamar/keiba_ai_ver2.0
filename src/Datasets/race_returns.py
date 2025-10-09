@@ -193,6 +193,28 @@ def scrape_race_returns_dataframe(race_id_list):
     else:
         return return_tables
 
+def split_race_returns_csv(place_id, year):
+    """ race_returnsのcsvを分割する 
+        Args:
+            place_id (int) : 開催コースid   
+            year(int) : 開催年
+    """
+    # csvを読み込む 
+    df = get_race_returns_csv(place_id, year)
+    if df.empty:
+        print("データが存在しません")
+        return
+    # 保存先ディレクトリの作成[
+    output_dir = name_header.DATA_PATH + "RaceReturns\\" + name_header.PLACE_LIST[place_id - 1] + '//' + str(year)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    # === race_id（0列目）でグループ化して分割保存 ===
+    for race_id, group in df.groupby(df.index):
+        output_path = os.path.join(output_dir, f"{race_id}.csv")
+        group.to_csv(output_path, index=True)
+        print(f"{race_id}.csv を出力しました ({len(group)} 行)")
+
+
 def get_race_returns_csv(place_id, year):
 
     """ race_returnsのcsvを取得する 
