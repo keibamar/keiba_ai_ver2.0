@@ -42,6 +42,8 @@ def scrape_df(url):
         
         # テーブルデータを取得
         df = [pd.read_html(str(t))[0] for t in soup.select('table:has(tr td)')]
+        if not df:
+            print("scrape_error: No table found ", url)
         return df
     
     except Exception as e:
