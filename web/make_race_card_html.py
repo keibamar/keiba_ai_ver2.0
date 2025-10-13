@@ -69,7 +69,7 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id, max_races):
     # --- CSV読込 ---
     try:
         df = pd.read_csv(csv_path)
-        df = df[["枠", "馬番", "馬名", "性齢", "斤量", "騎手", "score", "rank"]]
+        df = df[["枠", "馬番", "馬名", "性齢", "斤量", "騎手","馬体重(増減)", "score", "rank"]]
     except Exception as e:
         print(e)
         return
@@ -108,6 +108,7 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id, max_races):
           <td>{row['性齢']}</td>
           <td>{row['斤量']}</td>
           <td>{row['騎手']}</td>
+          <td>{row['馬体重(増減)']}</td>
           <td>{row['score']:.3f}</td>
           <td>{int(row['rank'])}</td>
         </tr>
@@ -232,6 +233,7 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id, max_races):
         <th>性齢</th>
         <th>斤量</th>
         <th>騎手</th>
+        <th>馬体重</th>
         <th>Score</th>
         <th>Rank ▼</th>
       </tr>
@@ -250,14 +252,14 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id, max_races):
       const waku = parseInt(row.children[0].innerText);
       row.children[0].classList.add(`waku-${{waku}}`);
       row.children[1].classList.add(`waku-${{waku}}`);
-      const rank = parseInt(row.children[7].innerText);
-      if (rank === 1) row.children[7].classList.add("rank-1");
-      if (rank === 2) row.children[7].classList.add("rank-2");
-      if (rank === 3) row.children[7].classList.add("rank-3");
-      const score = parseFloat(row.children[6].innerText);
-      if (score >= 0.1) row.children[6].classList.add("score-high");
-      if (score < 0 && score >= -1) row.children[6].classList.add("score-low");
-      if (score < -1) row.children[6].classList.add("score-verylow");
+      const rank = parseInt(row.children[8].innerText);
+      if (rank === 1) row.children[8].classList.add("rank-1");
+      if (rank === 2) row.children[8].classList.add("rank-2");
+      if (rank === 3) row.children[8].classList.add("rank-3");
+      const score = parseFloat(row.children[7].innerText);
+      if (score >= 0.1) row.children[7].classList.add("score-high");
+      if (score < 0 && score >= -1) row.children[7].classList.add("score-low");
+      if (score < -1) row.children[7].classList.add("score-verylow");
     }});
     // ======== ソート機能部分 ========
     const table = document.getElementById("raceTable");
@@ -317,7 +319,7 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id, max_races):
     }}
 
     // ======== 対象列にクリックイベントを追加 ========
-    [1, 7].forEach(idx => {{
+    [1, 8].forEach(idx => {{
       const th = headers[idx];
       if (th) {{
         th.style.cursor = "pointer";
@@ -420,6 +422,7 @@ def generate_result_table(df) :
         umaban = row["馬番"]
         horse = html.escape(str(row["馬名"]))
         jockey = html.escape(str(row["騎手"]))
+        horse_weight = row["馬体重"] if "馬体重" in row and pd.notna(row["馬体重"]) else ""
         time = row["タイム"]
         diff = row["着差"] if pd.notna(row["着差"]) else ""
         pop = str(int(float(row["人気"]))) if pd.notna(row["人気"]) else ""
@@ -460,6 +463,7 @@ def generate_result_table(df) :
             <td style="{waku_style}">{umaban}</td>
             <td>{horse}</td>
             <td>{jockey}</td>
+            <td>{horse_weight}</td>
             <td>{time}</td>
             <td>{diff}</td>
             <td style="{pop_style}">{pop}</td>
@@ -475,7 +479,7 @@ def generate_result_table(df) :
       <thead>
         <tr>
           <th>着順</th><th>枠</th><th>馬番</th><th>馬名</th>
-          <th>騎手</th><th>タイム</th><th>着差</th>
+          <th>騎手</th><th>馬体重</th><th>タイム</th><th>着差</th>
           <th>人気</th><th>単勝オッズ</th><th>score</th><th>Rank</th>
         </tr>
       </thead>
@@ -491,7 +495,7 @@ def generate_payout_table_html(df):
     指定されたレースIDに対応する配当結果テーブルをHTML化して返す
     """
     if df.empty:
-        return "<p>レース結果データが見つかりません。</p>"
+        return "<p>配当結果データが見つかりません。</p>"
     
     # # --- 配当金額を3桁区切りに整形 ---
     df["配当"] = df["配当"].apply(lambda x: f"{int(x):,}円")
