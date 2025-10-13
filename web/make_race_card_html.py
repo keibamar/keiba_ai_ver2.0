@@ -130,15 +130,22 @@ def csv_to_html(csv_path, output_path, date_str, race_num, place_id, max_races):
                 prev = df_info.iloc[idx - 1]
                 prev_name = str(prev["race_name"])
                 prev_num = int(str(prev["race_id"])[-2:])
-                prev_link = f'<a href="{name_header.PLACE_LIST[place_id - 1]}R{prev_num}.html">← 前のレース（{prev_name}）</a>'
-                # print(prev_name, prev_num)
-            # 次のレース
+                prev_file = f"{name_header.PLACE_LIST[place_id - 1]}R{prev_num}.html"
+                if os.path.exists(os.path.join(output_dir, prev_file)):
+                    prev_link = f'<a href="{prev_file}">← 前のレース（{prev_name}）</a>'
+                else:
+                    prev_link = f'<span class="disabled">← 前のレース（{prev_name}）</span>'
+
+            # --- 次のレース ---
             if idx < len(df_info) - 1:
                 nxt = df_info.iloc[idx + 1]
                 nxt_name = str(nxt["race_name"])
                 nxt_num = int(str(nxt["race_id"])[-2:])
-                next_link = f'<a href="{name_header.PLACE_LIST[place_id - 1]}R{nxt_num}.html">次のレース（{nxt_name}） →</a>'
-                # print(nxt_name, nxt_num)
+                next_file = f"{name_header.PLACE_LIST[place_id - 1]}R{nxt_num}.html"
+                if os.path.exists(os.path.join(output_dir, next_file)):
+                    next_link = f'<a href="{next_file}">次のレース（{nxt_name}） →</a>'
+                else:
+                    next_link = f'<span class="disabled">次のレース（{nxt_name}） →</span>'
 
     # --- ナビゲーション ---
     nav_html = f"""
@@ -618,12 +625,14 @@ def make_index_page(date_str, output_dir, files_info_list):
     place_keys = sorted(place_races.keys())
     max_races = max(len(data["races"]) for data in place_races.values())
 
+    # === レース番号ごとの行を構築 ===
     table_rows = ""
     for race_num in range(1, max_races + 1):
         row_cells = f"<th>{race_num}R</th>"
         for place_key in place_keys:
             races = place_races[place_key]["races"]
             race_info = next((r for r in races if r["race_num"] == race_num), None)
+
             if race_info:
                 race_name_disp = race_info['race_name'] if race_info['race_name'] else f"{race_num}R"
 
@@ -633,17 +642,29 @@ def make_index_page(date_str, output_dir, files_info_list):
                     t = race_info["race_time"].zfill(4)
                     race_time_disp = f"発走時刻: {t[:2]}:{t[2:]}"
 
-                # === HTML構成を縦並びにする ===
-                row_cells += (
-                    f'<td>'
-                    f'<a href="{place_key}R{race_num}.html">'
-                    f'{race_name_disp}</a><br>'
-                    f'{race_time_disp}'
-                    f'</td>'
-                )
+                # === ファイルの存在確認 ===
+                race_file = os.path.join(output_dir, f"{place_key}R{race_num}.html")
+                if os.path.exists(race_file):
+                    # リンクがある場合
+                    row_cells += (
+                        f'<td>'
+                        f'<a href="{place_key}R{race_num}.html">'
+                        f'{race_name_disp}</a><br>'
+                        f'{race_time_disp}'
+                        f'</td>'
+                    )
+                else:
+                    # ファイルがなければリンクなしで表示
+                    row_cells += (
+                        f'<td>'
+                        f'{race_name_disp}<br>'
+                        f'{race_time_disp}'
+                        f'</td>'
+                    )
             else:
                 row_cells += "<td>-</td>"
         table_rows += f"<tr>{row_cells}</tr>\n"
+
 
     # === 🔗 ナビゲーションHTML作成 ===
     nav_links = '<div class="nav">'
