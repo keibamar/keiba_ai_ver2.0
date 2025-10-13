@@ -747,7 +747,7 @@ def make_index_page(date_str, output_dir, files_info_list):
     with open(os.path.join(output_dir, "index.html"), "w", encoding="utf-8") as f:
         f.write(html)
 
-def make_global_index(output_dir="output"):
+def make_global_index(output_dir="races"):
     """
     開催日一覧をカレンダー形式で表示する index.html を作成。
     dates: ["20250922", "20250928", ...] の形式
@@ -787,6 +787,24 @@ def make_global_index(output_dir="output"):
       font-size: 1.5em;
       margin: 0 10px;
     }
+    #todayRace {
+      margin-top: 20px;
+      font-size: 1.2em;
+    }
+    #todayRace a {
+      text-decoration: none;
+      color: white;
+      background-color: #007bff;
+      padding: 10px 20px;
+      border-radius: 5px;
+      font-weight: bold;
+    }
+    #todayRace a:hover {
+      background-color: #0056b3;
+    }
+    #todayRace p {
+      color: #555;
+    }
   </style>
 </head>
 <body>
@@ -799,6 +817,9 @@ def make_global_index(output_dir="output"):
   </div>
 
   <table id="calendar"></table>
+
+  <!-- 🐎 本日のレースリンク -->
+  <div id="todayRace"></div>
 
   <!-- 開催日一覧（Pythonで自動生成される） -->
   <script src="../js/racedays.js"></script>
