@@ -426,6 +426,8 @@ def generate_result_table(df) :
         time = row["タイム"]
         diff = row["着差"] if pd.notna(row["着差"]) else ""
         pop = str(int(float(row["人気"]))) if pd.notna(row["人気"]) else ""
+        last_3f = row["上り"] if "上り" in row and pd.notna(row["上り"]) else ""
+        race_position = row["通過"] if "通過" in row and pd.notna(row["通過"]) else ""
         odds = row["単勝"]
         score = row.get("score", "")
         pred_rank = row.get("rank", "")
@@ -467,6 +469,8 @@ def generate_result_table(df) :
             <td>{time}</td>
             <td>{diff}</td>
             <td style="{pop_style}">{pop}</td>
+            <td>{last_3f}</td>
+            <td>{race_position}</td>
             <td>{odds}</td>
             <td style="{score_style}">{score:.3f}</td>
             <td style="{pred_rank_style}">{pred_rank}</td>
@@ -480,7 +484,8 @@ def generate_result_table(df) :
         <tr>
           <th>着順</th><th>枠</th><th>馬番</th><th>馬名</th>
           <th>騎手</th><th>馬体重</th><th>タイム</th><th>着差</th>
-          <th>人気</th><th>単勝オッズ</th><th>score</th><th>Rank</th>
+          <th>人気</th><th>上り</th><th>通過</th>
+          <th>単勝オッズ</th><th>score</th><th>Rank</th>
         </tr>
       </thead>
       <tbody>
