@@ -136,6 +136,36 @@ def scrape_race_results(race_id):
         df_results["horse_id"] = horse_id_list
         df_results["jockey_id"] = jockey_id_list
 
+        # 上りと通過を取得
+        tables = soup.find_all('table')
+        main_table = tables[0]
+        # 1. 各馬の<tr>を取得
+        rows = main_table.find_all('tr')[1:]  # 1行目はヘッダー
+        up_list = []
+        pass_list = []
+        for row in rows:
+            # diary_snap_cut内のtdを取得
+            snap_cut = row.find_all('diary_snap_cut')
+            if snap_cut:
+                # 通過
+                pass_td = snap_cut[0].find_all('td')[1]  # 2番目のtd
+                pass_list.append(pass_td.get_text(strip=True))
+                # 上り
+                up_td = snap_cut[0].find_all('td')[2]    # 3番目のtd
+                up_list.append(up_td.get_text(strip=True))
+            else:
+                # diary_snap_cutがない場合は空欄
+                pass_list.append("")
+                up_list.append("")
+        # DataFrame化
+        df_up = pd.DataFrame({
+            "通過": pass_list,
+            "上り": up_list
+        })
+
+        # df_resultsに統合
+        df_results = pd.concat([df_results, df_up], axis=1)
+
         #インデックスをrace_idにする
         df_results.index = [race_id] * len(df_results)
 
