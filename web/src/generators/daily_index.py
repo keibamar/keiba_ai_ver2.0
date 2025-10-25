@@ -238,6 +238,17 @@ def daily_index_template(date_display, nav_links, place_races, place_keys, table
 </html>
 """
 
+def make_daily_index_page(race_day):
+  """指定した日のレースカードHTMLインデックスページを生成する"""
+  day_str = race_day.strftime("%Y%m%d")
+  files_info_list = list_files_and_parse(RACE_CARDS_PATH + f"{day_str}")
+
+  output_dir = RACE_HTML_PATH + f"{day_str}"
+  if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+  make_index_page(day_str, output_dir, files_info_list)
+
 if __name__ == "__main__":
   # テスト用実行コード
   # folders = get_subfolders(RACE_CARDS_PATH)

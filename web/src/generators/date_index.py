@@ -2,6 +2,7 @@ import os
 import sys
 
 import pandas as pd
+from datetime import date
 
 # pycache を生成しない
 sys.dont_write_bytecode = True
@@ -16,6 +17,7 @@ for p in (PROJECT_SRC, LIBS_PATH):
         sys.path.insert(0, p)
 
 from config.path import JS_FOLDER_PATH, RACE_HTML_PATH
+from utils.format_data import format_date
 
 
 def make_date_index(output_dir = RACE_HTML_PATH):
@@ -104,11 +106,12 @@ def make_date_index(output_dir = RACE_HTML_PATH):
         f.write(html)
     print(f"✅ index.html を生成しました: {output_dir}")
 
-def add_race_day(new_day):
+def add_race_day(race_day):
     """
     racedays.js に日付を追加する関数
-    - new_day: 追加する日付 (例 "20250927")
+    - race_day: 追加する日付
     """
+    new_day = race_day.strftime("%Y%m%d")
     js_file = os.path.join(JS_FOLDER_PATH, "racedays.js")
     # ファイルが存在しない場合 → 新規作成
     if not os.path.exists(js_file):
@@ -153,5 +156,5 @@ def add_race_day(new_day):
 
 if __name__ == "__main__":
     # テスト用実行コード
-    day_str = "20251018"
-    add_race_day(day_str)
+    race_day = date.today()
+    add_race_day(race_day)

@@ -1,42 +1,26 @@
-import pandas as pd
 import os
 import sys
-from glob import glob
-import re
-from datetime import date,datetime, timedelta
-import calendar
-
+from datetime import date, datetime, timedelta
 
 # pycache を生成しない
 sys.dont_write_bytecode = True
-sys.path.append(r"C:\keiba_ai\keiba_ai_ver2.0\libs")
-import name_header
+
+# web/src を import path に追加（generators パッケージを解決）
+PROJECT_SRC = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if PROJECT_SRC not in sys.path:
+    sys.path.insert(0, PROJECT_SRC)
+
+from generators.date_index import add_race_day    
+from generators.daily_index import make_daily_index_page
+from generators.race_pages import make_daily_race_card_html 
 
 # 使用例
 if __name__ == "__main__":
-    base_path = "../data/RaceCards/"  # 例: racesフォルダ配下の一覧を取得
-    folders = get_subfolders(base_path)
-    # print(folders)
-    for day_str in folders:
-        print(day_str)
-        input_dir = f"../data/RaceCards/{day_str}"
-        output_dir = f"races/{day_str}"
-
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-
-        files_info_list = list_files_and_parse(input_dir)
-        # print(files_info_list)
-        # 各日ごとにHTML生成
-        for file_info in files_info_list:
-            csv_path = input_dir + "/" + str(file_info['file']) + ".csv"
-            csv_to_html(csv_path, os.path.join(output_dir, f"{name_header.PLACE_LIST[file_info['place_id'] - 1]}R{file_info['race_num']}.html"), str(day_str), file_info['race_num'], file_info['place_id'] , file_info["file"])
-        make_index_page(day_str, output_dir, files_info_list)
-
-        # # 開催日全体の index.html
-        # global_index_dir = "races"
-        # make_global_index( global_index_dir )
-        js_path = "js/raceDays.js"
-        add_race_day(js_path, day_str)
-
-
+    race_day = date.today()  - timedelta(days=6)
+    print(race_day)
+    # 各レースのHTMLを生成
+    make_daily_race_card_html(race_day)
+    # 日付別インデックスページを生成
+    make_daily_index_page(race_day)
+    # 全開催日インデックスページを更新
+    add_race_day(race_day)
