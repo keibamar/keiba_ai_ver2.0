@@ -9,6 +9,7 @@ warnings.simplefilter('ignore')
 
 sys.dont_write_bytecode = True
 sys.path.append(r"C:\keiba_ai\keiba_ai_ver2.0\libs")
+sys.path.append(r"C:\keiba_ai\keiba_ai_ver2.0\web\src")
 import name_header
 import post_text
 import mail_api
@@ -16,6 +17,10 @@ import mail_api
 import make_time_id_list
 import make_text
 import race_card
+
+from generators.date_index import add_race_day
+from generators.daily_index import make_daily_index_page
+from generators.race_pages import make_race_card_html  
 
 def post_race_pred(race_id, race_day):
     """レース予想のポスト
@@ -58,7 +63,12 @@ def post_daily_race_pred(race_day = date.today()):
         Args:
             race_day(date) : レース開催日(初期値:今日)
     """
+    date_str = race_day.strftime("%Y%m%d")
     time_id_list = make_time_id_list.get_time_id_list(race_day)
+    add_race_day(race_day)
+
+    # place_id 毎に直前に処理した race_id を保持する
+    last_race_by_place = {}
 
     while(any(time_id_list)):
         # レース10分前に投稿
@@ -87,7 +97,21 @@ def post_daily_race_pred(race_day = date.today()):
            except :
                print("post_error:" + str(race_time + ":" + str(race_id)))
                print(sys.exc_info())
-          
+
+           #htmlの作成
+           place_id = int(str(race_id)[4] + str(race_id)[5])
+           print("make html:" + str(race_id))
+           make_race_card_html(date_str, place_id, race_id)
+           make_daily_index_page(race_day)
+
+           # 直前の race_id を取得（存在すれば previous）
+           previous_race_id = last_race_by_place.get(place_id)
+           # 直前レースがあれば、htmlを再生成(リンク更新のため)
+           if previous_race_id:
+               print("previous race html make:" + str(previous_race_id))    
+               make_race_card_html(date_str, place_id, previous_race_id)
+           # 今回処理した race_id を last_race_by_place に記録
+           last_race_by_place[place_id] = race_id
            time_id_list.pop(0)
         
         # 1分ごとに実行
