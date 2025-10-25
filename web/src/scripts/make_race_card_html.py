@@ -1,6 +1,6 @@
 import os
 import sys
-from datetime import date, datetime, timedelta
+from datetime import date
 
 # pycache を生成しない
 sys.dont_write_bytecode = True
@@ -16,11 +16,13 @@ from generators.race_pages import make_daily_race_card_html
 
 # 使用例
 if __name__ == "__main__":
-    race_day = date.today()  - timedelta(days=6)
+    race_day = date.today()  #- timedelta(days=6)
     print(race_day)
     # 各レースのHTMLを生成
     make_daily_race_card_html(race_day)
     # 日付別インデックスページを生成
     make_daily_index_page(race_day)
+     # (リンク生成のため暫定で二度生成)各レースのHTMLを生成
+    make_daily_race_card_html(race_day)
     # 全開催日インデックスページを更新
     add_race_day(race_day)
