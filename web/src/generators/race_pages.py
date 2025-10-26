@@ -533,7 +533,7 @@ def make_race_card_html(date_str, place_id, target_id):
     table_rows = build_table_rows(df)
 
     # レース名・時刻取得
-    race_info_path = os.path.join(f"../texts/race_calendar/race_time_id_list/{date_str}.csv")
+    race_info_path = os.path.join(RACE_CALENDAR_FOLDER_PATH, f"race_time_id_list/{date_str}.csv")
     race_name = ""
     race_time = ""
     if os.path.exists(race_info_path):
