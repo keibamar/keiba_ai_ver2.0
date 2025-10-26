@@ -66,6 +66,7 @@ def post_daily_race_pred(race_day = date.today()):
     date_str = race_day.strftime("%Y%m%d")
     time_id_list = make_time_id_list.get_time_id_list(race_day)
     add_race_day(race_day)
+    make_daily_index_page(race_day)
 
     # place_id 毎に直前に処理した race_id を保持する
     last_race_by_place = {}
