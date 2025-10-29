@@ -243,6 +243,25 @@ def make_all_race_results(year = date.today().year):
             print("[NewMake]" + str(y) + ":" + name_header.PLACE_LIST[place_id -1] + " RaceResults")
             make_yearly_race_results_dataset(place_id, y)
 
+def split_race_results_by_year(place_id, year):
+    """ place_idのrace_resultsを指定年で分割して取得
+        Args:
+            place_id(int) : place_id
+            year(int) : 年 
+    """
+    # CSVファイルの読み込み（ファイル名は適宜変更してね）
+    df = get_race_results_csv(place_id, year)
+
+    # 出力先ディレクトリ（必要なら作成）
+    output_dir = name_header.DATA_PATH + "RaceResults\\" + name_header.PLACE_LIST[place_id - 1] +  '//' + str(year)
+    os.makedirs(output_dir, exist_ok=True)
+
+    # race_id ごとに分割して保存
+    for race_id, group in df.groupby(df.index):
+        output_path = os.path.join(output_dir, f"{race_id}.csv")
+        group.to_csv(output_path, index=True)
+        print(f"保存完了: {output_path}")
+
 if __name__ == "__main__":
     # montly_update_race_results()
     # weekly_update_race_results()
