@@ -45,6 +45,41 @@ def save_day_race_return_csv(place_id, race_day, return_result_df):
     except Exception as e:
         calc_returns_error(e)
 
+def save_each_race_return_csv(race_id, df_returns):
+    """各レースの配当結果を保存
+        Args:
+            race_id(str) : race_id
+            df_returns(pd.DataFrame) : 配当結果
+    """
+    try:
+        place_id = int(race_id[4:6])
+        year = int(race_id[0:4])
+        folder_path = name_header.DATA_PATH + "RaceReturns/" +name_header.PLACE_LIST[place_id - 1] + "/" + str(year)
+        if not os.path.isdir(folder_path):
+            os.mkdir(folder_path)
+        csv_data_path = folder_path + "//" + str(race_id) + ".csv"
+        df_returns.to_csv(csv_data_path)
+    except Exception as e:
+        calc_returns_error(e)
+
+def get_each_race_retutn_csv(race_id):
+    """配当結果csvの取得
+        Args: 
+            race_id(str) : race_id
+        Returns:
+            df_returns(pd.DataFrame) : 配当結果
+    """
+    try:
+        place_id = int(race_id[4:6])
+        year = int(race_id[0:4])
+        folder_path = name_header.DATA_PATH + "RaceReturns/" +name_header.PLACE_LIST[place_id - 1] + "/" + str(year)
+        csv_data_path = folder_path + "//" + str(race_id) + ".csv"
+        df_returns = pd.read_csv(csv_data_path, index_col = 0, dtype = str)
+        return df_returns
+    except Exception as e:
+        calc_returns_error(e)
+        return pd.DataFrame() 
+
 def add_symbol_in_selection(string, symbol, num):
     """ 式別の文字列に記号を付与する 
         Args:
@@ -114,6 +149,9 @@ def get_race_return(race_id):
     """
     # データフレームの整形
     df_return = scraping.scrape_day_race_returns(race_id)
+    if df_return.empty:
+        print(f"race_id '{race_id}' の配当結果が取得できませんでした")
+        return pd.DataFrame()
     df_return = format_day_race_returns(df_return)
     # 配当結果の取得
     df_returns = pd.DataFrame()
@@ -151,18 +189,18 @@ def get_win_result(race_day, race_id_list):
             continue
         
         # 配当データの取得
-        returns_df = get_race_return(race_id)
+        returns_df = get_each_race_retutn_csv(race_id)
         if returns_df.empty:
             race_num_diff += 1
             continue
 
         # 1着的中率・回収率
-        win_df = returns_df[returns_df[0] == "単勝"].reset_index(drop = True)
+        win_df = returns_df[returns_df["式別"] == "単勝"].reset_index(drop = True)
         for i in range(len(win_df)):
-            num = int(win_df.at[i,1])
+            num = int(win_df.at[i,"馬番"])
             if pred_df.at[num - 1,"rank"] == 1:
                 win_hit_rate += 1
-                win_return_rate = win_return_rate + float(win_df.at[i,2])
+                win_return_rate = win_return_rate + float(win_df.at[i,"配当"])
                 win_hit_race += str(int(str(race_id)[10] + str(race_id)[11])) + " "
     
     if not len(race_id_list) == race_num_diff:
@@ -193,20 +231,20 @@ def get_place_result(race_day, race_id_list):
             continue
         
         # 配当データの取得
-        returns_df = get_race_return(race_id)
+        returns_df = get_each_race_retutn_csv(race_id)
         if returns_df.empty:
             race_num_diff += 1
             continue
         
        # ３着内率・複勝回収率
-        place_df = returns_df[returns_df[0] == "複勝"].reset_index(drop = True)
+        place_df = returns_df[returns_df["式別"] == "複勝"].reset_index(drop = True)
         for i in range(len(place_df)):
-            num = int(place_df.at[i,1])
+            num = int(place_df.at[i,"馬番"])
             if pred_df.at[num - 1, "rank"] == 1:
                 place_hit_rate = place_hit_rate + 1
-                if type(place_df.at[i,2]) == str:
-                    place_df.at[i,2] = re.sub(r"\D","",place_df.at[i,2])
-                place_return_rate = place_return_rate + float(place_df.at[i,2])
+                if type(place_df.at[i,"配当"]) == str:
+                    place_df.at[i,"配当"] = re.sub(r"\D","",place_df.at[i,"配当"])
+                place_return_rate = place_return_rate + float(place_df.at[i,"配当"])
                 place_hit_race += str(int(str(race_id)[10] + str(race_id)[11])) + " "
     
     if not len(race_id_list) == race_num_diff:
@@ -239,16 +277,16 @@ def get_quinella_box_result(race_day, race_id_list, box_num):
             continue
         
         # 配当データの取得
-        returns_df = get_race_return(race_id)
+        returns_df = get_each_race_retutn_csv(race_id)
         if returns_df.empty:
             race_num_diff += 1
             continue
         
        # 馬連BOX的中率・回収率
-        quinella_df = returns_df[returns_df[0] == "馬連"].reset_index(drop = True)
+        quinella_df = returns_df[returns_df["式別"] == "馬連"].reset_index(drop = True)
         for i in range(len(quinella_df)):
              # 馬連の馬番の取得
-            num_list = re.findall(r"\d+", quinella_df.at[i,1])
+            num_list = re.findall(r"\d+", quinella_df.at[i,"馬番"])
             # １着馬・２着馬の予想順位を取得
             rank_1 = pred_df[pred_df["馬番"] == int(num_list[0])].reset_index(drop = True).at[0 ,"rank"]
             rank_2 = pred_df[pred_df["馬番"] == int(num_list[1])].reset_index(drop = True).at[0 ,"rank"]
@@ -259,9 +297,9 @@ def get_quinella_box_result(race_day, race_id_list, box_num):
             
             if eval_1 and eval_2:
                 quinella_box_hit_rate +=  1
-                if type(quinella_df.at[i, 2]) == str:
-                    quinella_df.at[i, 2] = re.sub(r"\D","",quinella_df.at[i, 2])
-                quinella_box_return_rate += float(quinella_df.at[i, 2])
+                if type(quinella_df.at[i, "配当"]) == str:
+                    quinella_df.at[i, "配当"] = re.sub(r"\D","",quinella_df.at[i, "配当"])
+                quinella_box_return_rate += float(quinella_df.at[i, "配当"])
                 quinella_box_hit_race += str(int(str(race_id)[10] + str(race_id)[11])) + " "
 
     if not len(race_id_list) == race_num_diff:
@@ -294,16 +332,16 @@ def get_quinella_wheel_result(race_day, race_id_list, wheel_num):
             continue
         
         # 配当データの取得
-        returns_df = get_race_return(race_id)
+        returns_df = get_each_race_retutn_csv(race_id)
         if returns_df.empty:
             race_num_diff += 1
             continue
         
        # 馬連流し的中率・回収率
-        quinella_df = returns_df[returns_df[0] == "馬連"].reset_index(drop = True)
+        quinella_df = returns_df[returns_df["式別"] == "馬連"].reset_index(drop = True)
         for i in range(len(quinella_df)):
              # 馬連の馬番の取得
-            num_list = re.findall(r"\d+", quinella_df.at[i,1])
+            num_list = re.findall(r"\d+", quinella_df.at[i,"馬番"])
             # １着馬・２着馬の予想順位を取得
             rank_1 = pred_df[pred_df["馬番"] == int(num_list[0])].reset_index(drop = True).at[0 ,"rank"]
             rank_2 = pred_df[pred_df["馬番"] == int(num_list[1])].reset_index(drop = True).at[0 ,"rank"]
@@ -311,9 +349,9 @@ def get_quinella_wheel_result(race_day, race_id_list, wheel_num):
             # 軸流し
             if (rank_1 == 1 and rank_2 <= (wheel_num + 1)) or (rank_1 <= (wheel_num + 1) and rank_2 == 1):
                 quinella_wheel_hit_rate +=  1
-                if type(quinella_df.at[i, 2]) == str:
-                    quinella_df.at[i, 2] = re.sub(r"\D","",quinella_df.at[i, 2])
-                quinella_wheel_return_rate += float(quinella_df.at[i, 2])
+                if type(quinella_df.at[i, "配当"]) == str:
+                    quinella_df.at[i, "配当"] = re.sub(r"\D","",quinella_df.at[i, "配当"])
+                quinella_wheel_return_rate += float(quinella_df.at[i, "配当"])
                 quinella_wheel_hit_race += str(int(str(race_id)[10] + str(race_id)[11])) + " "
 
     if not len(race_id_list) == race_num_diff:
@@ -345,16 +383,16 @@ def get_trio_box_result(race_day, race_id_list, box_num):
             continue
         
         # 配当データの取得
-        returns_df = get_race_return(race_id)
+        returns_df = get_each_race_retutn_csv(race_id)
         if returns_df.empty:
             race_num_diff += 1
             continue
         
        # 三連複BOX的中率・回収率
-        trio_df = returns_df[returns_df[0] == "3連複"].reset_index(drop = True)
+        trio_df = returns_df[returns_df["式別"] == "3連複"].reset_index(drop = True)
         for i in range(len(trio_df)):
             # 三連複の馬番の取得
-            num_list = re.findall(r"\d+", trio_df.at[i,1])
+            num_list = re.findall(r"\d+", trio_df.at[i,"馬番"])
             # １着馬・２着馬・３着馬の予想順位を取得
             rank_1 = pred_df[pred_df["馬番"] == int(num_list[0])].reset_index(drop = True).at[0 ,"rank"]
             rank_2 = pred_df[pred_df["馬番"] == int(num_list[1])].reset_index(drop = True).at[0 ,"rank"]
@@ -366,9 +404,9 @@ def get_trio_box_result(race_day, race_id_list, box_num):
             eval_3 = rank_3  <= box_num
             if eval_1 and eval_2 and eval_3:
                 trio_box_hit_rate +=  1
-                if type(trio_df.at[i, 2]) == str:
-                    trio_df.at[i, 2] = re.sub(r"\D","",trio_df.at[i, 2])
-                trio_box_return_rate += float(trio_df.at[i, 2])
+                if type(trio_df.at[i, "配当"]) == str:
+                    trio_df.at[i, "配当"] = re.sub(r"\D","",trio_df.at[i, "配当"])
+                trio_box_return_rate += float(trio_df.at[i, "配当"])
                 trio_box_hit_race += str(int(str(race_id)[10] + str(race_id)[11])) + " "
     if not len(race_id_list) == race_num_diff:
         trio_box_hit_rate = (trio_box_hit_rate / (len(race_id_list) - race_num_diff)) 
@@ -399,16 +437,16 @@ def get_trio_wheel_result(race_day, race_id_list, wheel_num):
             continue
         
         # 配当データの取得
-        returns_df = get_race_return(race_id)
+        returns_df = get_each_race_retutn_csv(race_id)
         if returns_df.empty:
             race_num_diff += 1
             continue
         
        # 三連複的中率・回収率(上位5頭BOX)
-        trio_df = returns_df[returns_df[0] == "3連複"].reset_index(drop = True)
+        trio_df = returns_df[returns_df["式別"] == "3連複"].reset_index(drop = True)
         for i in range(len(trio_df)):
             # 三連複の馬番の取得
-            num_list = re.findall(r"\d+", trio_df.at[i,1])
+            num_list = re.findall(r"\d+", trio_df.at[i,"馬番"])
             # １着馬・２着馬・３着馬の予想順位を取得
             rank_1 = pred_df[pred_df["馬番"] == int(num_list[0])].reset_index(drop = True).at[0 ,"rank"]
             rank_2 = pred_df[pred_df["馬番"] == int(num_list[1])].reset_index(drop = True).at[0 ,"rank"]
@@ -418,9 +456,9 @@ def get_trio_wheel_result(race_day, race_id_list, wheel_num):
             or (rank_1 <= (wheel_num + 1) and rank_2 == 1 and rank_3 <= (wheel_num + 1)) \
             or (rank_1 <= (wheel_num + 1) and rank_2 <= (wheel_num + 1) and rank_3 == 1):
                 trio_wheel_hit_rate +=  1
-                if type(trio_df.at[i, 2]) == str:
-                    trio_df.at[i, 2] = re.sub(r"\D","",trio_df.at[i, 2])
-                trio_wheel_return_rate += float(trio_df.at[i, 2])
+                if type(trio_df.at[i, "配当"]) == str:
+                    trio_df.at[i, "配当"] = re.sub(r"\D","",trio_df.at[i, "配当"])
+                trio_wheel_return_rate += float(trio_df.at[i, "配当"])
                 trio_wheel_hit_race += str(int(str(race_id)[10] + str(race_id)[11])) + " "
     if not len(race_id_list) == race_num_diff:
         trio_wheel_hit_rate = (trio_wheel_hit_rate / (len(race_id_list) - race_num_diff)) 
@@ -502,6 +540,73 @@ def post_race_rerurns(place_id, race_day):
     # テキストファイルの読み込み
     text_data_path =  name_header.TEXT_PATH + "race_returns/" + race_day.strftime("%Y%m%d") + "//" + name_header.PLACE_LIST[place_id - 1] + "_pred_score.txt"
     post_text.post_text_data(text_data_path)
+
+def save_calc_day_return(race_day = date.today()):
+    """指定日の全開催場回収率・的中率を計算して保存
+    """ 
+    # 今日のid_listを取得
+    race_id_list = get_race_id.get_daily_id(race_day = race_day)
+    if not race_id_list:
+        return
+    # 各競馬場ごとにrace_idを分割
+    course_list = []
+    for i in range(0, len(race_id_list), 12):
+        course_list.append(race_id_list[i: i + 12])     
+    # 各競馬場毎の的中率・回収率の計算
+    for race_id_list in course_list:
+        print(race_id_list)
+        for race_id in race_id_list:
+            # データフレームの整形
+            df_return = get_race_return(race_id)
+            if df_return.empty:
+                continue
+            # 各レースの配当結果を保存
+            print(df_return)
+            save_each_race_return_csv(race_id, df_return)
+
+def run_all_year(year):
+    """指定した年の全日付で save_calc_day_return() を実行（今日より後は実行しない）"""
+    start = date(year, 1, 1)
+    end = date(year, 12, 31)
+    today = date.today()
+
+    current = start
+    while current <= end and current <= today:
+        try:
+            print(f"{current}")
+            save_calc_day_return(current)
+        except Exception as e:
+            print(f"{current} の処理中にエラー: {e}")
+        current += timedelta(days=1)
+
+def run_all_year_temp(year):
+    skip_flag = False
+    for place_id in range(5, 11):
+        race_id_list = get_race_id.get_year_id_all(place_id, year)
+        for race_id in race_id_list:
+            print(race_id)
+            if skip_flag:
+                race_count = race_count + 1
+                if race_count > 11:
+                    race_count = 0
+                    skip_flag = False
+                continue
+
+            # データフレームの整形
+            df_return = get_race_return(race_id)
+            if df_return.empty:
+                # race_idの下二けたからレース数を取得
+                race_num = int(race_id[10:12])
+                # 1レース目がなければ12レース目までないと判断
+                if race_num == 1:
+                    race_count = 1
+                    skip_flag = True
+                continue
+
+            # 各レースの配当結果を保存
+            print(df_return)
+            save_each_race_return_csv(race_id, df_return)
+        
 
 if __name__ =="__main__":
     race_day = date.today()

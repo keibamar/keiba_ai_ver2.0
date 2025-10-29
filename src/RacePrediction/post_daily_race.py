@@ -17,6 +17,7 @@ import mail_api
 import make_time_id_list
 import make_text
 import race_card
+import calc_returns
 
 from generators.date_index import add_race_day
 from generators.daily_index import make_daily_index_page
@@ -111,10 +112,14 @@ def post_daily_race_pred(race_day = date.today()):
 
            # 直前の race_id を取得（存在すれば previous）
            previous_race_id = last_race_by_place.get(place_id)
-           # 直前レースがあれば、htmlを再生成(リンク更新のため)
+           # 直前レースがあれば、結果の取得とhtmlを再生成(リンク更新のため)
            if previous_race_id:
-               print("previous race html make:" + str(previous_race_id))    
-               make_race_card_html(date_str, place_id, previous_race_id)
+               # 配当結果の取得
+                df_return = calc_returns.get_race_return(previous_race_id)
+                if not df_return.empty:
+                    calc_returns.save_each_race_return_csv(previous_race_id, df_return)
+                print("previous race html make:" + str(previous_race_id))    
+                make_race_card_html(date_str, place_id, previous_race_id)
            # 今回処理した race_id を last_race_by_place に記録
            last_race_by_place[place_id] = race_id
            time_id_list.pop(0)

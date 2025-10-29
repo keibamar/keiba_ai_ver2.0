@@ -109,36 +109,121 @@ def is_bracket_quinella(df_return):
             return True
     return False
 
-def format_type_returns_dataframe(return_df, type):
-    """ 各式別フォーマットの整形
-        Args:
-            return_df : 配当結果のデータフレーム
-            tyoe : 式別
-        Returns:
-            return_df : 指定式別のフォーマットを整理したDataFrame 
-    """
+def format_type_returns_dataframe(return_df, bet_type):
     try:
-        temp = return_df[type:type].reset_index().T
-        # 各式別毎に馬番を分割
-        if type == "枠連" or type == "馬連" or type == "ワイド" or type == "馬単":
-            temp.iloc[1,:] = replace_br(temp.iloc[1,:].values, 2)
-        elif type == "3連複" or type == "3連単" or type == "三連複" or type == "三連単":
-            temp.iloc[1,:] = replace_br(temp.iloc[1,:].values, 3)
-        # 各式別の数分割する(同着の場合複数)
-        split_results = pd.DataFrame()
-        for i in range(1, 4):
-            split_results = pd.concat([split_results, temp.iloc[i,:].str.split('br', expand = True)])
+        if return_df.index.name is not None or return_df.index[0] in [
+            "単勝", "複勝", "枠連", "馬連", "ワイド", "馬単", "3連複", "3連単"
+        ]:
+            return_df = return_df.reset_index().rename(columns={"index": "式別"})
 
-        # 分割数に応じて列を追加
-        type_result = pd.DataFrame()
-        for num in range(len(split_results.T)):
-            type_result = pd.concat([type_result, pd.DataFrame([type])])
-        type_result = pd.concat([type_result.reset_index(drop = True),split_results.reset_index(drop = True).T], axis = 1).T.reset_index(drop = True)
-        
-        return type_result.T
+        cols = list(return_df.columns)
+        if len(cols) >= 4:
+            return_df.columns = ["式別", "col1", "col2", "col3"]
+        else:
+            return_df.columns = ["式別", "col1", "col2", "col3"][:len(cols)]
+
+        def clean_text(text):
+            if pd.isna(text):
+                return ""
+            text = str(text)
+            text = re.sub(r"<br\s*/?>", " ", text)
+            text = text.replace("br", " ")
+            text = text.replace("　", " ")
+            text = re.sub(r"\s+", " ", text)
+            return text.strip()
+
+        return_df = return_df.map(clean_text)
+
+        bet_type = str(bet_type).strip()
+        temp = return_df[return_df["式別"] == bet_type]
+        if temp.empty:
+            print(f"⚠️ 式別 '{bet_type}' が見つかりませんでした")
+            return pd.DataFrame(columns=["式別", "馬番", "配当", "人気"])
+
+        row = temp.iloc[0, 1:].astype(str).tolist()
+        row = [r for r in row if r]
+
+        results = []
+
+        # === 複勝 ===
+        if bet_type == "複勝":
+            horses = re.findall(r"\d+", row[0])
+            pays = re.findall(r"\d+", row[1])
+            pops = re.findall(r"\d+", row[2]) if len(row) > 2 else []
+            for i in range(len(horses)):
+                results.append([
+                    bet_type,
+                    horses[i],
+                    pays[i] if i < len(pays) else None,
+                    pops[i] if i < len(pops) else None
+                ])
+
+        # === ワイド ===
+        elif bet_type == "ワイド":
+            horses = re.findall(r"\d+", row[0])
+            pays = re.findall(r"\d+", row[1])
+            pops = re.findall(r"\d+", row[2]) if len(row) > 2 else []
+            pairs = [f"{horses[i]}-{horses[i+1]}" for i in range(0, len(horses), 2)]
+            for i in range(len(pairs)):
+                results.append([
+                    bet_type,
+                    pairs[i],
+                    pays[i] if i < len(pays) else None,
+                    pops[i] if i < len(pops) else None
+                ])
+
+        # === 単勝・枠連・馬連・馬単 ===
+        elif bet_type in ["単勝", "枠連", "馬連", "馬単"]:
+            nums = re.findall(r"\d+", row[0])
+            pays = re.findall(r"\d+", row[1])
+            pops = re.findall(r"\d+", row[2]) if len(row) > 2 else []
+            for i in range(len(nums) // 2 if bet_type != "単勝" else len(nums)):
+                if bet_type == "単勝":
+                    results.append([bet_type, nums[i], pays[i], pops[i]])
+                else:
+                    sep = "→" if bet_type == "馬単" else "-"
+                    pair = f"{nums[i*2]}{sep}{nums[i*2+1]}"
+                    results.append([bet_type, pair, pays[i], pops[i]])
+
+        # === 3連複 ===
+        elif bet_type == "3連複":
+            nums = re.findall(r"\d+", row[0])
+            pays = re.findall(r"\d+", row[1])
+            pops = re.findall(r"\d+", row[2]) if len(row) > 2 else []
+            combos = [f"{nums[i]}-{nums[i+1]}-{nums[i+2]}" for i in range(0, len(nums), 3)]
+            for i, combo in enumerate(combos):
+                results.append([
+                    bet_type,
+                    combo,
+                    pays[i] if i < len(pays) else None,
+                    pops[i] if i < len(pops) else None
+                ])
+
+        # === 3連単 ===
+        elif bet_type == "3連単":
+            nums = re.findall(r"\d+", row[0])
+            pays = re.findall(r"\d+", row[1])
+            pops = re.findall(r"\d+", row[2]) if len(row) > 2 else []
+            combos = [f"{nums[i]}→{nums[i+1]}→{nums[i+2]}" for i in range(0, len(nums), 3)]
+            for i, combo in enumerate(combos):
+                results.append([
+                    bet_type,
+                    combo,
+                    pays[i] if i < len(pays) else None,
+                    pops[i] if i < len(pops) else None
+                ])
+
+
+
+        df_out = pd.DataFrame(results, columns=["式別", "馬番", "配当", "人気"])
+        return df_out
+
     except Exception as e:
-        race_returns_error(e)
-        return return_df
+        print(f"Error in format_type_returns_dataframe({bet_type}): {repr(e)}")
+        return pd.DataFrame(columns=["式別", "馬番", "配当", "人気"])
+
+
+
 
 def format_race_return_dataframe(race_return_df):
     """ 配当結果のフォーマットを整える
