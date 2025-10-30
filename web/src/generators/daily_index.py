@@ -107,6 +107,15 @@ def build_table_rows(place_races, output_dir):
 def make_index_page(date_str, output_dir, files_info_list):
     date_display = format_date(date_str)
 
+    # --- レース情報読み込みとグルーピング ---
+    race_info_dict = load_race_info(date_str)
+    if race_info_dict == {}:
+        return
+    
+    #--- 出力ディレクトリ作成 ---
+    if not os.path.exists(output_dir):
+          os.makedirs(output_dir)
+
     # === 全開催日フォルダの一覧を取得してソート ===
     all_days = [
         d for d in os.listdir(RACE_HTML_PATH)
@@ -126,8 +135,7 @@ def make_index_page(date_str, output_dir, files_info_list):
     prev_day_display = format_date(prev_day)
     next_day_display = format_date(next_day)
 
-    # --- レース情報読み込みとグルーピング ---
-    race_info_dict = load_race_info(date_str)
+    # --- レース情報のグルーピング ---
     place_races = group_place_races(files_info_list, race_info_dict)
 
     # --- テーブル行とplace_keysを作成 ---
@@ -244,8 +252,6 @@ def make_daily_index_page(race_day):
   files_info_list = list_files_and_parse(RACE_CARDS_PATH + f"{day_str}")
 
   output_dir = RACE_HTML_PATH + f"{day_str}"
-  if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
 
   make_index_page(day_str, output_dir, files_info_list)
 

@@ -23,7 +23,7 @@ from get_race_id import get_daily_id
 import html
 
 try:
-    from config.templates import RANK_COLORS, WAKU_COLORS
+    from config.settings import RANK_COLORS, WAKU_COLORS
 except Exception:
     # templates.py の定義名が異なる／未定義の場合のフォールバック
     from config import templates as templates_mod
@@ -51,35 +51,45 @@ def read_race_csv(date_str, target_id):
 
 def get_result_table(date_str, place_id, target_id) :
     year = date_str[:4]
-    result_csv = os.path.join(RACE_RESULTS_PATH, name_header.PLACE_LIST[place_id - 1], f"{year}_race_results.csv")
+    # result_csv = os.path.join(RACE_RESULTS_PATH, name_header.PLACE_LIST[place_id - 1], f"{year}_race_results.csv")
+    # if not os.path.exists(result_csv):
+    #     print(f"警告: レース結果ファイルが存在しません: {result_csv}")
+    #     return pd.DataFrame()
+
+    # df = pd.read_csv(result_csv, dtype=str, index_col=0)
+    # df_race = df.loc[df.index == int(target_id)]
+
+    # if df_race.empty:
+    #     print(f"警告: 指定レースの結果データが存在しません: {target_id}")
+    #     return pd.DataFrame()
+
+    result_csv = os.path.join(RACE_RESULTS_PATH, name_header.PLACE_LIST[place_id - 1], year, f"{target_id}.csv")
     if not os.path.exists(result_csv):
-        print(f"警告: レース結果ファイルが存在しません: {result_csv}")
-        return pd.DataFrame()
-
-    df = pd.read_csv(result_csv, dtype=str, index_col=0)
-    df_race = df.loc[df.index == int(target_id)]
-
-    if df_race.empty:
-        print(f"警告: 指定レースの結果データが存在しません: {target_id}")
-        return pd.DataFrame()
+      print(f"警告: レース結果ファイルが存在しません: {result_csv}")
+      return pd.DataFrame()
     
+    df_race = pd.read_csv(result_csv, dtype=str, index_col=0)
     return df_race.copy()
 
 def get_returns_table(date_str, place_id, target_id) :
     year = date_str[:4]
-    result_csv = os.path.join(RACE_RETURNS_PATH, name_header.PLACE_LIST[place_id - 1], f"{year}_race_returns.csv")
-    if not os.path.exists(result_csv):
-        print(f"警告: 配当結果ファイルが存在しません: {result_csv}")
-        return pd.DataFrame()
+    # result_csv = os.path.join(RACE_RETURNS_PATH, name_header.PLACE_LIST[place_id - 1], f"{year}_race_returns.csv")
+    # if not os.path.exists(result_csv):
+    #     print(f"警告: 配当結果ファイルが存在しません: {result_csv}")
+    #     return pd.DataFrame()
 
-    df = pd.read_csv(result_csv, dtype=str, index_col=0)
-    df_race = df.loc[df.index == int(target_id)]
-    df_race.columns = ["式別", "馬番", "配当", "人気"]
-    # print(df_race)
-    if df_race.empty:
-        print(f"警告: 指定レースの配当結果データが存在しません: {target_id}")
+    # df = pd.read_csv(result_csv, dtype=str, index_col=0)
+    # df_race = df.loc[df.index == int(target_id)]
+    # df_race.columns = ["式別", "馬番", "配当", "人気"]
+    # # print(df_race)
+    # if df_race.empty:
+    #     print(f"警告: 指定レースの配当結果データが存在しません: {target_id}")
+    #     return pd.DataFrame()
+    returns_csv = os.path.join(RACE_RETURNS_PATH, name_header.PLACE_LIST[place_id - 1], year, f"{target_id}.csv")
+    if not os.path.exists(returns_csv):
+        print(f"警告: 配当結果ファイルが存在しません: {returns_csv}")
         return pd.DataFrame()
-    
+    df_race = pd.read_csv(returns_csv, dtype=str, index_col=0)
     return df_race.copy()
 
 def build_table_rows(df):
@@ -376,7 +386,7 @@ def generate_result_table(df) :
     result_rows = ""
     for _, row in df.iterrows():
         rank = row["着順"]
-        waku = row["枠番"]
+        waku = row["枠"]
         umaban = row["馬番"]
         horse = html.escape(str(row["馬名"]))
         jockey = html.escape(str(row["騎手"]))
@@ -408,14 +418,18 @@ def generate_result_table(df) :
 
         # --- score色付け ---
         score_color = "black"
-        if (score >= 0.1):
-            score_color = "red"
-        if (score < 0 and score >= -1):
-            score_color = "blue"
-        if (score < -1):
-            score_color = "dark_blue"
+        if score is not None:
+          if (score >= 0.1):
+              score_color = "red"
+          if (score < 0 and score >= -1):
+              score_color = "blue"
+          if (score < -1):
+              score_color = "dark_blue"
         score_style = f'color:{score_color};'
 
+        # --- score の表示文字列（None対応）---
+        score_str = f"{score:.3f}" if isinstance(score, (int, float)) else ""
+        
         result_rows += f"""
         <tr>
             <td>{rank}</td>
@@ -430,7 +444,7 @@ def generate_result_table(df) :
             <td>{last_3f}</td>
             <td>{race_position}</td>
             <td>{odds}</td>
-            <td style="{score_style}">{score:.3f}</td>
+            <td style="{score_style}">{score_str}</td>
             <td style="{pred_rank_style}">{pred_rank}</td>
         </tr>
         """
@@ -533,7 +547,7 @@ def make_race_card_html(date_str, place_id, target_id):
     table_rows = build_table_rows(df)
 
     # レース名・時刻取得
-    race_info_path = os.path.join(f"../texts/race_calendar/race_time_id_list/{date_str}.csv")
+    race_info_path = os.path.join(RACE_CALENDAR_FOLDER_PATH, f"race_time_id_list/{date_str}.csv")
     race_name = ""
     race_time = ""
     if os.path.exists(race_info_path):

@@ -17,6 +17,9 @@ import mail_api
 import make_time_id_list
 import make_text
 import race_card
+import calc_returns
+
+import daily_racve_results
 
 from generators.date_index import add_race_day
 from generators.daily_index import make_daily_index_page
@@ -67,6 +70,10 @@ def post_daily_race_pred(race_day = date.today()):
     time_id_list = make_time_id_list.get_time_id_list(race_day)
     add_race_day(race_day)
     make_daily_index_page(race_day)
+    # 過去一週間のindexを再作成（リンクの生成）
+    for delta_day in range(1, 8):
+        past_day = race_day - timedelta(days=delta_day)
+        make_daily_index_page(past_day)
 
     # place_id 毎に直前に処理した race_id を保持する
     last_race_by_place = {}
@@ -107,10 +114,19 @@ def post_daily_race_pred(race_day = date.today()):
 
            # 直前の race_id を取得（存在すれば previous）
            previous_race_id = last_race_by_place.get(place_id)
-           # 直前レースがあれば、htmlを再生成(リンク更新のため)
+           # 直前レースがあれば、結果の取得とhtmlを再生成(リンク更新のため)
            if previous_race_id:
-               print("previous race html make:" + str(previous_race_id))    
-               make_race_card_html(date_str, place_id, previous_race_id)
+               # レース結果の取得
+                results_df = daily_racve_results.get_each_reca_results(previous_race_id)
+                if not results_df.empty:
+                    daily_racve_results.save_each_race_result_csv(previous_race_id, results_df)
+               # 配当結果の取得
+                df_return = calc_returns.get_race_return(previous_race_id)
+                if not df_return.empty:
+                    calc_returns.save_each_race_return_csv(previous_race_id, df_return)
+                
+                print("previous race html make:" + str(previous_race_id))    
+                make_race_card_html(date_str, place_id, previous_race_id)
            # 今回処理した race_id を last_race_by_place に記録
            last_race_by_place[place_id] = race_id
            time_id_list.pop(0)
