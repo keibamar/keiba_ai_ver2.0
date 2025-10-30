@@ -175,6 +175,67 @@ def scrape_race_results(race_id):
         # scraping_error(e)
         return pd.DataFrame()
 
+
+def clean_race_results(df: pd.DataFrame):
+    """
+        レース結果の体裁を整える。
+    """
+    df = df.copy()
+
+    for i in range(len(df)):
+        # 時間表記を変更
+        if df.notnull().at[i,"タイム"]:
+            df.at[i,"タイム"] = "0:" + df.at[i,"タイム"]
+
+    # --- 列名変更 ---
+    df = df.rename(columns={
+        "後3F": "上り",
+        "コーナー通過順": "通過",
+        "単勝オッズ": "単勝",
+        "馬体重(増減)": "馬体重"
+    })
+
+    # --- 列順を見やすく調整（任意） ---
+    reorder_cols = [
+        "着順", "枠", "馬番", "馬名", "性齢", "斤量", "騎手", "タイム", "着差",
+        "人気", "単勝", "上り", "通過", "厩舎", "馬体重"
+    ]
+    df = df[[c for c in reorder_cols if c in df.columns]]
+
+    return df
+    
+def scrape_day_race_results(race_id):
+    """ race_idから、当日のレース結果結果を返す 
+        Args:
+            race_id (str) : スクレイピングするrace_id
+
+        Returns:
+            df_return(pd.DataFrame) : race_idのレース結果結果    
+    """
+    # 配当結果の取得
+    url = "https://race.netkeiba.com/race/result.html?race_id=" + race_id
+    html = requests.get(url, headers=scraping_header)
+    html.encoding = "EUC-JP"
+    try:
+        soup = BeautifulSoup(html.text, "html.parser")
+        # バグ対策でdecode
+        soup = BeautifulSoup(html.content.decode("euc-jp", "ignore"), "html.parser")
+        
+        # メインとなるテーブルデータを取得
+        df_results = [pd.read_html(str(t))[0] for t in soup.select('table:has(tr td)')][0]
+        # 列名に半角スペースがあれば除去する
+        df_results = df_results.rename(columns=lambda x: x.replace(' ', ''))
+        
+        df_results = clean_race_results(df_results)
+
+        #インデックスをrace_idにする
+        df_results.index = [race_id] * len(df_results)
+
+        return df_results
+    except Exception as e:
+        scraping_error(e)
+        return pd.DataFrame()
+
 def scrape_day_race_returns(race_id):
     """ race_idから、当日の配当結果を返す 
         Args:
