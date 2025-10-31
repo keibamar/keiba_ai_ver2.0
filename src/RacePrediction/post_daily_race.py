@@ -136,7 +136,7 @@ def post_daily_race_pred(race_day = date.today()):
     
     # 最後のレースから10分待つ
     sleep(600)
-    for place_id in (len(name_header.PLACE_LIST) + 1):
+    for place_id in range(1, len(name_header.PLACE_LIST) + 1):
         last_race_id = last_race_by_place.get(place_id)
         if last_race_id is not None:
             # レース結果の取得
