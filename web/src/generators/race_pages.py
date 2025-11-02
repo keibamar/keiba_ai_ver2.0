@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import sys
 import pandas as pd
 from datetime import date
@@ -30,7 +31,7 @@ except Exception:
     RANK_COLORS = getattr(templates_mod, "RANK_COLORS", {})
     WAKU_COLORS = getattr(templates_mod, "WAKU_COLORS", {})
 
-from config.path import RACE_HTML_PATH, RACE_INFO_PATH, RACE_CARDS_PATH, RACE_RESULTS_PATH, RACE_RETURNS_PATH, RACE_CALENDAR_FOLDER_PATH
+from config.path import RACE_HTML_PATH, RACE_INFO_PATH, RACE_CARDS_PATH, RACE_RESULTS_PATH, RACE_RETURNS_PATH, RACE_CALENDAR_FOLDER_PATH, TIME_INFO_PATH
 from utils.format_data import format_date
 from utils.format_data import merge_rank_score
 
@@ -181,7 +182,7 @@ def build_nav_html(output_dir, date_str, place_id, target_id):
     """
     return nav_html
 
-def build_html_content(date_display, place_id, race_num, race_name, race_time, nav_html, table_rows, result_table_html, payout_table_html):
+def build_html_content(date_display, place_id, race_num, race_name, race_time, nav_html, table_rows, run_time_info, result_table_html, payout_table_html):
     """HTMLテンプレートを返す"""
     race_time_display = f"{race_time[:2]}:{race_time[2:]}" if race_time else ""
     place_name = name_header.NAME_LIST[place_id - 1]
@@ -275,6 +276,7 @@ def build_html_content(date_display, place_id, race_num, race_name, race_time, n
       {table_rows}
     </tbody>
   </table>
+  {run_time_info}
   {result_table_html}
   {payout_table_html}
   <script>
@@ -375,6 +377,7 @@ def build_html_content(date_display, place_id, race_num, race_name, race_time, n
     race_time_display=race_time_display,
     nav_html=nav_html,
     table_rows=table_rows,
+    run_time_info=run_time_info,
     result_table_html=result_table_html,
     payout_table_html=payout_table_html,
     )
@@ -386,7 +389,7 @@ def generate_result_table(df) :
     result_rows = ""
     for _, row in df.iterrows():
         rank = row["着順"]
-        waku = row["枠"]
+        waku = row.get("枠", row.get("枠番", None))
         umaban = row["馬番"]
         horse = html.escape(str(row["馬名"]))
         jockey = html.escape(str(row["騎手"]))
@@ -540,6 +543,176 @@ def generate_race_info(date_str, place_id, target_id):
 def generate_run_time_info(date_str, place_id, target_id) :
     """平均勝ち時計/先週の三着内時計/ 同コース/条件 上りタイム"""
 
+    year = date_str[:4]
+    race_info_path = os.path.join(RACE_INFO_PATH, name_header.PLACE_LIST[place_id - 1], year, f"{target_id}.csv")
+    if os.path.exists(race_info_path):
+        df_info = pd.read_csv(race_info_path, dtype=str)
+        if not df_info.empty:
+            # 追加部分: コース情報の取得
+            race_type = str(df_info.iloc[0].get("race_type", ""))
+            course_len = int(df_info.iloc[0].get("course_len", ""))
+            ground_state = str(df_info.iloc[0].get("ground_state", ""))
+            race_class = str(df_info.iloc[0].get("class", ""))
+        else:
+            print("No Race Info:", target_id)
+            return None
+    
+
+    # --- パス設定 ---
+    total_run_time_path = os.path.join(TIME_INFO_PATH, name_header.PLACE_LIST[place_id - 1], "total_avg_time.csv")
+    total_data_path     = os.path.join(TIME_INFO_PATH, name_header.PLACE_LIST[place_id - 1], "total_wineer_time.csv")
+    year_run_time_path  = os.path.join(TIME_INFO_PATH, name_header.PLACE_LIST[place_id - 1], f"{year}_avg_time.csv")
+    year_data_path      = os.path.join(TIME_INFO_PATH, name_header.PLACE_LIST[place_id - 1], f"{year}_wineer_time.csv")
+    # --- データ読み込み ---
+    def read_csv_safe(path):
+        if os.path.exists(path):
+            return pd.read_csv(path)
+        else:
+            print(f"[warn] ファイルが見つかりません: {path}")
+            return pd.DataFrame()
+
+    total_run_df = read_csv_safe(total_run_time_path)
+    total_data_df = read_csv_safe(total_data_path)
+    year_run_df = read_csv_safe(year_run_time_path)
+    year_data_df = read_csv_safe(year_data_path)
+
+    # --- CSV読み込み（なければ空DataFrame）---
+    def read_if_exists(path):
+        if os.path.exists(path):
+            return pd.read_csv(path, dtype=str)
+        return pd.DataFrame()
+
+    total_run_df = read_if_exists(total_run_time_path)
+    total_data_df = read_if_exists(total_data_path)
+    year_run_df = read_if_exists(year_run_time_path)
+    year_data_df = read_if_exists(year_data_path)
+
+    # --- 該当行取得関数 ---
+    def get_row(df, cls):
+        if df.empty:
+            return None
+        cond = (
+            (df["race_type"] == race_type) &
+            (df["course_len"].astype(str) == str(course_len)) &
+            (df["ground_state"] == ground_state) &
+            (df["class"] == cls)
+        )
+        sub = df[cond]
+        if sub.empty:
+            return None
+        return sub.iloc[0]
+
+    # --- 各行取得 ---
+    # 勝ち時計: allクラス用
+    year_all_time   = get_row(year_run_df, "all")
+    year_class_time = get_row(year_run_df, race_class)
+    total_all_time  = get_row(total_run_df, "all")
+    total_class_time  = get_row(total_run_df, race_class)
+
+    # 上り/通過: 各クラス用
+    year_all_data  = get_row(year_data_df, "all")
+    year_class_data  = get_row(year_data_df, race_class)
+    total_all_data = get_row(total_data_df, "all")
+    total_class_data = get_row(total_data_df, race_class)
+
+    # --- HTML整形用ユーティリティ ---
+    def fmt_avg_time_html(row):
+        """勝ち時計(ms) → mm:ss.ms 形式"""
+        if row is None or pd.isna(row.get("avg_time", None)) or row["avg_time"] == "":
+            return "―"
+        try:
+            val = float(row["avg_time"])
+            total_seconds = int(val // 1000)
+            ms = int(val % 1000)
+            minutes = total_seconds // 60
+            seconds = total_seconds % 60
+            return f"{minutes}:{seconds:02d}.{ms:03d}"
+        except:
+            return str(row["avg_time"])
+
+    def color_for_position(pos):
+        """通過順位の色を決定"""
+        try:
+            pos = int(pos)
+        except:
+            return "black"
+        if 1 <= pos <= 2:
+            return "red"
+        elif 3 <= pos <= 9:
+            return "orange"
+        elif 10 <= pos <= 16:
+            return "deepskyblue"
+        elif pos >= 17:
+            return "blue"
+        return "black"
+
+    def fmt_passing_html(row):
+        """通過列（複数）を整形"""
+        if row is None:
+            return "―"
+        passes = [row[col] for col in row.index if col.startswith("通過") and pd.notna(row[col]) and row[col] != ""]
+        if not passes:
+            return "―"
+        html_parts = []
+        for p in passes:
+            color = color_for_position(p)
+            html_parts.append(f'<span style="color:{color}; font-weight:bold;">{p}</span>')
+        return "-".join(html_parts)
+
+    def fmt_last_html(row):
+        """上りタイムを整形"""
+        if row is None or "上り" not in row or pd.isna(row["上り"]) or row["上り"] == "":
+            return "―"
+        return f"{row['上り']}"
+
+    # --- HTML整形 ---
+    run_time_info_html = f"""
+    <div id="runtimeInfo" style="margin: 20px 0; padding: 10px; border: 1px solid #ccc; background: #fafafa;">
+      <h3>🏇 コース別平均タイム情報 ({race_type} {course_len}m {ground_state} {race_class})</h3>
+      <table style="border-collapse: collapse; width: 100%; text-align: center;">
+        <thead>
+          <tr style="background: #f2f2f2;">
+            <th>区分</th>
+            <th>対象</th>
+            <th>平均勝ち時計</th>
+            <th>上り</th>
+            <th>通過</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td rowspan="2">全クラス</td>
+            <td>{year}年平均</td>
+            <td>{fmt_avg_time_html(year_all_time)}</td>
+            <td>{fmt_last_html(year_all_data)}</td>
+            <td>{fmt_passing_html(year_all_data)}</td>
+          </tr>
+          <tr>
+            <td>TOTAL平均</td>
+            <td>{fmt_avg_time_html(total_all_time)}</td>
+            <td>{fmt_last_html(total_all_data)}</td>
+            <td>{fmt_passing_html(total_all_data)}</td>
+          </tr>
+          <tr>
+            <td rowspan="2">{race_class}</td>
+            <td>{year}年平均</td>
+            <td>{fmt_avg_time_html(year_class_time)}</td>
+            <td>{fmt_last_html(year_class_data)}</td>
+            <td>{fmt_passing_html(year_class_data)}</td>
+          </tr>
+          <tr>
+            <td>TOTAL平均</td>
+            <td>{fmt_avg_time_html(total_class_time)}</td>
+            <td>{fmt_last_html(total_class_data)}</td>
+            <td>{fmt_passing_html(total_class_data)}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    """.strip()
+
+    return run_time_info_html
+
 
 def make_race_card_html(date_str, place_id, target_id):
     """レースカード HTML を生成して output_path に保存する"""
@@ -581,6 +754,8 @@ def make_race_card_html(date_str, place_id, target_id):
             race_name = str(match.iloc[0]["race_name"])
             race_time = str(match.iloc[0]["race_time"])
 
+    # レースの平均時計、上り時計を取得
+    run_time_info = generate_run_time_info(date_str, place_id, target_id)
     # ナビゲーション作成
     nav_html = build_nav_html(output_dir, date_str, place_id, target_id)
 
@@ -593,6 +768,7 @@ def make_race_card_html(date_str, place_id, target_id):
         race_time=race_time,
         nav_html=nav_html,
         table_rows=table_rows,
+        run_time_info = run_time_info,
         result_table_html=result_table_html,
         payout_table_html=payout_table_html,
     )
