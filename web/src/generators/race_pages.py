@@ -524,10 +524,8 @@ def generate_race_info(date_str, place_id, target_id):
     """ レース情報をcsvファイルから取得する"""
     year = date_str[:4]
     race_info_path = os.path.join(RACE_INFO_PATH, name_header.PLACE_LIST[place_id - 1], year, f"{target_id}.csv")
-    print(race_info_path)
     if os.path.exists(race_info_path):
         df_info = pd.read_csv(race_info_path, dtype=str)
-        print(df_info)
         if not df_info.empty:
             # 追加部分: コース情報の取得
             race_type = str(df_info.iloc[0].get("race_type", ""))
