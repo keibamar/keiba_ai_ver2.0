@@ -30,7 +30,7 @@ except Exception:
     RANK_COLORS = getattr(templates_mod, "RANK_COLORS", {})
     WAKU_COLORS = getattr(templates_mod, "WAKU_COLORS", {})
 
-from config.path import RACE_HTML_PATH, RACE_CARDS_PATH, RACE_RESULTS_PATH, RACE_RETURNS_PATH, RACE_CALENDAR_FOLDER_PATH
+from config.path import RACE_HTML_PATH, RACE_INFO_PATH, RACE_CARDS_PATH, RACE_RESULTS_PATH, RACE_RETURNS_PATH, RACE_CALENDAR_FOLDER_PATH
 from utils.format_data import format_date
 from utils.format_data import merge_rank_score
 
@@ -520,6 +520,23 @@ def generate_payout_table_html(df):
 
     return payout_html
 
+def generate_race_info(date_str, place_id, target_id):
+    """ レース情報をcsvファイルから取得する"""
+    year = date_str[:4]
+    race_info_path = os.path.join(RACE_INFO_PATH, name_header.PLACE_LIST[place_id - 1], year, f"{target_id}.csv")
+    if os.path.exists(race_info_path):
+        df_info = pd.read_csv(race_info_path, dtype=str)
+        if not df_info.empty:
+            # 追加部分: コース情報の取得
+            race_type = str(df_info.iloc[0].get("race_type", ""))
+            course_len = str(df_info.iloc[0].get("course_len", ""))
+            weather = str(df_info.iloc[0].get("weather", ""))
+            ground_state = str(df_info.iloc[0].get("ground_state", ""))
+            race_class = str(df_info.iloc[0].get("class", ""))
+            course_info_text = f"{race_type}{course_len}m 天候:{weather} 馬場:{ground_state} クラス:{race_class}"
+            return course_info_text
+    return None
+    
 def make_race_card_html(date_str, place_id, target_id):
     """レースカード HTML を生成して output_path に保存する"""
     race_num = int(str(target_id)[-2:])
@@ -534,7 +551,10 @@ def make_race_card_html(date_str, place_id, target_id):
     if df is None:
         return
 
-    # レース結果、配当取得（既存関数を利用）
+    # --- レース情報（コース・距離・馬場・クラス）を取得 ---
+    course_info_text = generate_race_info(date_str, place_id, target_id)
+
+    # --- レース結果、配当取得 ---
     result_df = get_result_table(date_str, place_id, target_id)
     if not result_df.empty:
         result_df = merge_rank_score(result_df, df)
@@ -560,8 +580,25 @@ def make_race_card_html(date_str, place_id, target_id):
     # ナビゲーション作成
     nav_html = build_nav_html(output_dir, date_str, place_id, target_id)
 
-    # HTML生成・書き込み
-    html_content = build_html_content(date_display, place_id, race_num, race_name, race_time, nav_html, table_rows, result_table_html, payout_table_html)
+    # --- HTML生成・書き込み ---
+    html_content = build_html_content(
+        date_display=date_display,
+        place_id=place_id,
+        race_num=race_num,
+        race_name=race_name,
+        race_time=race_time,
+        nav_html=nav_html,
+        table_rows=table_rows,
+        result_table_html=result_table_html,
+        payout_table_html=payout_table_html,
+    )
+
+    # 🆕 コース情報をHTMLに挿入
+    html_content = html_content.replace(
+        "<p>発走時刻:",
+        f"<p>{course_info_text}</p>\n  <p>発走時刻:"
+    )
+
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html_content)
