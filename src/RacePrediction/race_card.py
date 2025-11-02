@@ -44,6 +44,24 @@ def save_race_cards(race_card_df, race_day, race_id):
     except Exception as e:
         make_race_card_error(e)
 
+def save_race_info_df(race_info_df, race_day, race_id):
+    """レース情報データセットの保存
+        Args:
+            race_info_df(pd.DataFrame) : レース情報データ
+            race_day(date) : レース開催日
+            race_id(int) : race_id
+    """
+    try:
+        str_day = race_day.strftime("%Y%m%d")
+        year = str_day[:4]
+        place_id = int(str(race_id)[4] + str(race_id)[5])
+        folder_path = name_header.DATA_PATH + "RaceInfo//" + name_header.PLACE_LIST[place_id - 1] + "//" + year  + "//"
+        if not os.path.isdir(folder_path):
+            os.mkdir(folder_path)
+        race_info_df.to_csv(folder_path + "//" + str(race_id) + ".csv")
+    except Exception as e:
+        make_race_card_error(e)
+
 def get_race_info(race_id):
     """レース情報(レース名・発走時刻)を取得
         Args:
@@ -130,7 +148,7 @@ def make_race_card(race_id):
     race_card_df = pd.concat([race_card_df.reset_index(drop = True), horse_peds_display.T.reset_index(drop = True)], axis = 1)
     race_card_df = pd.concat([race_card_df, rank_df.reset_index(drop=True)], axis = 1)
     
-    return race_card_df
+    return race_card_df, race_info_df
 
 def daily_race_card(place_id = 0, race_day = date.today()):
     """出馬表を出力

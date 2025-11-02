@@ -88,9 +88,10 @@ def post_daily_race_pred(race_day = date.today()):
            race_id = time_id_list[0][1]
            try:
                 # 予想の更新
-                race_card_df = race_card.make_race_card(race_id)
+                race_card_df, race_info_df = race_card.make_race_card(race_id)
                 # csvファイルで出力
                 race_card.save_race_cards(race_card_df, race_day, race_id)
+                race_card.save_race_info_df(race_info_df, race_day, race_id)
                 # textの作成
                 make_text.make_race_text(race_day, race_id)
                 # API対策で計12レースのみ投稿
