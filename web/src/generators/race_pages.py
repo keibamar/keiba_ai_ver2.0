@@ -536,7 +536,11 @@ def generate_race_info(date_str, place_id, target_id):
             course_info_text = f"{race_type}{course_len}m 天候:{weather} 馬場:{ground_state} クラス:{race_class}"
             return course_info_text
     return None
-    
+
+def generate_run_time_info(date_str, place_id, target_id) :
+    """平均勝ち時計/先週の三着内時計/ 同コース/条件 上りタイム"""
+
+
 def make_race_card_html(date_str, place_id, target_id):
     """レースカード HTML を生成して output_path に保存する"""
     race_num = int(str(target_id)[-2:])
