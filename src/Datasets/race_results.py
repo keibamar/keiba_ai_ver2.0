@@ -157,6 +157,70 @@ def get_course_info(result):
 
     return [place_id, race_type, course_len, ground_state, race_class]
 
+def export_race_info_per_race(place_id, year):
+    """
+    各レースIDごとに基本情報(race_type, course_len, weather, ground_state, class)を抽出して
+    {year}/{race_id}.csv に保存する。
+
+    Parameters
+    ----------
+    input_csv : str
+        元のレース結果CSVファイルのパス
+    output_base_path : str
+        出力先のベースディレクトリ（例: "./race_info"）
+    """
+    input_csv = name_header.DATA_PATH + "RaceResults//" + name_header.PLACE_LIST[place_id - 1] + f"//{year}_race_results.csv"
+    
+    # CSV読み込み
+    if not os.path.exists(input_csv):
+        print("not file exists:", input_csv)
+        return
+    df = pd.read_csv(input_csv, dtype=str)
+    if df.empty:
+        print("⚠️ 入力CSVが空です。処理を終了します。")
+        return
+
+    out_dir = name_header.DATA_PATH + "RaceInfo//" + name_header.PLACE_LIST[place_id - 1] + "//" + str(year)
+    os.makedirs(out_dir, exist_ok=True)
+
+    # --- race_id 列の特定 ---
+    if "race_id" in df.columns:
+        pass  # そのまま使用
+    elif "Unnamed: 0" in df.columns:
+        df = df.rename(columns={"Unnamed: 0": "race_id"})
+    else:
+        # indexから復元（ファイルによってはインデックスがrace_idの場合もある）
+        df = df.reset_index().rename(columns={"index": "race_id"})
+    # race_id 列を文字列として確保
+    df["race_id"] = df.index if "race_id" not in df.columns else df["race_id"]
+
+    # 重複レースIDを除去（1レースにつき1行だけ）
+    unique_race_ids = df["race_id"].unique()
+
+    # 各レースごとにファイル作成
+    for race_id in unique_race_ids:
+        sub = df[df["race_id"] == race_id].iloc[0]  # 最初の1行だけ取得
+
+        # 出力ファイルパス
+        out_path = os.path.join(out_dir, f"{race_id}.csv")
+
+        # 必要列を抽出
+        record = {
+            "race_type": sub.get("race_type", ""),
+            "course_len": sub.get("course_len", ""),
+            "weather": sub.get("weather", ""),
+            "ground_state": sub.get("ground_state", ""),
+            "class": sub.get("class", "")
+        }
+
+        # DataFrameとして保存
+        out_df = pd.DataFrame([record])
+        out_df.to_csv(out_path, index_label="", encoding="utf-8-sig")
+
+        # print(f"✅ {out_path} を作成しました。")
+
+    print(name_header.PLACE_LIST[place_id - 1], str(year), "レース情報出力完了")
+
 def update_race_results_dataset(place_id, day = date.today()):
     """ 開催コースと日にちを指定して、過去1週間分のrace_resultsデータセットを更新する 
         Args:
