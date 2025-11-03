@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import sys
 import pandas as pd
-from datetime import date
+from datetime import date, timedelta
 
 # pycache を生成しない
 sys.dont_write_bytecode = True
@@ -553,9 +553,9 @@ def generate_run_time_info(date_str, place_id, target_id) :
             course_len = int(df_info.iloc[0].get("course_len", ""))
             ground_state = str(df_info.iloc[0].get("ground_state", ""))
             race_class = str(df_info.iloc[0].get("class", ""))
-        else:
-            print("No Race Info:", target_id)
-            return None
+    else:
+        print("No Race Info:", target_id)
+        return None
     
 
     # --- パス設定 ---
