@@ -31,7 +31,7 @@ except Exception:
     RANK_COLORS = getattr(templates_mod, "RANK_COLORS", {})
     WAKU_COLORS = getattr(templates_mod, "WAKU_COLORS", {})
 
-from config.path import RACE_HTML_PATH, RACE_INFO_PATH, RACE_CARDS_PATH, RACE_RESULTS_PATH, RACE_RETURNS_PATH, RACE_CALENDAR_FOLDER_PATH, TIME_INFO_PATH
+from config.path import RACE_HTML_PATH, RACE_INFO_PATH, RACE_CARDS_PATH, RACE_RESULTS_PATH, RACE_RETURNS_PATH, RACE_CALENDAR_FOLDER_PATH, TIME_INFO_PATH, WEIGHT_INFO_PATH
 from utils.format_data import format_date
 from utils.format_data import merge_rank_score
 
@@ -182,7 +182,7 @@ def build_nav_html(output_dir, date_str, place_id, target_id):
     """
     return nav_html
 
-def build_html_content(date_display, place_id, race_num, race_name, race_time, nav_html, table_rows, run_time_info, result_table_html, payout_table_html):
+def build_html_content(date_display, place_id, race_num, race_name, race_time, nav_html, table_rows, run_time_info, weight_info, result_table_html, payout_table_html):
     """HTMLテンプレートを返す"""
     race_time_display = f"{race_time[:2]}:{race_time[2:]}" if race_time else ""
     place_name = name_header.NAME_LIST[place_id - 1]
@@ -277,6 +277,7 @@ def build_html_content(date_display, place_id, race_num, race_name, race_time, n
     </tbody>
   </table>
   {run_time_info}
+  {weight_info}
   {result_table_html}
   {payout_table_html}
   <script>
@@ -378,6 +379,7 @@ def build_html_content(date_display, place_id, race_num, race_name, race_time, n
     nav_html=nav_html,
     table_rows=table_rows,
     run_time_info=run_time_info,
+    weight_info=weight_info,
     result_table_html=result_table_html,
     payout_table_html=payout_table_html,
     )
@@ -714,6 +716,108 @@ def generate_run_time_info(date_str, place_id, target_id) :
     return run_time_info_html
 
 
+def generate_weight_info(date_str, place_id, target_id):
+  """
+  勝ち馬の平均馬体重を取得して HTML を生成する。
+  """
+  year = date_str[:4]
+  race_info_path = os.path.join(RACE_INFO_PATH, name_header.PLACE_LIST[place_id - 1], year, f"{target_id}.csv")
+  if os.path.exists(race_info_path):
+      df_info = pd.read_csv(race_info_path, dtype=str)
+      if not df_info.empty:
+          race_type = str(df_info.iloc[0].get("race_type", ""))
+          course_len = int(df_info.iloc[0].get("course_len", ""))
+          ground_state = str(df_info.iloc[0].get("ground_state", ""))
+          race_class = str(df_info.iloc[0].get("class", ""))
+  else:
+      print("No Race Info:", target_id)
+      return None
+
+  # --- パス設定 ---
+  total_weight_path = os.path.join(WEIGHT_INFO_PATH, name_header.PLACE_LIST[place_id - 1], "total_wineer_weight.csv")
+  year_weight_path = os.path.join(WEIGHT_INFO_PATH, name_header.PLACE_LIST[place_id - 1], f"{year}_wineer_weight.csv")
+
+  def read_if_exists(path):
+      if os.path.exists(path):
+          return pd.read_csv(path, dtype=str)
+      return pd.DataFrame()
+
+  total_df = read_if_exists(total_weight_path)
+  year_df = read_if_exists(year_weight_path)
+
+  def get_row(df, cls):
+      if df.empty:
+          return None
+      cond = (
+          (df["race_type"] == race_type) &
+          (df["course_len"].astype(str) == str(course_len)) &
+          (df["ground_state"] == ground_state) &
+          (df["class"] == cls)
+      )
+      sub = df[cond]
+      if sub.empty:
+          return None
+      return sub.iloc[0]
+
+  year_all = get_row(year_df, "all")
+  year_class = get_row(year_df, race_class)
+  total_all = get_row(total_df, "all")
+  total_class = get_row(total_df, race_class)
+
+  def fmt_weight_html(row):
+      """馬体重に色をつけて表示"""
+      if row is None or "馬体重" not in row or pd.isna(row["馬体重"]) or row["馬体重"] == "":
+          return "―"
+      try:
+          weight = float(row["馬体重"])
+          if weight >= 500:
+              color = "red"
+          elif weight <= 450:
+              color = "deepskyblue"
+          else:
+              color = "black"
+          return f'<span style="color:{color}; font-weight:bold;">{weight:.1f}kg</span>'
+      except:
+          return str(row["馬体重"])
+
+  # --- HTML生成 ---
+  weight_info_html = f"""
+  <div id="weightInfo" style="margin: 20px 0; padding: 10px; border: 1px solid #ccc; background: #fefefe;">
+    <h3>🏇 コース別平均馬体重情報 ({race_type} {course_len}m {ground_state} {race_class})</h3>
+    <table style="border-collapse: collapse; width: 100%; text-align: center;">
+      <thead>
+        <tr style="background: #f2f2f2;">
+          <th>区分</th>
+          <th>対象</th>
+          <th>平均馬体重</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td rowspan="2">全クラス</td>
+          <td>{year}年平均</td>
+          <td>{fmt_weight_html(year_all)}</td>
+        </tr>
+        <tr>
+          <td>TOTAL平均</td>
+          <td>{fmt_weight_html(total_all)}</td>
+        </tr>
+        <tr>
+          <td rowspan="2">{race_class}</td>
+          <td>{year}年平均</td>
+          <td>{fmt_weight_html(year_class)}</td>
+        </tr>
+        <tr>
+          <td>TOTAL平均</td>
+          <td>{fmt_weight_html(total_class)}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  """.strip()
+
+  return weight_info_html
+
 def make_race_card_html(date_str, place_id, target_id):
     """レースカード HTML を生成して output_path に保存する"""
     race_num = int(str(target_id)[-2:])
@@ -756,6 +860,8 @@ def make_race_card_html(date_str, place_id, target_id):
 
     # レースの平均時計、上り時計を取得
     run_time_info = generate_run_time_info(date_str, place_id, target_id)
+    # レースの平均時計、上り時計を取得
+    weight_info = generate_weight_info(date_str, place_id, target_id)
     # ナビゲーション作成
     nav_html = build_nav_html(output_dir, date_str, place_id, target_id)
 
@@ -769,6 +875,7 @@ def make_race_card_html(date_str, place_id, target_id):
         nav_html=nav_html,
         table_rows=table_rows,
         run_time_info = run_time_info,
+        weight_info = weight_info,
         result_table_html=result_table_html,
         payout_table_html=payout_table_html,
     )
@@ -796,5 +903,15 @@ def make_daily_race_card_html(race_day = date.today()):
 
 if __name__ == "__main__":
     # テスト用実行コード
-    race_day = date(2025, 10, 18)
-    make_daily_race_card_html(race_day)
+    race_day = date(2025, 10, 1)
+    # make_daily_race_card_html(race_day)
+
+    today = date.today()
+    current = race_day
+
+    while current <= today:
+        print(f"🏇 {current} のレースカードを作成中...")
+        make_daily_race_card_html(current)
+        current += timedelta(days=1)
+
+    print("🎉 すべての日付のレースカード作成が完了しました！")
