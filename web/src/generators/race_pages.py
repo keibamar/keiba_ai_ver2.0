@@ -31,7 +31,7 @@ except Exception:
     RANK_COLORS = getattr(templates_mod, "RANK_COLORS", {})
     WAKU_COLORS = getattr(templates_mod, "WAKU_COLORS", {})
 
-from config.path import RACE_HTML_PATH, RACE_INFO_PATH, RACE_CARDS_PATH, RACE_RESULTS_PATH, RACE_RETURNS_PATH, RACE_CALENDAR_FOLDER_PATH, TIME_INFO_PATH, WEIGHT_INFO_PATH
+from config.path import RACE_HTML_PATH, RACE_INFO_PATH, RACE_CARDS_PATH, RACE_RESULTS_PATH, RACE_RETURNS_PATH, RACE_CALENDAR_FOLDER_PATH, TIME_INFO_PATH, WEIGHT_INFO_PATH, PEDS_RESULTS_PATH
 from utils.format_data import format_date
 from utils.format_data import merge_rank_score
 
@@ -49,6 +49,12 @@ def read_race_csv(date_str, target_id):
     except Exception as e:
         print(f"CSV読み込み失敗: {csv_path} - {e}")
         return None
+
+def read_peds_results_csv(path):
+  """CSVを読み込んで返す。失敗時はNoneを返す"""
+  if os.path.exists(path):
+      return pd.read_csv(path)
+  return pd.DataFrame()
 
 def get_result_table(date_str, place_id, target_id) :
     year = date_str[:4]
@@ -92,6 +98,24 @@ def get_returns_table(date_str, place_id, target_id) :
         return pd.DataFrame()
     df_race = pd.read_csv(returns_csv, dtype=str, index_col=0)
     return df_race.copy()
+
+def get_race_info(year, place_id, target_id):
+  race_info_path = os.path.join(RACE_INFO_PATH, name_header.PLACE_LIST[place_id - 1], year, f"{target_id}.csv")
+  if os.path.exists(race_info_path):
+      df_info = pd.read_csv(race_info_path, dtype=str)
+      if not df_info.empty:
+          race_type = str(df_info.iloc[0].get("race_type", ""))
+          course_len = int(df_info.iloc[0].get("course_len", ""))
+          ground_state = str(df_info.iloc[0].get("ground_state", ""))
+          race_class = str(df_info.iloc[0].get("class", ""))
+          return race_type, course_len, ground_state, race_class
+      else:
+          print("Failed Get Race Info:", target_id)
+          return None, None, None, None
+  else:
+      print("No Race Info:", target_id)
+      return None, None, None, None
+
 
 def build_table_rows(df):
     """メインの出走表（csv側）から HTML の行文字列を作成"""
@@ -182,7 +206,7 @@ def build_nav_html(output_dir, date_str, place_id, target_id):
     """
     return nav_html
 
-def build_html_content(date_display, place_id, race_num, race_name, race_time, nav_html, table_rows, run_time_info, weight_info, result_table_html, payout_table_html):
+def build_html_content(date_display, place_id, race_num, race_name, race_time, nav_html, table_rows, run_time_info, weight_info, peds_info, result_table_html, payout_table_html):
     """HTMLテンプレートを返す"""
     race_time_display = f"{race_time[:2]}:{race_time[2:]}" if race_time else ""
     place_name = name_header.NAME_LIST[place_id - 1]
@@ -278,6 +302,7 @@ def build_html_content(date_display, place_id, race_num, race_name, race_time, n
   </table>
   {run_time_info}
   {weight_info}
+  {peds_info}
   {result_table_html}
   {payout_table_html}
   <script>
@@ -380,6 +405,7 @@ def build_html_content(date_display, place_id, race_num, race_name, race_time, n
     table_rows=table_rows,
     run_time_info=run_time_info,
     weight_info=weight_info,
+    peds_info = peds_info,
     result_table_html=result_table_html,
     payout_table_html=payout_table_html,
     )
@@ -544,22 +570,11 @@ def generate_race_info(date_str, place_id, target_id):
 
 def generate_run_time_info(date_str, place_id, target_id) :
     """平均勝ち時計/先週の三着内時計/ 同コース/条件 上りタイム"""
-
+    # --- レース情報の取得 ---
     year = date_str[:4]
-    race_info_path = os.path.join(RACE_INFO_PATH, name_header.PLACE_LIST[place_id - 1], year, f"{target_id}.csv")
-    if os.path.exists(race_info_path):
-        df_info = pd.read_csv(race_info_path, dtype=str)
-        if not df_info.empty:
-            # 追加部分: コース情報の取得
-            race_type = str(df_info.iloc[0].get("race_type", ""))
-            course_len = int(df_info.iloc[0].get("course_len", ""))
-            ground_state = str(df_info.iloc[0].get("ground_state", ""))
-            race_class = str(df_info.iloc[0].get("class", ""))
-    else:
-        print("No Race Info:", target_id)
-        return None
-    
-
+    race_type, course_len, ground_state, race_class = get_race_info(year, place_id, target_id)
+    if race_type == None and course_len == None and ground_state == None and race_class == None:
+        return
     # --- パス設定 ---
     total_run_time_path = os.path.join(TIME_INFO_PATH, name_header.PLACE_LIST[place_id - 1], "total_avg_time.csv")
     total_data_path     = os.path.join(TIME_INFO_PATH, name_header.PLACE_LIST[place_id - 1], "total_wineer_time.csv")
@@ -715,23 +730,15 @@ def generate_run_time_info(date_str, place_id, target_id) :
 
     return run_time_info_html
 
-
 def generate_weight_info(date_str, place_id, target_id):
   """
   勝ち馬の平均馬体重を取得して HTML を生成する。
   """
+  # --- レース情報の取得 ---
   year = date_str[:4]
-  race_info_path = os.path.join(RACE_INFO_PATH, name_header.PLACE_LIST[place_id - 1], year, f"{target_id}.csv")
-  if os.path.exists(race_info_path):
-      df_info = pd.read_csv(race_info_path, dtype=str)
-      if not df_info.empty:
-          race_type = str(df_info.iloc[0].get("race_type", ""))
-          course_len = int(df_info.iloc[0].get("course_len", ""))
-          ground_state = str(df_info.iloc[0].get("ground_state", ""))
-          race_class = str(df_info.iloc[0].get("class", ""))
-  else:
-      print("No Race Info:", target_id)
-      return None
+  race_type, course_len, ground_state, race_class = get_race_info(year, place_id, target_id)
+  if race_type == None and course_len == None and ground_state == None and race_class == None:
+      return
 
   # --- パス設定 ---
   total_weight_path = os.path.join(WEIGHT_INFO_PATH, name_header.PLACE_LIST[place_id - 1], "total_wineer_weight.csv")
@@ -818,6 +825,87 @@ def generate_weight_info(date_str, place_id, target_id):
 
   return weight_info_html
 
+def generate_peds_result_html(date_str, place_id, target_id):
+    """血統別成績（PedsResults）をHTMLで整形して返す"""
+    # --- レース情報の取得 ---
+    year = date_str[:4]
+    race_type, course_len, ground_state, race_class = get_race_info(year, place_id, target_id)
+    if race_type == None and course_len == None and ground_state == None and race_class == None:
+        return
+    
+    total_path = os.path.join(PEDS_RESULTS_PATH, name_header.PLACE_LIST[place_id - 1], "Total", f"{race_type}_{course_len}m_{ground_state}.csv")
+    year_path  = os.path.join(PEDS_RESULTS_PATH, name_header.PLACE_LIST[place_id - 1], str(year), f"{race_type}_{course_len}m_{ground_state}.csv")
+
+    total_df = read_peds_results_csv(total_path)
+    year_df = read_peds_results_csv(year_path)
+    # --- どちらも空なら表示なし ---
+    if total_df.empty and year_df.empty:
+        return f"""
+        <div class="peds-result-block"; style="margin: 20px 0; padding: 10px; border: 1px solid #ccc; background: #fefefe;">
+          <h3>🐎 血統別成績 ({race_type} {course_len}m {ground_state})</h3>
+          <p style="color:#888;">データが存在しません。</p>
+        </div>
+        """
+    
+     # --- クラス順保持 ---
+    CLASS_ORDER = ["all", "未勝利", "新馬", "1勝クラス", "2勝クラス", "3勝クラス", "オープン"]
+    # --- クラス列が存在する場合のみカテゴリ化 ---
+    for df in [total_df, year_df]:
+        if not df.empty and "クラス" in df.columns:
+            df["クラス"] = pd.Categorical(df["クラス"], categories=CLASS_ORDER, ordered=True)
+
+    def make_table_html(df, cls_name, title):
+        """サブテーブル作成"""
+        if df.empty or "クラス" not in df.columns:
+            return f"<h4>{title}：データなし</h4>"
+
+        sub = df[df["クラス"] == cls_name].copy()
+        if sub.empty:
+            return f"<h4>{title}：データなし</h4>"
+
+        # 上位5件（1着多い順→2着→3着）
+        sub = sub.sort_values(by=["1着", "2着", "3着"], ascending=False).head(5)
+        sub["総数"] = sub[["1着", "2着", "3着", "着外"]].sum(axis=1)
+        sub["勝率"] = (sub["1着"] / sub["総数"] * 100).round(1)
+        sub["複勝率"] = ((sub["1着"] + sub["2着"] + sub["3着"]) / sub["総数"] * 100).round(1)
+
+        rows = ""
+        for _, r in sub.iterrows():
+            stat = f"({int(r['1着'])},{int(r['2着'])},{int(r['3着'])},{int(r['着外'])})"
+            rows += f"""
+            <tr>
+              <td>{r['血統']}</td>
+              <td>{stat}</td>
+              <td>{r['勝率']}%</td>
+              <td>{r['複勝率']}%</td>
+            </tr>"""
+
+        html = f"""
+        <h4>{title} </h4>
+        <table class="peds-table">
+          <thead>
+            <tr><th>血統</th><th>成績(1,2,3,着外)</th><th>勝率</th><th>複勝率</th></tr>
+          </thead>
+          <tbody>{rows}</tbody>
+        </table>
+        """
+        return html
+
+    # --- 出力HTML作成 ---
+    html = f"""
+    <div class="peds-result-block"; style="margin: 20px 0; padding: 10px; border: 1px solid #ccc; background: #fefefe;">
+      <h3>🐎 血統別成績 ({race_type} {course_len}m {ground_state})</h3>
+
+      {make_table_html(total_df, "all", f"全クラス 2019~{year}")}
+      {make_table_html(total_df, race_class, f"{race_class} 2019~{year}")}
+      {make_table_html(year_df, "all", f"全クラス {year}年")}
+      {make_table_html(year_df, race_class, f"{race_class} {year}年")}
+    </div>
+    """
+
+    return html
+
+    
 def make_race_card_html(date_str, place_id, target_id):
     """レースカード HTML を生成して output_path に保存する"""
     race_num = int(str(target_id)[-2:])
@@ -860,8 +948,10 @@ def make_race_card_html(date_str, place_id, target_id):
 
     # レースの平均時計、上り時計を取得
     run_time_info = generate_run_time_info(date_str, place_id, target_id)
-    # レースの平均時計、上り時計を取得
+    # レースの勝ち馬の平均馬体重情報を取得
     weight_info = generate_weight_info(date_str, place_id, target_id)
+    # レースの血統情報を取得
+    peds_info = generate_peds_result_html(date_str, place_id, target_id)
     # ナビゲーション作成
     nav_html = build_nav_html(output_dir, date_str, place_id, target_id)
 
@@ -876,6 +966,7 @@ def make_race_card_html(date_str, place_id, target_id):
         table_rows=table_rows,
         run_time_info = run_time_info,
         weight_info = weight_info,
+        peds_info = peds_info,
         result_table_html=result_table_html,
         payout_table_html=payout_table_html,
     )
