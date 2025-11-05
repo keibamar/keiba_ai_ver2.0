@@ -31,7 +31,7 @@ except Exception:
     RANK_COLORS = getattr(templates_mod, "RANK_COLORS", {})
     WAKU_COLORS = getattr(templates_mod, "WAKU_COLORS", {})
 
-from config.path import RACE_HTML_PATH, RACE_INFO_PATH, RACE_CARDS_PATH, RACE_RESULTS_PATH, RACE_RETURNS_PATH, RACE_CALENDAR_FOLDER_PATH, TIME_INFO_PATH, WEIGHT_INFO_PATH, PEDS_RESULTS_PATH
+from config.path import RACE_HTML_PATH, RACE_INFO_PATH, RACE_CARDS_PATH, RACE_RESULTS_PATH, RACE_RETURNS_PATH, RACE_CALENDAR_FOLDER_PATH, TIME_INFO_PATH, WEIGHT_INFO_PATH, PEDS_RESULTS_PATH, POPS_INFO_PATH
 from utils.format_data import format_date
 from utils.format_data import merge_rank_score
 
@@ -206,7 +206,7 @@ def build_nav_html(output_dir, date_str, place_id, target_id):
     """
     return nav_html
 
-def build_html_content(date_display, place_id, race_num, race_name, race_time, nav_html, table_rows, run_time_info, weight_info, peds_info, result_table_html, payout_table_html):
+def build_html_content(date_display, place_id, race_num, race_name, race_time, nav_html, table_rows, run_time_info, weight_info, peds_info, pops_info, result_table_html, payout_table_html):
     """HTMLテンプレートを返す"""
     race_time_display = f"{race_time[:2]}:{race_time[2:]}" if race_time else ""
     place_name = name_header.NAME_LIST[place_id - 1]
@@ -303,6 +303,7 @@ def build_html_content(date_display, place_id, race_num, race_name, race_time, n
   {run_time_info}
   {weight_info}
   {peds_info}
+  {pops_info}
   {result_table_html}
   {payout_table_html}
   <script>
@@ -406,6 +407,7 @@ def build_html_content(date_display, place_id, race_num, race_name, race_time, n
     run_time_info=run_time_info,
     weight_info=weight_info,
     peds_info = peds_info,
+    pops_info = pops_info,
     result_table_html=result_table_html,
     payout_table_html=payout_table_html,
     )
@@ -905,7 +907,107 @@ def generate_peds_result_html(date_str, place_id, target_id):
 
     return html
 
-    
+def generate_pops_info(date_str, place_id, target_id):
+    """
+    勝ち馬の平均人気と3着内平均人気を取得して HTML を生成する。
+    """
+    # --- レース情報の取得 ---
+    year = date_str[:4]
+    race_type, course_len, ground_state, race_class = get_race_info(year, place_id, target_id)
+    if race_type == None and course_len == None and ground_state == None and race_class == None:
+        return
+
+    # --- パス設定 ---
+    total_pops_path = os.path.join(POPS_INFO_PATH, name_header.PLACE_LIST[place_id - 1], "total_average_pops.csv")
+    year_pops_path  = os.path.join(POPS_INFO_PATH, name_header.PLACE_LIST[place_id - 1], f"{year}_average_pops.csv")
+
+    def read_if_exists(path):
+        if os.path.exists(path):
+            return pd.read_csv(path, dtype=str)
+        return pd.DataFrame()
+
+    total_df = read_if_exists(total_pops_path)
+    year_df = read_if_exists(year_pops_path)
+
+    def get_row(df, cls):
+        if df.empty:
+            return None
+        cond = (
+            (df["race_type"] == race_type) &
+            (df["course_len"].astype(str) == str(course_len)) &
+            (df["ground_state"] == ground_state) &
+            (df["class"] == cls)
+        )
+        sub = df[cond]
+        if sub.empty:
+            return None
+        return sub.iloc[0]
+
+    year_all = get_row(year_df, "all")
+    year_class = get_row(year_df, race_class)
+    total_all = get_row(total_df, "all")
+    total_class = get_row(total_df, race_class)
+
+    # --- 表示フォーマット ---
+    def fmt_pops_html(pops_value):
+        """人気数値に色をつけて表示"""
+        if pops_value is None or pops_value == "" or pd.isna(pops_value):
+            return "―"
+        try:
+            pops = float(pops_value)
+            if pops >= 12:
+                color = "red"
+            elif pops >= 6:
+                color = "deepskyblue"
+            else:
+                color = "black"
+            return f'<span style="color:{color}; font-weight:bold;">{pops:.1f}番人気</span>'
+        except:
+            return str(pops_value)
+
+    # --- HTML生成 ---
+    pops_info_html = f"""
+    <div id="popsInfo" style="margin: 20px 0; padding: 10px; border: 1px solid #ccc; background: #fefefe;">
+      <h3>🏇 コース別平均人気情報 ({race_type} {course_len}m {ground_state} {race_class})</h3>
+      <table style="border-collapse: collapse; width: 100%; text-align: center;">
+        <thead>
+          <tr style="background: #f2f2f2;">
+            <th>区分</th>
+            <th>対象</th>
+            <th>平均勝馬人気</th>
+            <th>平均着内人気</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td rowspan="2">全クラス</td>
+            <td>{year}年平均</td>
+            <td>{fmt_pops_html(year_all["winner_pops"]) if year_all is not None else "―"}</td>
+            <td>{fmt_pops_html(year_all["place_pops"]) if year_all is not None else "―"}</td>
+          </tr>
+          <tr>
+            <td>TOTAL平均</td>
+            <td>{fmt_pops_html(total_all["winner_pops"]) if total_all is not None else "―"}</td>
+            <td>{fmt_pops_html(total_all["place_pops"]) if total_all is not None else "―"}</td>
+          </tr>
+          <tr>
+            <td rowspan="2">{race_class}</td>
+            <td>{year}年平均</td>
+            <td>{fmt_pops_html(year_class["winner_pops"]) if year_class is not None else "―"}</td>
+            <td>{fmt_pops_html(year_class["place_pops"]) if year_class is not None else "―"}</td>
+          </tr>
+          <tr>
+            <td>TOTAL平均</td>
+            <td>{fmt_pops_html(total_class["winner_pops"]) if total_class is not None else "―"}</td>
+            <td>{fmt_pops_html(total_class["place_pops"]) if total_class is not None else "―"}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    """.strip()
+
+    return pops_info_html
+
 def make_race_card_html(date_str, place_id, target_id):
     """レースカード HTML を生成して output_path に保存する"""
     race_num = int(str(target_id)[-2:])
@@ -952,6 +1054,8 @@ def make_race_card_html(date_str, place_id, target_id):
     weight_info = generate_weight_info(date_str, place_id, target_id)
     # レースの血統情報を取得
     peds_info = generate_peds_result_html(date_str, place_id, target_id)
+    # レースの人気情報を取得
+    pops_info = generate_pops_info(date_str, place_id, target_id)
     # ナビゲーション作成
     nav_html = build_nav_html(output_dir, date_str, place_id, target_id)
 
@@ -967,6 +1071,7 @@ def make_race_card_html(date_str, place_id, target_id):
         run_time_info = run_time_info,
         weight_info = weight_info,
         peds_info = peds_info,
+        pops_info = pops_info,
         result_table_html=result_table_html,
         payout_table_html=payout_table_html,
     )
