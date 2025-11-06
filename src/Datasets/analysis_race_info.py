@@ -3,6 +3,7 @@ import sys
 import re
 
 from datetime import date
+from glob import glob
 import pandas as pd
 import numpy as np
 import warnings
@@ -249,8 +250,71 @@ def analyze_average_pops(csv_path, place_id):
 
     return df_result
 
+def update_horse_name_id_map(place_id, year):
+    """
+    指定ディレクトリ内のレース結果CSVをすべて読み込み、
+    既存の horse_name_id_map.csv にマージして更新する。
+
+    Parameters
+    ----------
+    input_dir : str
+        レース結果CSVの格納ディレクトリ（例: './RaceResults/'）
+    output_path : str
+        出力ファイルパス（例: './horse_name_id_map.csv'）
+    """
+    csv_file_path = os.path.join(name_header.DATA_PATH, "horse_id_map.csv")
+    # --- 既存データの読み込み ---
+    if os.path.exists(csv_file_path):
+        existing_df = pd.read_csv(csv_file_path, dtype=str)
+        print(f"📘 既存の対応表を読み込みました ({len(existing_df)}件)")
+    else:
+        existing_df = pd.DataFrame(columns=["馬名", "horse_id"])
+        print("⚠️ 既存の対応表が見つかりません。新規作成します。")
+
+    # --- 新規データの読み込み ---
+    input_files = os.path.join(name_header.DATA_PATH, "RaceResults", name_header.PLACE_LIST[place_id - 1], f"{year}_race_results.csv")
+
+    # --- 入力ファイル読み込み ---
+    print()
+    all_data = []
+    if not os.path.exists(input_files):
+        print(f"❌ ファイルが見つかりません: {input_files}")
+    else:
+        try:
+            df = pd.read_csv(input_files, dtype=str)
+            if "馬名" in df.columns and "horse_id" in df.columns:
+                all_data.append(df[["馬名", "horse_id"]].dropna())
+                print(f"📗 読み込み成功: {input_files} ({len(df)}件)")
+            else:
+                print(f"⚠️ カラム不足のためスキップ: {input_files}")
+        except Exception as e:
+            print(f"[WARN] {input_files} 読み込み中にエラー: {e}")
+
+    if not all_data:
+        print("❌ 有効なCSVデータがありません。")
+        return
+
+     # --- 結合 ---
+    new_df = pd.concat(all_data, ignore_index=True)
+    merged_df = pd.concat([existing_df, new_df], ignore_index=True)
+
+    # --- 重複削除 ---
+    merged_df = merged_df.drop_duplicates(subset=["horse_id"], keep="first")
+    merged_df = merged_df.drop_duplicates(subset=["馬名"], keep="first")
+
+    # --- horse_id順にソート ---
+    merged_df = merged_df.sort_values(by="horse_id").reset_index(drop=True)
+
+    # --- 保存 ---
+    merged_df.to_csv(csv_file_path, index=False, encoding="utf-8-sig")
+
+    print(f"✅ 馬名・horse_id対応表を更新しました ({len(merged_df)}件): {csv_file_path}")
+
 if __name__ == '__main__':
-# --- 使用例 ---
+    # for place_id in range(1, len(name_header.PLACE_LIST) + 1):
+    #     for year in range(2019, 2026):
+    #         update_horse_name_id_map(place_id,year)
+
     for place_id in range(1, len(name_header.PLACE_LIST) + 1):
         # 各年の記録を計算
         for year in range(2019,date.today().year + 1):
