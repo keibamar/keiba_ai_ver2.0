@@ -3,6 +3,7 @@ import sys
 import re
 
 from datetime import date
+from glob import glob
 import pandas as pd
 import numpy as np
 import warnings
@@ -130,18 +131,200 @@ def analyze_winner_weights(csv_path, place_id):
 
     return df_result
 
+def analyze_average_pops_multi_years(base_dir, place_id, start_year):
+    """
+    各年度（start_year〜今年）について、人気の平均を正規化して算出し、
+    年ごとの結果 + 全期間平均の DataFrame を返す。
+    """
+    current_year = int(date.today().year)
+    results_by_year = {}
+
+    for year in range(start_year, current_year + 1):
+        csv_path = os.path.join(base_dir, f"{year}_race_results.csv")
+        if not os.path.exists(csv_path):
+            print(f"⚠️ {csv_path} が見つかりません。スキップします。")
+            continue
+
+        print(f"📘 {year}年の人気データを処理中 ...")
+        df_year = analyze_average_pops(csv_path, place_id)
+        if not df_year.empty:
+            df_year["year"] = year
+            results_by_year[year] = df_year
+
+    if not results_by_year:
+        print("❌ 有効な人気データがありません。")
+        return {}, pd.DataFrame()
+
+    combined_df = pd.concat(results_by_year.values(), ignore_index=True)
+
+    group_cols = ["race_type", "course_len", "ground_state", "class"]
+    total_df = (
+        combined_df.groupby(group_cols, dropna=False)[["winner_pops", "place_pops"]]
+        .mean()
+        .round(2)
+        .reset_index()
+    )
+
+    total_df["race_type"] = pd.Categorical(total_df["race_type"], categories=["芝", "ダート"], ordered=True)
+    total_df["class"] = pd.Categorical(total_df["class"], categories=CLASSES, ordered=True)
+    total_df["ground_state"] = pd.Categorical(total_df["ground_state"], categories=GROUNDS, ordered=True)
+
+    total_df = total_df.sort_values(["race_type", "course_len", "class", "ground_state"]).reset_index(drop=True)
+    total_df = total_df.reindex(columns=["race_type", "course_len", "ground_state", "class", "winner_pops", "place_pops"])
+
+    print(f"✅ 全期間平均（{start_year}〜{current_year}）を作成しました。")
+    return total_df
+
+
+def analyze_average_pops(csv_path, place_id):
+    """
+    勝ち馬・3着以内馬の平均人気を race_type, course_len, ground_state, class ごとに算出する。
+    頭数による正規化あり（18頭立て換算）。
+    """
+    if os.path.isfile(csv_path):
+        df_raw = pd.read_csv(csv_path, dtype=str, index_col=0).reset_index().rename(columns={"index": "race_id"})
+    else:
+        return pd.DataFrame()
+
+    df = df_raw.copy()
+    df["着順"] = pd.to_numeric(df["着順"], errors="coerce")
+    df["人気"] = pd.to_numeric(df["人気"], errors="coerce")
+    df["course_len"] = pd.to_numeric(df["course_len"], errors="coerce")
+
+    # 出走頭数を算出（race_id単位）
+    df["頭数"] = df.groupby("race_id")["馬番"].transform("count")
+
+    all_results = []
+    courses = name_header.COURSE_LISTS[place_id - 1]
+
+    for race_type, course_len in courses:
+        base_data = df[
+            (df["race_type"] == race_type) &
+            (df["course_len"] == float(course_len))
+        ]
+
+        for cls in CLASSES:
+            for grd in GROUNDS:
+                tmp = base_data.copy()
+                if cls != "all":
+                    tmp = tmp[tmp["class"] == cls]
+                if grd != "全":
+                    tmp = tmp[tmp["ground_state"] == grd]
+
+                if tmp.empty:
+                    all_results.append({
+                        "race_type": race_type,
+                        "course_len": int(course_len),
+                        "ground_state": grd,
+                        "class": cls,
+                        "winner_pops": None,
+                        "place_pops": None
+                    })
+                    continue
+
+                # --- 勝ち馬データ ---
+                winners = tmp[tmp["着順"] == 1].copy()
+                winners["norm_pop"] = winners["人気"] * (18 / winners["頭数"])
+                avg_winner = winners["norm_pop"].mean() if not winners.empty else None
+
+                # --- 3着以内データ ---
+                places = tmp[tmp["着順"].isin([1, 2, 3])].copy()
+                places["norm_pop"] = places["人気"] * (18 / places["頭数"])
+                avg_place = places["norm_pop"].mean() if not places.empty else None
+
+                all_results.append({
+                    "race_type": race_type,
+                    "course_len": int(course_len),
+                    "ground_state": grd,
+                    "class": cls,
+                    "winner_pops": round(avg_winner, 2) if avg_winner else None,
+                    "place_pops": round(avg_place, 2) if avg_place else None
+                })
+
+    df_result = pd.DataFrame(all_results)
+    df_result["race_type"] = pd.Categorical(df_result["race_type"], categories=["芝", "ダート"], ordered=True)
+    df_result["class"] = pd.Categorical(df_result["class"], categories=CLASSES, ordered=True)
+    df_result["ground_state"] = pd.Categorical(df_result["ground_state"], categories=GROUNDS, ordered=True)
+    df_result = df_result.sort_values(["race_type", "course_len", "class", "ground_state"]).reset_index(drop=True)
+    df_result = df_result.reindex(columns=["race_type", "course_len", "ground_state", "class", "winner_pops", "place_pops"])
+
+    return df_result
+
+def update_horse_name_id_map(place_id, year):
+    """
+    指定ディレクトリ内のレース結果CSVをすべて読み込み、
+    既存の horse_name_id_map.csv にマージして更新する。
+
+    Parameters
+    ----------
+    input_dir : str
+        レース結果CSVの格納ディレクトリ（例: './RaceResults/'）
+    output_path : str
+        出力ファイルパス（例: './horse_name_id_map.csv'）
+    """
+    csv_file_path = os.path.join(name_header.DATA_PATH, "horse_id_map.csv")
+    # --- 既存データの読み込み ---
+    if os.path.exists(csv_file_path):
+        existing_df = pd.read_csv(csv_file_path, dtype=str)
+        print(f"📘 既存の対応表を読み込みました ({len(existing_df)}件)")
+    else:
+        existing_df = pd.DataFrame(columns=["馬名", "horse_id"])
+        print("⚠️ 既存の対応表が見つかりません。新規作成します。")
+
+    # --- 新規データの読み込み ---
+    input_files = os.path.join(name_header.DATA_PATH, "RaceResults", name_header.PLACE_LIST[place_id - 1], f"{year}_race_results.csv")
+
+    # --- 入力ファイル読み込み ---
+    print()
+    all_data = []
+    if not os.path.exists(input_files):
+        print(f"❌ ファイルが見つかりません: {input_files}")
+    else:
+        try:
+            df = pd.read_csv(input_files, dtype=str)
+            if "馬名" in df.columns and "horse_id" in df.columns:
+                all_data.append(df[["馬名", "horse_id"]].dropna())
+                print(f"📗 読み込み成功: {input_files} ({len(df)}件)")
+            else:
+                print(f"⚠️ カラム不足のためスキップ: {input_files}")
+        except Exception as e:
+            print(f"[WARN] {input_files} 読み込み中にエラー: {e}")
+
+    if not all_data:
+        print("❌ 有効なCSVデータがありません。")
+        return
+
+     # --- 結合 ---
+    new_df = pd.concat(all_data, ignore_index=True)
+    merged_df = pd.concat([existing_df, new_df], ignore_index=True)
+
+    # --- 重複削除 ---
+    merged_df = merged_df.drop_duplicates(subset=["horse_id"], keep="first")
+    merged_df = merged_df.drop_duplicates(subset=["馬名"], keep="first")
+
+    # --- horse_id順にソート ---
+    merged_df = merged_df.sort_values(by="horse_id").reset_index(drop=True)
+
+    # --- 保存 ---
+    merged_df.to_csv(csv_file_path, index=False, encoding="utf-8-sig")
+
+    print(f"✅ 馬名・horse_id対応表を更新しました ({len(merged_df)}件): {csv_file_path}")
+
 if __name__ == '__main__':
-# --- 使用例 ---
+    # for place_id in range(1, len(name_header.PLACE_LIST) + 1):
+    #     for year in range(2019, 2026):
+    #         update_horse_name_id_map(place_id,year)
+
     for place_id in range(1, len(name_header.PLACE_LIST) + 1):
         # 各年の記録を計算
         for year in range(2019,date.today().year + 1):
             csv_path = name_header.DATA_PATH + "//RaceResults//" + name_header.PLACE_LIST[place_id -1] + "//" + f"{year}_race_results.csv"
-            result = analyze_winner_weights(csv_path, place_id)
+            result = analyze_average_pops(csv_path, place_id)
             if not result.empty:
-                output_path = name_header.DATA_PATH + "//AverageWeights//" + name_header.PLACE_LIST[place_id -1] + "//" + f"{year}_wineer_weight.csv"
+                output_path = name_header.DATA_PATH + "//AveragePops//" + name_header.PLACE_LIST[place_id -1] + "//" + f"{year}_average_pops.csv"
                 result.to_csv(output_path)
         # totalの記録を計算
         base_dir = name_header.DATA_PATH + "//RaceResults//" + name_header.PLACE_LIST[place_id -1] + "//"
-        total_df = analyze_winner_weights_multi_years(base_dir, place_id, 2019)
-        total_ouutput_path = name_header.DATA_PATH + "//AverageWeights//" + name_header.PLACE_LIST[place_id -1] + "//" + "total_wineer_weight.csv"
+        total_df = analyze_average_pops_multi_years(base_dir, place_id, 2019)
+        total_ouutput_path = name_header.DATA_PATH + "//AveragePops//" + name_header.PLACE_LIST[place_id -1] + "//" + "total_average_pops.csv"
         total_df.to_csv(total_ouutput_path)

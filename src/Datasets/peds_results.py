@@ -3,6 +3,7 @@ import re
 import sys
 
 from datetime import date, timedelta
+from glob import glob
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -247,6 +248,162 @@ def peds_index(father, mother_father, course_info, year):
 
     return return_df
 
+def output_results(df_peds_results):
+    """血統ごとの着順集計してCSV出力"""
+    if df_peds_results.empty:
+        return
+
+    result_list = []
+    for peds, sub_df in df_peds_results.groupby("peds_0"):
+        first = (sub_df["着順"] == 1).sum()
+        second = (sub_df["着順"] == 2).sum()
+        third = (sub_df["着順"] == 3).sum()
+        others = ((sub_df["着順"] > 3) & (sub_df["着順"].notna())).sum()
+
+        result_list.append({
+            "血統": peds,
+            "1着": first,
+            "2着": second,
+            "3着": third,
+            "着外": others
+        })
+
+    result_df = pd.DataFrame(result_list)
+    result_df = result_df.sort_values(by=["1着", "2着", "3着"], ascending=False)
+
+    return result_df
+
+def aggregate_peds_results(place_id, year):
+    """
+    各コース（芝/ダート・距離）× 馬場状態 × クラスごとに血統成績を集計。
+    全馬場状態(all)、全クラス(all)の集計も同時に出力。
+    """
+    # === データ読み込み ===
+    df = get_peds_data_dataset_csv(place_id, year)
+    if df.empty:
+        print("not PedsResultData:", name_header.PLACE_LIST[place_id - 1], year)
+        return
+    
+    output_dir = os.path.join(name_header.DATA_PATH, "PedsResults", name_header.PLACE_LIST[place_id - 1], str(year))
+    os.makedirs(output_dir, exist_ok=True)
+
+    # 着順を数値化
+    df["着順"] = pd.to_numeric(df["着順"], errors="coerce")
+
+    # === race_type, course_len ごとに処理 ===
+    for (race_type, course_len), df_group in df.groupby(["race_type", "course_len"]):
+        ground_list = sorted(df_group["ground_state"].dropna().unique())
+
+        # === 各馬場状態ごと ===
+        for ground_state in ground_list + ["all"]:
+            if ground_state == "all":
+                df_ground = df_group
+            else:
+                df_ground = df_group[df_group["ground_state"] == ground_state]
+
+            if df_ground.empty:
+                continue
+            
+            # === 全クラスまとめ(all) ===
+            result_all_classes = []
+            result_all = output_results(df_ground)
+            if not result_all.empty:
+                result_all.insert(0, "クラス", "all")
+                result_all_classes.append(result_all)
+
+            # === クラス別処理 ===
+            for class_name, df_class in df_ground.groupby("class"):
+                result_df = output_results(df_class)
+                if not result_df.empty:
+                    result_df.insert(0, "クラス", class_name)
+                    result_all_classes.append(result_df)
+
+            # === 全クラス結合 ===
+            if result_all_classes:
+                final_df = pd.concat(result_all_classes, ignore_index=True)
+            else:
+                continue
+
+            # === 出力 ===
+            file_name = f"{race_type}_{course_len}m_{ground_state}.csv"
+            output_path = os.path.join(output_dir, file_name)
+            final_df.to_csv(output_path, index=False, encoding="utf-8-sig")
+
+        print(f"make peds_result {name_header.PLACE_LIST[place_id -1]} {year} {race_type} {course_len}m")
+
+
+def aggregate_total_peds_results(place_id, start_year=2019, end_year=date.today().year):
+    """
+    各年度のPeds結果CSVを統合し、Totalディレクトリに合計結果を出力。
+
+    Parameters
+    ----------
+    place_id : int
+        競馬場ID
+    start_year : int
+        集計開始年
+    end_year : int
+        集計終了年（含む）
+    """
+
+    base_dir = os.path.join(name_header.DATA_PATH, "PedsResults", name_header.PLACE_LIST[place_id - 1])
+    output_dir = os.path.join(base_dir, "Total")
+    os.makedirs(output_dir, exist_ok=True)
+
+    # === 全ファイル名の集合を取得 ===
+    all_files = set()
+    for year in range(start_year, end_year + 1):
+        year_dir = os.path.join(base_dir, str(year))
+        if not os.path.exists(year_dir):
+            continue
+        csv_files = [os.path.basename(p) for p in glob(os.path.join(year_dir, "*.csv"))]
+        all_files.update(csv_files)
+
+    print(f"🔍 集計対象ファイル数: {len(all_files)} ({start_year}–{end_year})")
+
+    # === 各ファイル名ごとに集計 ===
+    for file_name in sorted(all_files):
+        merged_df_list = []
+
+        for year in range(start_year, end_year + 1):
+            csv_path = os.path.join(base_dir, str(year), file_name)
+            if os.path.exists(csv_path):
+                df = pd.read_csv(csv_path)
+                if not df.empty:
+                    df["year"] = year
+                    merged_df_list.append(df)
+
+        if not merged_df_list:
+            continue
+
+        df_all = pd.concat(merged_df_list, ignore_index=True)
+
+        # === 集計 ===
+        agg_df = (
+            df_all.groupby(["クラス", "血統"], as_index=False)[["1着", "2着", "3着", "着外"]]
+            .sum()
+        )
+        # === クラスの表示順を定義 ===
+        CLASS_ORDER = ["all", "未勝利", "新馬", "1勝クラス", "2勝クラス", "3勝クラス", "オープン"]
+
+        # === クラス順序をカテゴリ型で保持 ===
+        agg_df["クラス"] = pd.Categorical(agg_df["クラス"], categories=CLASS_ORDER, ordered=True)
+        
+        # === クラス → 着順 の順でソート ===
+        agg_df = agg_df.sort_values(
+            by=["クラス", "1着", "2着", "3着"],
+            ascending=[True, False, False, False]
+        ).reset_index(drop=True)
+
+        # === 出力 ===
+        output_path = os.path.join(output_dir, file_name)
+        agg_df.to_csv(output_path, index=False, encoding="utf-8-sig")
+
+        print(f"✅ Total集計完了: {file_name}")
+
+    print(f"\n🎯 すべてのTotal集計が完了しました -> {output_dir}")
+        
+
 def update_peds_dataset(place_id, day = date.today()):
     """ 指定したコースの指定日から、１週間分のデータセットを更新  
     Args:
@@ -265,7 +422,10 @@ def update_peds_dataset(place_id, day = date.today()):
         new_peds_df = pd.concat([old_peds_df,new_peds_df],axis = 0)
         print(new_peds_df)
         save_peds_dataset(new_peds_df, place_id, day.year)
-
+        # 集計結果を更新
+        aggregate_peds_results(place_id, day.year)
+        aggregate_total_peds_results(place_id = place_id, end_year = day.year)
+    
 def weekly_update_pedsdata(day = date.today()):
     """ 指定した日にちから、１週間分のデータセットを更新  
     Args:
@@ -296,6 +456,10 @@ def make_all_pedsdata(year = date.today().year):
             print("[NewMake]" + str(y) + ":" + name_header.PLACE_LIST[place_id -1] + " PedsResults")
             make_peds_dataset_from_race_results(place_id, y)
             merge_pedsdata_with_race_results(place_id, y)
+
+def make_peds_results(year = date.today().year):
+    for place_id in range(1, len(name_header.PLACE_LIST) + 1):
+        aggregate_peds_results(place_id, year)
 
 if __name__ == "__main__":
 #    make_peds_dataset_from_race_results(3, 2024)
