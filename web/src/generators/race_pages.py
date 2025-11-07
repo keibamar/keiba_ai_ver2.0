@@ -1,8 +1,9 @@
 import os
+import re
 from pathlib import Path
 import sys
 import pandas as pd
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 
 # pycache を生成しない
 sys.dont_write_bytecode = True
@@ -206,7 +207,7 @@ def build_nav_html(output_dir, date_str, place_id, target_id):
     """
     return nav_html
 
-def build_html_content(date_display, place_id, race_num, race_name, race_time, nav_html, table_rows, run_time_info, weight_info, peds_info, pops_info, result_table_html, payout_table_html):
+def build_html_content(date_display, place_id, race_num, race_name, race_time, nav_html, table_rows, run_time_info, weight_info, peds_info, pops_info, recent_html, result_table_html, payout_table_html):
     """HTMLテンプレートを返す"""
     race_time_display = f"{race_time[:2]}:{race_time[2:]}" if race_time else ""
     place_name = name_header.NAME_LIST[place_id - 1]
@@ -304,6 +305,7 @@ def build_html_content(date_display, place_id, race_num, race_name, race_time, n
   {weight_info}
   {peds_info}
   {pops_info}
+  {recent_html}
   {result_table_html}
   {payout_table_html}
   <script>
@@ -408,6 +410,7 @@ def build_html_content(date_display, place_id, race_num, race_name, race_time, n
     weight_info=weight_info,
     peds_info = peds_info,
     pops_info = pops_info,
+    recent_html = recent_html,
     result_table_html=result_table_html,
     payout_table_html=payout_table_html,
     )
@@ -1008,6 +1011,120 @@ def generate_pops_info(date_str, place_id, target_id):
 
     return pops_info_html
 
+def generate_recent_same_condition_html(date_str, place_id, target_id):
+    """
+    近10日間の同条件レース上位3頭をHTMLで表示する
+    """
+    # --- 基準レース情報取得 ---
+    year = date_str[:4]
+    base_type, base_len, ground_state, race_class = get_race_info(year, place_id, target_id)
+    if base_type == None and base_len == None and ground_state == None and race_class == None:
+        return
+
+    # --- 日付処理 ---
+    base_date = datetime.strptime(date_str, "%Y%m%d")
+    recent_days = [base_date - timedelta(days=i) for i in range(1, 11)]
+    matched_race_ids = []
+    # --- 各日付ごとに処理 ---
+    for race_day in recent_days:
+        race_day_str = race_day.strftime("%Y%m%d")
+        try:
+            daily_ids = get_daily_id(place_id, race_day)
+        except Exception:
+            continue
+
+        for rid in daily_ids:
+            info = get_race_info(year, place_id, rid)
+            if info is None:
+                continue
+            race_type, course_len, ground_state, race_class = info
+
+            # 条件一致
+            if race_type == base_type and str(course_len) == str(base_len):
+                print(f"一致: {race_day_str} {race_type} {course_len}")
+                matched_race_ids.append((rid, race_day_str, race_class, ground_state))
+
+    if not matched_race_ids:
+        return "<div>同条件の近走レースはありません。</div>"
+    print(matched_race_ids)
+     # --- HTML構築開始 ---
+    html = f"""
+    <div id="recentSameCondition" style="margin-top:20px; padding:10px; border:1px solid #ccc; background:#fefefe;">
+      <h3>🏇 近10日間の同条件レース結果 ({base_type} {base_len}m)</h3>
+    """
+
+    for race_id, race_date_str, race_class, ground_state in matched_race_ids:
+        result_csv = os.path.join(RACE_RESULTS_PATH, name_header.PLACE_LIST[place_id - 1], year, f"{race_id}.csv")
+        if not os.path.exists(result_csv):
+          print(f"警告: レース結果ファイルが存在しません: {result_csv}")
+          continue
+    
+        df_all = pd.read_csv(result_csv, dtype=str, index_col=0)
+
+        if df_all is None or df_all.empty:
+            continue
+
+        # race_id列がインデックスになっている場合もあるので両対応
+        if "Unnamed: 0" in df_all.columns:
+            df_all.rename(columns={"Unnamed: 0": "race_id"}, inplace=True)
+
+        # indexをrace_idに変換しているケースもあるのでケア
+        if "race_id" not in df_all.columns:
+            df_all = df_all.reset_index().rename(columns={"index": "race_id"})
+
+        # race_id一致行を抽出
+        df_race = df_all[df_all["race_id"].astype(str) == str(race_id)]
+        if df_race.empty:
+            continue
+
+        # 上位3頭抽出
+        df_top3 = df_race.head(3)[["馬名", "タイム", "人気", "単勝", "上り", "通過", "馬体重"]]
+
+        # レース情報
+        type, len, ground, race_class_name = get_race_info(year, place_id, race_id)
+        race_num = str(int(race_id[-2:]))
+
+        # レース名
+        race_info_path = os.path.join(RACE_CALENDAR_FOLDER_PATH, f"race_time_id_list/{date_str}.csv")
+        race_name = ""
+        if os.path.exists(race_info_path):
+            df_info = pd.read_csv(race_info_path, dtype=str)
+            match = df_info[df_info["race_id"].astype(str) == str(target_id)]
+            if not match.empty:
+                race_name = str(match.iloc[0]["race_name"])
+
+        # --- HTML組み立て ---
+        html += f"""
+        <div style="margin-top:10px; padding:5px; border:1px solid #ddd;">
+          <h4>{race_date_str}:{race_num}R {race_name} {type}{len}m {race_class_name} ({ground})</h4>
+          <table style="width:100%; border-collapse:collapse; text-align:center; font-size:14px;">
+            <thead>
+              <tr style="background:#f2f2f2;">
+                <th>順位</th><th>馬名</th><th>タイム</th><th>人気</th><th>単勝</th><th>上り</th><th>通過</th><th>馬体重</th>
+              </tr>
+            </thead>
+            <tbody>
+        """
+
+        for i, row in df_top3.iterrows():
+            html += f"""
+              <tr>
+                <td>{i + 1}</td>
+                <td>{row["馬名"]}</td>
+                <td>{row["タイム"]}</td>
+                <td>{row["人気"]}</td>
+                <td>{row["単勝"]}</td>
+                <td>{row["上り"]}</td>
+                <td>{row["通過"]}</td>
+                <td>{row["馬体重"]}</td>
+              </tr>
+            """
+
+        html += "</tbody></table></div>"
+
+    html += "</div>"
+    return html
+
 def make_race_card_html(date_str, place_id, target_id):
     """レースカード HTML を生成して output_path に保存する"""
     race_num = int(str(target_id)[-2:])
@@ -1058,6 +1175,8 @@ def make_race_card_html(date_str, place_id, target_id):
     pops_info = generate_pops_info(date_str, place_id, target_id)
     # ナビゲーション作成
     nav_html = build_nav_html(output_dir, date_str, place_id, target_id)
+    # 近走の結果を取得
+    recent_html = generate_recent_same_condition_html(date_str, place_id, target_id)
 
     # --- HTML生成・書き込み ---
     html_content = build_html_content(
@@ -1072,6 +1191,7 @@ def make_race_card_html(date_str, place_id, target_id):
         weight_info = weight_info,
         peds_info = peds_info,
         pops_info = pops_info,
+        recent_html = recent_html,
         result_table_html=result_table_html,
         payout_table_html=payout_table_html,
     )
