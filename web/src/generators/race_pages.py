@@ -32,7 +32,7 @@ except Exception:
     RANK_COLORS = getattr(templates_mod, "RANK_COLORS", {})
     WAKU_COLORS = getattr(templates_mod, "WAKU_COLORS", {})
 
-from config.path import RACE_HTML_PATH, RACE_INFO_PATH, RACE_CARDS_PATH, RACE_RESULTS_PATH, RACE_RETURNS_PATH, RACE_CALENDAR_FOLDER_PATH, TIME_INFO_PATH, WEIGHT_INFO_PATH, PEDS_RESULTS_PATH, POPS_INFO_PATH
+from config.path import RACE_HTML_PATH, RACE_INFO_PATH, RACE_CARDS_PATH, RACE_RESULTS_PATH, RACE_RETURNS_PATH, RACE_CALENDAR_FOLDER_PATH, TIME_INFO_PATH, WEIGHT_INFO_PATH, PEDS_RESULTS_PATH, POPS_INFO_PATH, FRAME_INFO_PATH
 from utils.format_data import format_date
 from utils.format_data import merge_rank_score
 
@@ -211,7 +211,7 @@ def build_nav_html(output_dir, date_str, place_id, target_id):
     """
     return nav_html
 
-def build_html_content(date_display, place_id, race_num, race_name, race_time, nav_html, table_rows, run_time_info, weight_info, peds_info, pops_info, recent_html, result_table_html, payout_table_html):
+def build_html_content(date_display, place_id, race_num, race_name, race_time, nav_html, table_rows, run_time_info, weight_info, peds_info, pops_info, frames_info, recent_html, result_table_html, payout_table_html):
     """HTMLテンプレートを返す"""
     race_time_display = f"{race_time[:2]}:{race_time[2:]}" if race_time else ""
     place_name = name_header.NAME_LIST[place_id - 1]
@@ -309,6 +309,7 @@ def build_html_content(date_display, place_id, race_num, race_name, race_time, n
   {weight_info}
   {peds_info}
   {pops_info}
+  {frames_info}
   {recent_html}
   {result_table_html}
   {payout_table_html}
@@ -414,6 +415,7 @@ def build_html_content(date_display, place_id, race_num, race_name, race_time, n
     weight_info=weight_info,
     peds_info = peds_info,
     pops_info = pops_info,
+    frames_info = frames_info,
     recent_html = recent_html,
     result_table_html=result_table_html,
     payout_table_html=payout_table_html,
@@ -1023,6 +1025,151 @@ def generate_pops_info(date_str, place_id, target_id):
 
     return pops_info_html
 
+def generate_frame_horse_info(date_str, place_id, target_id):
+    """
+    勝ち馬と3着内馬の平均枠番・平均馬番を取得して HTML を生成する。
+    """
+    # --- レース情報の取得 ---
+    year = date_str[:4]
+    race_type, course_len, ground_state, race_class = get_race_info(year, place_id, target_id)
+    if race_type is None:
+        return ""
+
+    # --- パス設定 ---
+    total_frame_path = os.path.join(FRAME_INFO_PATH, name_header.PLACE_LIST[place_id - 1], "total_average_frames.csv")
+    total_top3_path  = os.path.join(FRAME_INFO_PATH, name_header.PLACE_LIST[place_id - 1], "total_average_frames_top3.csv")
+    year_frame_path = os.path.join(FRAME_INFO_PATH, name_header.PLACE_LIST[place_id - 1], f"{year}_average_frames.csv")
+    year_top3_path  = os.path.join(FRAME_INFO_PATH, name_header.PLACE_LIST[place_id - 1], f"{year}_average_frames_top3.csv")
+
+    def read_if_exists(path):
+        if os.path.exists(path):
+            df = pd.read_csv(path, dtype=str)
+            # class列の全角数字→半角数字を統一
+            if "class" in df.columns:
+                trans_table = str.maketrans("０１２３４５６７８９", "0123456789")
+                df["class"] = df["class"].astype(str).apply(lambda x: x.translate(trans_table).strip())
+            return df
+        return pd.DataFrame()
+
+    total_df = read_if_exists(total_frame_path)
+    total_top3_df = read_if_exists(total_top3_path)
+    year_df = read_if_exists(year_frame_path)
+    year_top3_df = read_if_exists(year_top3_path)
+
+    def get_row(df, cls):
+        if df.empty:
+            return None
+        # クラス名の統一（全角→半角）
+        trans_table = str.maketrans("０１２３４５６７８９", "0123456789")
+        cls = str(cls).translate(trans_table).strip()
+        cond = (
+            (df["race_type"] == race_type)
+            & (df["course_len"].astype(str) == str(course_len))
+            & (df["ground_state"] == ground_state)
+            & (df["class"] == cls)
+        )
+        sub = df[cond]
+        if sub.empty:
+            return None
+        return sub.iloc[0]
+
+    # --- 該当行取得 ---
+    total_class = get_row(total_df, race_class)
+    total_all   = get_row(total_df, "all")
+    total_top3_class  = get_row(total_top3_df, race_class)
+    total_top3_all    = get_row(total_top3_df, "all")
+
+    year_class = get_row(year_df, race_class)
+    year_all   = get_row(year_df, "all")
+    year_top3_class  = get_row(year_top3_df, race_class)
+    year_top3_all    = get_row(year_top3_df, "all")
+
+    # --- HTML整形 ---
+    def fmt_frame_color(value):
+        """枠番の色付け：1〜2=赤、7〜8=青、それ以外=黒"""
+        if value is None or value == "" or pd.isna(value):
+            return "―"
+        try:
+            val = float(value)
+            if val in [1, 2]:
+                color = "red"
+            elif val in [7, 8]:
+                color = "deepskyblue"
+            else:
+                color = "black"
+            return f'<span style="color:{color}; font-weight:bold;">{val:.2f}</span>'
+        except:
+            return str(value)
+
+    def fmt_horse_color(value):
+        """馬番の色付け：1〜4=赤、13〜18=青、それ以外=黒"""
+        if value is None or value == "" or pd.isna(value):
+            return "―"
+        try:
+            val = float(value)
+            if 1 <= val <= 4:
+                color = "red"
+            elif 13 <= val <= 18:
+                color = "deepskyblue"
+            else:
+                color = "black"
+            return f'<span style="color:{color}; font-weight:bold;">{val:.2f}</span>'
+        except:
+            return str(value)
+
+    # --- HTML生成 ---
+    html = f"""
+    <div id="frameHorseInfo" style="margin:20px 0; padding:10px; border:1px solid #ccc; background:#fefefe;">
+      <h3>📊 枠番・馬番 平均情報 ({race_type} {course_len}m {ground_state} {race_class})</h3>
+      <table style="border-collapse:collapse; width:100%; text-align:center;">
+        <thead>
+          <tr style="background:#f2f2f2;">
+            <th>区分</th>
+            <th>対象</th>
+            <th>平均枠番(勝ち馬)</th>
+            <th>平均馬番(勝ち馬)</th>
+            <th>平均枠番(3着内)</th>
+            <th>平均馬番(3着内)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td rowspan="2">全クラス</td>
+            <td>{year}年平均</td>
+            <td>{fmt_frame_color(year_all["avg_frame"]) if year_all is not None else "―"}</td>
+            <td>{fmt_horse_color(year_all["avg_horse"]) if year_all is not None else "―"}</td>
+            <td>{fmt_frame_color(year_top3_all["avg_frame"]) if year_top3_all is not None else "―"}</td>
+            <td>{fmt_horse_color(year_top3_all["avg_horse"]) if year_top3_all is not None else "―"}</td>
+          </tr>
+          <tr>
+            <td>TOTAL平均</td>
+            <td>{fmt_frame_color(total_all["avg_frame"]) if total_all is not None else "―"}</td>
+            <td>{fmt_horse_color(total_all["avg_horse"]) if total_all is not None else "―"}</td>
+            <td>{fmt_frame_color(total_top3_all["avg_frame"]) if total_top3_all is not None else "―"}</td>
+            <td>{fmt_horse_color(total_top3_all["avg_horse"]) if total_top3_all is not None else "―"}</td>
+          </tr>
+          <tr>
+            <td rowspan="2">{race_class}</td>
+            <td>{year}年平均</td>
+            <td>{fmt_frame_color(year_class["avg_frame"]) if year_class is not None else "―"}</td>
+            <td>{fmt_horse_color(year_class["avg_horse"]) if year_class is not None else "―"}</td>
+            <td>{fmt_frame_color(year_top3_class["avg_frame"]) if year_top3_class is not None else "―"}</td>
+            <td>{fmt_horse_color(year_top3_class["avg_horse"]) if year_top3_class is not None else "―"}</td>
+          </tr>
+          <tr>
+            <td>TOTAL平均</td>
+            <td>{fmt_frame_color(total_class["avg_frame"]) if total_class is not None else "―"}</td>
+            <td>{fmt_horse_color(total_class["avg_horse"]) if total_class is not None else "―"}</td>
+            <td>{fmt_frame_color(total_top3_class["avg_frame"]) if total_top3_class is not None else "―"}</td>
+            <td>{fmt_horse_color(total_top3_class["avg_horse"]) if total_top3_class is not None else "―"}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    """.strip()
+
+    return html
+
 def generate_recent_same_condition_html(date_str, place_id, target_id):
     """
     近10日間の同条件レース上位3頭をHTMLで表示する
@@ -1053,12 +1200,12 @@ def generate_recent_same_condition_html(date_str, place_id, target_id):
 
             # 条件一致
             if race_type == base_type and str(course_len) == str(base_len):
-                print(f"一致: {race_day_str} {race_type} {course_len}")
+                # print(f"一致: {race_day_str} {race_type} {course_len}")
                 matched_race_ids.append((rid, race_day_str, race_class, ground_state))
 
     if not matched_race_ids:
         return "<div>同条件の近走レースはありません。</div>"
-    print(matched_race_ids)
+    # print(matched_race_ids)
      # --- HTML構築開始 ---
     html = f"""
     <div id="recentSameCondition" style="margin-top:20px; padding:10px; border:1px solid #ccc; background:#fefefe;">
@@ -1185,6 +1332,8 @@ def make_race_card_html(date_str, place_id, target_id):
     peds_info = generate_peds_result_html(date_str, place_id, target_id)
     # レースの人気情報を取得
     pops_info = generate_pops_info(date_str, place_id, target_id)
+    # レースの枠順情報を取得
+    frames_info = generate_frame_horse_info(date_str, place_id, target_id)
     # ナビゲーション作成
     nav_html = build_nav_html(output_dir, date_str, place_id, target_id)
     # 近走の結果を取得
@@ -1203,6 +1352,7 @@ def make_race_card_html(date_str, place_id, target_id):
         weight_info = weight_info,
         peds_info = peds_info,
         pops_info = pops_info,
+        frames_info = frames_info,
         recent_html = recent_html,
         result_table_html=result_table_html,
         payout_table_html=payout_table_html,
