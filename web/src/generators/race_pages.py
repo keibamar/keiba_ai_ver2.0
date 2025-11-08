@@ -109,6 +109,10 @@ def get_race_info(year, place_id, target_id):
           course_len = int(df_info.iloc[0].get("course_len", ""))
           ground_state = str(df_info.iloc[0].get("ground_state", ""))
           race_class = str(df_info.iloc[0].get("class", ""))
+
+           # --- クラス表記を統一（全角数字 → 半角数字）---
+          trans_table = str.maketrans("０１２３４５６７８９", "0123456789")
+          race_class = race_class.translate(trans_table)
           return race_type, course_len, ground_state, race_class
       else:
           print("Failed Get Race Info:", target_id)
@@ -926,7 +930,12 @@ def generate_pops_info(date_str, place_id, target_id):
 
     def read_if_exists(path):
         if os.path.exists(path):
-            return pd.read_csv(path, dtype=str)
+          df = pd.read_csv(path, dtype=str)
+          # class列の全角数字→半角数字を統一
+          if "class" in df.columns:
+              trans_table = str.maketrans("０１２３４５６７８９", "0123456789")
+              df["class"] = df["class"].astype(str).apply(lambda x: x.translate(trans_table).strip())
+          return df
         return pd.DataFrame()
 
     total_df = read_if_exists(total_pops_path)
@@ -935,6 +944,9 @@ def generate_pops_info(date_str, place_id, target_id):
     def get_row(df, cls):
         if df.empty:
             return None
+        # クラス名を全角→半角に変換しておく
+        trans_table = str.maketrans("０１２３４５６７８９", "0123456789")
+        cls = str(cls).translate(trans_table).strip()
         cond = (
             (df["race_type"] == race_type) &
             (df["course_len"].astype(str) == str(course_len)) &
