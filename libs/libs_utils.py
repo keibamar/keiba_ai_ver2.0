@@ -23,5 +23,5 @@ def create_place_folders(base_path):
             print(f"❌ エラー: {folder_path} の作成に失敗しました → {e}")
 
 if __name__ == '__main__':
-    base_path = name_header.DATA_PATH + "//AveragePops"
+    base_path = name_header.DATA_PATH + "//AverageFrames"
     create_place_folders(base_path)

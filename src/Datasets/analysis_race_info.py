@@ -250,6 +250,164 @@ def analyze_average_pops(csv_path, place_id):
 
     return df_result
 
+def analyze_frame_and_horse_multi_years(base_dir, place_id, start_year):
+    """
+    各年度（start_year〜今年）について、枠・馬番の平均と勝ち数を算出。
+    全年度を結合し、全期間の平均（平均値＋合計勝利数）を生成。
+    """
+    current_year = int(date.today().year)
+    results_by_year = {}
+
+    for year in range(start_year, current_year + 1):
+        csv_path = os.path.join(base_dir, f"{year}_race_results.csv")
+        if not os.path.exists(csv_path):
+            print(f"⚠️ {csv_path} が見つかりません。スキップします。")
+            continue
+
+        print(f"📘 {year}年の枠・馬番データを処理中 ...")
+        df_year = analyze_average_frame_and_horse(csv_path, place_id)
+        if not df_year.empty:
+            df_year["year"] = year
+            results_by_year[year] = df_year
+
+    if not results_by_year:
+        print("❌ 有効な枠・馬番データがありません。")
+        return pd.DataFrame()
+
+    combined_df = pd.concat(results_by_year.values(), ignore_index=True)
+
+    # 平均値カラムと合計カラムを判別
+    group_cols = ["race_type", "course_len", "ground_state", "class"]
+    mean_cols = ["avg_frame", "avg_horse"]
+    sum_cols = [c for c in combined_df.columns if c.startswith("frame_") or c.startswith("horse_") or c == "total_winners"]
+
+    agg_dict = {c: "mean" for c in mean_cols}
+    agg_dict.update({c: "sum" for c in sum_cols})
+
+    total_df = (
+        combined_df.groupby(group_cols, dropna=False)
+        .agg(agg_dict)
+        .round(2)
+        .reset_index()
+    )
+
+    total_df["race_type"] = pd.Categorical(total_df["race_type"], categories=["芝", "ダート"], ordered=True)
+    total_df["class"] = pd.Categorical(total_df["class"], categories=CLASSES, ordered=True)
+    total_df["ground_state"] = pd.Categorical(total_df["ground_state"], categories=GROUNDS, ordered=True)
+
+    total_df = total_df.sort_values(["race_type", "course_len", "class", "ground_state"]).reset_index(drop=True)
+
+    print(f"✅ 全期間平均（{start_year}〜{current_year}）の枠・馬番データを作成しました。")
+    return total_df
+
+def analyze_average_frame_and_horse(csv_path, place_id):
+    """
+    勝ち馬の「平均枠番」「平均馬番」「勝利数」および
+    各枠・馬番の勝ち数を race_type, course_len, ground_state, class ごとに算出。
+    （人気分析と同じ構造・並び順で全条件生成）
+    """
+    if not os.path.isfile(csv_path):
+        return pd.DataFrame()
+
+    df_raw = pd.read_csv(csv_path, dtype=str, index_col=0).reset_index().rename(columns={"index": "race_id"})
+    df = df_raw.copy()
+
+    df["着順"] = pd.to_numeric(df["着順"], errors="coerce")
+    df["枠番"] = pd.to_numeric(df["枠番"], errors="coerce")
+    df["馬番"] = pd.to_numeric(df["馬番"], errors="coerce")
+    df["course_len"] = pd.to_numeric(df["course_len"], errors="coerce")
+
+    all_results = []
+    courses = name_header.COURSE_LISTS[place_id - 1]
+
+    for race_type, course_len in courses:
+        for cls in CLASSES:
+            for grd in GROUNDS:
+                tmp = df[
+                    (df["race_type"] == race_type) &
+                    (df["course_len"] == float(course_len))
+                ]
+
+                if cls != "all":
+                    tmp = tmp[tmp["class"] == cls]
+                if grd != "全":
+                    tmp = tmp[tmp["ground_state"] == grd]
+
+                if tmp.empty:
+                    # データがない場合も空行を埋めておく（人気版と同じ）
+                    result = {
+                        "race_type": race_type,
+                        "course_len": int(course_len),
+                        "ground_state": grd,
+                        "class": cls,
+                        "avg_frame": None,
+                        "avg_horse": None,
+                        "total_winners": 0
+                    }
+                    for i in range(1, 9):
+                        result[f"frame_{i}_wins"] = 0
+                    for j in range(1, 19):
+                        result[f"horse_{j}_wins"] = 0
+                    all_results.append(result)
+                    continue
+
+                winners = tmp[tmp["着順"] == 1].copy()
+                if winners.empty:
+                    result = {
+                        "race_type": race_type,
+                        "course_len": int(course_len),
+                        "ground_state": grd,
+                        "class": cls,
+                        "avg_frame": None,
+                        "avg_horse": None,
+                        "total_winners": 0
+                    }
+                    for i in range(1, 9):
+                        result[f"frame_{i}_wins"] = 0
+                    for j in range(1, 19):
+                        result[f"horse_{j}_wins"] = 0
+                    all_results.append(result)
+                    continue
+
+                avg_frame = winners["枠番"].mean()
+                avg_horse = winners["馬番"].mean()
+                frame_counts = winners["枠番"].value_counts().reindex(range(1, 9), fill_value=0)
+                horse_counts = winners["馬番"].value_counts().reindex(range(1, 19), fill_value=0)
+
+                result = {
+                    "race_type": race_type,
+                    "course_len": int(course_len),
+                    "ground_state": grd,
+                    "class": cls,
+                    "avg_frame": round(avg_frame, 2) if not pd.isna(avg_frame) else None,
+                    "avg_horse": round(avg_horse, 2) if not pd.isna(avg_horse) else None,
+                    "total_winners": len(winners)
+                }
+
+                for i in range(1, 9):
+                    result[f"frame_{i}_wins"] = frame_counts[i]
+                for j in range(1, 19):
+                    result[f"horse_{j}_wins"] = horse_counts[j]
+
+                all_results.append(result)
+
+    df_result = pd.DataFrame(all_results)
+
+    # --- カテゴリ順を指定（人気集計と同じ並び）---
+    df_result["race_type"] = pd.Categorical(df_result["race_type"], categories=["芝", "ダート"], ordered=True)
+    df_result["class"] = pd.Categorical(df_result["class"], categories=CLASSES, ordered=True)
+    df_result["ground_state"] = pd.Categorical(df_result["ground_state"], categories=GROUNDS, ordered=True)
+
+    df_result = df_result.sort_values(["race_type", "course_len", "class", "ground_state"]).reset_index(drop=True)
+
+    base_cols = ["race_type", "course_len", "ground_state", "class", "avg_frame", "avg_horse", "total_winners"]
+    frame_cols = [f"frame_{i}_wins" for i in range(1, 9)]
+    horse_cols = [f"horse_{j}_wins" for j in range(1, 19)]
+
+    df_result = df_result.reindex(columns=base_cols + frame_cols + horse_cols)
+
+    return df_result
+
 def update_horse_name_id_map(place_id, year):
     """
     指定ディレクトリ内のレース結果CSVをすべて読み込み、
@@ -319,12 +477,12 @@ if __name__ == '__main__':
         # 各年の記録を計算
         for year in range(2019,date.today().year + 1):
             csv_path = name_header.DATA_PATH + "//RaceResults//" + name_header.PLACE_LIST[place_id -1] + "//" + f"{year}_race_results.csv"
-            result = analyze_average_pops(csv_path, place_id)
+            result = analyze_average_frame_and_horse(csv_path, place_id)
             if not result.empty:
-                output_path = name_header.DATA_PATH + "//AveragePops//" + name_header.PLACE_LIST[place_id -1] + "//" + f"{year}_average_pops.csv"
+                output_path = name_header.DATA_PATH + "//AverageFrames//" + name_header.PLACE_LIST[place_id -1] + "//" + f"{year}_average_frames.csv"
                 result.to_csv(output_path)
         # totalの記録を計算
         base_dir = name_header.DATA_PATH + "//RaceResults//" + name_header.PLACE_LIST[place_id -1] + "//"
-        total_df = analyze_average_pops_multi_years(base_dir, place_id, 2019)
-        total_ouutput_path = name_header.DATA_PATH + "//AveragePops//" + name_header.PLACE_LIST[place_id -1] + "//" + "total_average_pops.csv"
+        total_df = analyze_frame_and_horse_multi_years(base_dir, place_id, 2019)
+        total_ouutput_path = name_header.DATA_PATH + "//AverageFrames//" + name_header.PLACE_LIST[place_id -1] + "//" + "total_average_frames.csv"
         total_df.to_csv(total_ouutput_path)
