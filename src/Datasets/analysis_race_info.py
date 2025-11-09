@@ -131,10 +131,11 @@ def analyze_winner_weights(csv_path, place_id):
 
     return df_result
 
-def analyze_average_pops_multi_years(base_dir, place_id, start_year):
+def analyze_average_pop_multi_years(base_dir, place_id, start_year, top3=False):
     """
-    各年度（start_year〜今年）について、人気の平均を正規化して算出し、
-    年ごとの結果 + 全期間平均の DataFrame を返す。
+    各年度（start_year〜今年）について、人気データを集計。
+    勝ち馬（top3=False）または3着内（top3=True）を対象に、
+    全期間平均（TOTAL）を計算して返す。
     """
     current_year = int(date.today().year)
     results_by_year = {}
@@ -146,7 +147,7 @@ def analyze_average_pops_multi_years(base_dir, place_id, start_year):
             continue
 
         print(f"📘 {year}年の人気データを処理中 ...")
-        df_year = analyze_average_pops(csv_path, place_id)
+        df_year = analyze_average_pops(csv_path, place_id, top3=top3)
         if not df_year.empty:
             df_year["year"] = year
             results_by_year[year] = df_year
@@ -155,31 +156,47 @@ def analyze_average_pops_multi_years(base_dir, place_id, start_year):
         print("❌ 有効な人気データがありません。")
         return {}, pd.DataFrame()
 
+    # --- 全期間結合 ---
     combined_df = pd.concat(results_by_year.values(), ignore_index=True)
 
+    # --- 平均値＆合計を集計 ---
     group_cols = ["race_type", "course_len", "ground_state", "class"]
-    total_df = (
-        combined_df.groupby(group_cols, dropna=False)[["winner_pops", "place_pops"]]
+
+    # 平均人気
+    avg_df = (
+        combined_df.groupby(group_cols, dropna=False)["avg_pop"]
         .mean()
         .round(2)
         .reset_index()
     )
 
+    # 人気別勝利数の合計
+    pop_cols = [f"pop_{i}_count" for i in range(1, 19)]
+    sum_df = (
+        combined_df.groupby(group_cols, dropna=False)[pop_cols]
+        .sum()
+        .reset_index()
+    )
+
+    # 結合
+    total_df = pd.merge(avg_df, sum_df, on=group_cols, how="left")
+
+    # --- 並び順を整える ---
     total_df["race_type"] = pd.Categorical(total_df["race_type"], categories=["芝", "ダート"], ordered=True)
     total_df["class"] = pd.Categorical(total_df["class"], categories=CLASSES, ordered=True)
     total_df["ground_state"] = pd.Categorical(total_df["ground_state"], categories=GROUNDS, ordered=True)
 
     total_df = total_df.sort_values(["race_type", "course_len", "class", "ground_state"]).reset_index(drop=True)
-    total_df = total_df.reindex(columns=["race_type", "course_len", "ground_state", "class", "winner_pops", "place_pops"])
+    total_df = total_df.reindex(columns=group_cols + ["avg_pop"] + pop_cols)
 
-    print(f"✅ 全期間平均（{start_year}〜{current_year}）を作成しました。")
+    print(f"✅ 全期間平均（{start_year}〜{current_year}）を作成しました。対象: {'3着内' if top3 else '勝ち馬'}")
     return total_df
 
 
-def analyze_average_pops(csv_path, place_id):
+def analyze_average_pops(csv_path, place_id, top3=False):
     """
-    勝ち馬・3着以内馬の平均人気を race_type, course_len, ground_state, class ごとに算出する。
-    頭数による正規化あり（18頭立て換算）。
+    勝ち馬または3着内馬の平均人気と人気別勝利数を集計。
+    top3=True の場合は3着内を対象。
     """
     if os.path.isfile(csv_path):
         df_raw = pd.read_csv(csv_path, dtype=str, index_col=0).reset_index().rename(columns={"index": "race_id"})
@@ -211,43 +228,54 @@ def analyze_average_pops(csv_path, place_id):
                 if grd != "全":
                     tmp = tmp[tmp["ground_state"] == grd]
 
+                if top3:
+                    tmp = tmp[tmp["着順"].isin([1, 2, 3])]
+                else:
+                    tmp = tmp[tmp["着順"] == 1]
+
                 if tmp.empty:
-                    all_results.append({
+                    # データなしでも全人気列を埋める
+                    result = {
                         "race_type": race_type,
                         "course_len": int(course_len),
                         "ground_state": grd,
                         "class": cls,
-                        "winner_pops": None,
-                        "place_pops": None
-                    })
+                        "avg_pop": None,
+                    }
+                    for i in range(1, 19):
+                        result[f"pop_{i}_count"] = 0
+                    all_results.append(result)
                     continue
 
-                # --- 勝ち馬データ ---
-                winners = tmp[tmp["着順"] == 1].copy()
-                winners["norm_pop"] = winners["人気"] * (18 / winners["頭数"])
-                avg_winner = winners["norm_pop"].mean() if not winners.empty else None
+                # 平均人気（18頭立て換算）
+                tmp["norm_pop"] = tmp["人気"] * (18 / tmp["頭数"])
+                avg_pop = tmp["norm_pop"].mean()
 
-                # --- 3着以内データ ---
-                places = tmp[tmp["着順"].isin([1, 2, 3])].copy()
-                places["norm_pop"] = places["人気"] * (18 / places["頭数"])
-                avg_place = places["norm_pop"].mean() if not places.empty else None
+                # 人気別勝利数カウント
+                pop_counts = tmp["人気"].value_counts().to_dict()
 
-                all_results.append({
+                result = {
                     "race_type": race_type,
                     "course_len": int(course_len),
                     "ground_state": grd,
                     "class": cls,
-                    "winner_pops": round(avg_winner, 2) if avg_winner else None,
-                    "place_pops": round(avg_place, 2) if avg_place else None
-                })
+                    "avg_pop": round(avg_pop, 2) if avg_pop else None,
+                }
+
+                for i in range(1, 19):
+                    result[f"pop_{i}_count"] = int(pop_counts.get(i, 0))
+
+                all_results.append(result)
 
     df_result = pd.DataFrame(all_results)
     df_result["race_type"] = pd.Categorical(df_result["race_type"], categories=["芝", "ダート"], ordered=True)
     df_result["class"] = pd.Categorical(df_result["class"], categories=CLASSES, ordered=True)
     df_result["ground_state"] = pd.Categorical(df_result["ground_state"], categories=GROUNDS, ordered=True)
-    df_result = df_result.sort_values(["race_type", "course_len", "class", "ground_state"]).reset_index(drop=True)
-    df_result = df_result.reindex(columns=["race_type", "course_len", "ground_state", "class", "winner_pops", "place_pops"])
 
+    df_result = df_result.sort_values(["race_type", "course_len", "class", "ground_state"]).reset_index(drop=True)
+
+    cols = ["race_type", "course_len", "ground_state", "class", "avg_pop"] + [f"pop_{i}_count" for i in range(1, 19)]
+    df_result = df_result.reindex(columns=cols)
     return df_result
 
 def analyze_frame_and_horse_multi_years(base_dir, place_id, start_year):
@@ -628,12 +656,12 @@ if __name__ == '__main__':
         # 各年の記録を計算
         for year in range(2019,date.today().year + 1):
             csv_path = name_header.DATA_PATH + "//RaceResults//" + name_header.PLACE_LIST[place_id -1] + "//" + f"{year}_race_results.csv"
-            result = analyze_average_frame_and_horse_top3(csv_path, place_id)
+            result = analyze_average_pops(csv_path, place_id, False)
             if not result.empty:
-                output_path = name_header.DATA_PATH + "//AverageFrames//" + name_header.PLACE_LIST[place_id -1] + "//" + f"{year}_average_frames_top3.csv"
+                output_path = name_header.DATA_PATH + "//AveragePops//" + name_header.PLACE_LIST[place_id -1] + "//" + f"{year}_average_pops.csv"
                 result.to_csv(output_path)
         # totalの記録を計算
         base_dir = name_header.DATA_PATH + "//RaceResults//" + name_header.PLACE_LIST[place_id -1] + "//"
-        total_df = analyze_frame_and_horse_top3_multi_years(base_dir, place_id, 2019)
-        total_ouutput_path = name_header.DATA_PATH + "//AverageFrames//" + name_header.PLACE_LIST[place_id -1] + "//" + "total_average_frames_top3.csv"
+        total_df = analyze_average_pop_multi_years(base_dir, place_id, 2019, False)
+        total_ouutput_path = name_header.DATA_PATH + "//AveragePops//" + name_header.PLACE_LIST[place_id -1] + "//" + "total_average_pops.csv"
         total_df.to_csv(total_ouutput_path)
