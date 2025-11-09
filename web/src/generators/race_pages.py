@@ -35,7 +35,7 @@ except Exception:
 from config.path import RACE_HTML_PATH, RACE_INFO_PATH, RACE_CARDS_PATH, RACE_RESULTS_PATH, RACE_RETURNS_PATH, RACE_CALENDAR_FOLDER_PATH, TIME_INFO_PATH, WEIGHT_INFO_PATH, PEDS_RESULTS_PATH, POPS_INFO_PATH, FRAME_INFO_PATH
 from utils.format_data import format_date
 from utils.format_data import merge_rank_score
-
+import horse_info # import horse_report_to_html, build_horse_report
 
 def read_race_csv(date_str, target_id):
     """CSVを読み込んで必要列を返す。失敗時はNoneを返す"""
@@ -1348,6 +1348,33 @@ def make_race_card_html(date_str, place_id, target_id):
     # 近走の結果を取得
     recent_html = generate_recent_same_condition_html(date_str, place_id, target_id)
 
+    # --- 各馬の詳細レポートを生成 ---
+    horse_reports_html = ""
+    for _, row in df.iterrows():
+        horse_name = str(row.get("馬名", "")).strip()
+        if not horse_name:
+            continue
+
+        try:
+            # 🐴 各馬の血統・成績・持ち時計を取得
+            report = horse_info.build_horse_report(
+                horse_name,
+                place_id,
+                target_id
+            )
+            # 🧩 HTML化
+            report_html = horse_info.horse_report_to_html(report)
+            horse_reports_html += f"""
+            <div class="horse-report-card">
+              <h3>🐎 {horse_name}</h3>
+              {report_html}
+            </div>
+            <hr>
+            """
+        except Exception as e:
+            print(f"❌ {horse_name} のレポート作成に失敗: {e}")
+            continue
+
     # --- HTML生成・書き込み ---
     html_content = build_html_content(
         date_display=date_display,
@@ -1371,6 +1398,12 @@ def make_race_card_html(date_str, place_id, target_id):
     html_content = html_content.replace(
         "<p>発走時刻:",
         f"<p>{course_info_text}</p>\n  <p>発走時刻:"
+    )
+
+    # 🧩 各馬の詳細レポートを race_page 下部に追加
+    html_content = html_content.replace(
+        "</body>",
+        f"<h2>出走馬 詳細レポート</h2>\n{horse_reports_html}\n</body>"
     )
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
