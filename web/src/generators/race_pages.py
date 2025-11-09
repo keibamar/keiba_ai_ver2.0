@@ -166,22 +166,28 @@ def build_table_rows(df):
     return rows
 
 def build_nav_html(output_dir, date_str, place_id, target_id):
-    """前後レースリンクを作成して返す"""
+    """前後レース＋同日の他場同レースリンクを作成して返す"""
     prev_link = ""
     next_link = ""
-    race_info_path = os.path.join(RACE_CALENDAR_FOLDER_PATH , f"race_time_id_list/{date_str}.csv")
+    other_places_html = ""
+    race_info_path = os.path.join(RACE_CALENDAR_FOLDER_PATH, f"race_time_id_list/{date_str}.csv")
+
     if os.path.exists(race_info_path):
         df_info = pd.read_csv(race_info_path, dtype=str)
-        df_info = df_info[df_info["race_id"].astype(str).str.startswith(str(target_id)[:10])]
-        df_info = df_info.sort_values("race_id").reset_index(drop=True)
-        race_ids = df_info["race_id"].astype(str).tolist()
+
+        # --- 前後レースリンク ---
+        # 同じ開催（place_id）だけ抽出
+        df_place = df_info[df_info["race_id"].astype(str).str.startswith(str(target_id)[:10])]
+        df_place = df_place.sort_values("race_id").reset_index(drop=True)
+        race_ids = df_place["race_id"].astype(str).tolist()
+
         if str(target_id) in race_ids:
             idx = race_ids.index(str(target_id))
-            # 出力ディレクトリ（ファイルの格納先）
             out_dir = output_dir
-            # 前のレース
+
+            # 前レース
             if idx > 0:
-                prev = df_info.iloc[idx - 1]
+                prev = df_place.iloc[idx - 1]
                 prev_name = str(prev["race_name"])
                 prev_num = int(str(prev["race_id"])[-2:])
                 prev_file = f"{name_header.PLACE_LIST[place_id - 1]}R{prev_num}.html"
@@ -190,9 +196,9 @@ def build_nav_html(output_dir, date_str, place_id, target_id):
                 else:
                     prev_link = f'<span class="disabled">← 前のレース（{prev_name}）</span>'
 
-            # 次のレース
-            if idx < len(df_info) - 1:
-                nxt = df_info.iloc[idx + 1]
+            # 次レース
+            if idx < len(df_place) - 1:
+                nxt = df_place.iloc[idx + 1]
                 nxt_name = str(nxt["race_name"])
                 nxt_num = int(str(nxt["race_id"])[-2:])
                 next_file = f"{name_header.PLACE_LIST[place_id - 1]}R{nxt_num}.html"
@@ -200,6 +206,44 @@ def build_nav_html(output_dir, date_str, place_id, target_id):
                     next_link = f'<a href="{next_file}">次のレース（{nxt_name}） →</a>'
                 else:
                     next_link = f'<span class="disabled">次のレース（{nxt_name}） →</span>'
+
+        # --- 同日の他場同レースリンク ---
+        # 今のレース番号を抽出
+        race_num = int(str(target_id)[-2:])
+        same_rnum_df = df_info[df_info["race_id"].astype(str).str.endswith(f"{race_num:02d}")]
+        same_rnum_df = same_rnum_df.sort_values("race_id")
+
+        other_links = []
+        for _, r in same_rnum_df.iterrows():
+            rid = str(r["race_id"])
+            rname = str(r["race_name"])
+            # 開催場コードの取得
+            place_code = rid[4:6]
+            # print(place_code)
+            try:
+                pidx = int(place_code)
+                place_id_str = name_header.PLACE_LIST[pidx - 1]
+                place_name = name_header.NAME_LIST[pidx - 1]
+            except Exception:
+                continue
+            # 自分自身は除外
+            if pidx == place_id:
+                continue
+            race_file = f"{place_id_str}R{race_num}.html"
+            race_path = os.path.join(output_dir.replace(name_header.PLACE_LIST[place_id - 1],
+                                                        place_id_str), race_file)
+            print(rid, place_code, place_name, race_num, rname)
+            # ファイル存在チェック
+            if os.path.exists(race_path):
+                link_html = f'<a href="{race_file}">{place_name}{race_num}R（{rname}）</a>'
+            else:
+                link_html = f'<span class="disabled">{place_name}{race_num}R（{rname}）</span>'
+            other_links.append(link_html)
+
+        if other_links:
+            other_places_html = "<div class='other-places'>他場：" + " ｜ ".join(other_links) + "</div>"
+
+    # --- HTML全体 ---
     nav_html = f"""
     <div class="nav">
       <a href="index.html">この日の一覧に戻る</a><br>
@@ -207,6 +251,7 @@ def build_nav_html(output_dir, date_str, place_id, target_id):
         {prev_link if prev_link else '<span class="disabled">← 前のレースなし</span>'}
         {next_link if next_link else '<span class="disabled">次のレースなし →</span>'}
       </div>
+      {other_places_html}
     </div>
     """
     return nav_html
