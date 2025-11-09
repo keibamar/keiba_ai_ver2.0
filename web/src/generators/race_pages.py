@@ -929,6 +929,8 @@ def generate_pops_info(date_str, place_id, target_id):
     # --- パス設定 ---
     total_pops_path = os.path.join(POPS_INFO_PATH, name_header.PLACE_LIST[place_id - 1], "total_average_pops.csv")
     year_pops_path  = os.path.join(POPS_INFO_PATH, name_header.PLACE_LIST[place_id - 1], f"{year}_average_pops.csv")
+    total_pops_top3_path = os.path.join(POPS_INFO_PATH, name_header.PLACE_LIST[place_id - 1], "total_average_pops_top3.csv")
+    year_pops_top3_path  = os.path.join(POPS_INFO_PATH, name_header.PLACE_LIST[place_id - 1], f"{year}_average_pops_top3.csv")
 
     def read_if_exists(path):
         if os.path.exists(path):
@@ -942,6 +944,8 @@ def generate_pops_info(date_str, place_id, target_id):
 
     total_df = read_if_exists(total_pops_path)
     year_df = read_if_exists(year_pops_path)
+    total_top3_df = read_if_exists(total_pops_top3_path)
+    year_top3_df = read_if_exists(year_pops_top3_path)
 
     def get_row(df, cls):
         if df.empty:
@@ -964,6 +968,11 @@ def generate_pops_info(date_str, place_id, target_id):
     year_class = get_row(year_df, race_class)
     total_all = get_row(total_df, "all")
     total_class = get_row(total_df, race_class)
+
+    year_all_top3 = get_row(year_top3_df, "all")
+    year_class_top3 = get_row(year_top3_df, race_class)
+    total_all_top3 = get_row(total_top3_df, "all")
+    total_class_top3 = get_row(total_top3_df, race_class)
 
     # --- 表示フォーマット ---
     def fmt_pops_html(pops_value):
@@ -999,24 +1008,24 @@ def generate_pops_info(date_str, place_id, target_id):
           <tr>
             <td rowspan="2">全クラス</td>
             <td>{year}年平均</td>
-            <td>{fmt_pops_html(year_all["winner_pops"]) if year_all is not None else "―"}</td>
-            <td>{fmt_pops_html(year_all["place_pops"]) if year_all is not None else "―"}</td>
+            <td>{fmt_pops_html(year_all["avg_pop"]) if year_all is not None else "―"}</td>
+            <td>{fmt_pops_html(year_all_top3["avg_pop"]) if year_all_top3 is not None else "―"}</td>
           </tr>
           <tr>
             <td>TOTAL平均</td>
-            <td>{fmt_pops_html(total_all["winner_pops"]) if total_all is not None else "―"}</td>
-            <td>{fmt_pops_html(total_all["place_pops"]) if total_all is not None else "―"}</td>
+            <td>{fmt_pops_html(total_all["avg_pop"]) if total_all is not None else "―"}</td>
+            <td>{fmt_pops_html(total_all_top3["avg_pop"]) if total_all_top3 is not None else "―"}</td>
           </tr>
           <tr>
             <td rowspan="2">{race_class}</td>
             <td>{year}年平均</td>
-            <td>{fmt_pops_html(year_class["winner_pops"]) if year_class is not None else "―"}</td>
-            <td>{fmt_pops_html(year_class["place_pops"]) if year_class is not None else "―"}</td>
+            <td>{fmt_pops_html(year_class["avg_pop"]) if year_class is not None else "―"}</td>
+            <td>{fmt_pops_html(year_class_top3["avg_pop"]) if year_class_top3 is not None else "―"}</td>
           </tr>
           <tr>
             <td>TOTAL平均</td>
-            <td>{fmt_pops_html(total_class["winner_pops"]) if total_class is not None else "―"}</td>
-            <td>{fmt_pops_html(total_class["place_pops"]) if total_class is not None else "―"}</td>
+            <td>{fmt_pops_html(total_class["avg_pop"]) if total_class is not None else "―"}</td>
+            <td>{fmt_pops_html(total_class_top3["avg_pop"]) if total_class_top3 is not None else "―"}</td>
           </tr>
         </tbody>
       </table>
