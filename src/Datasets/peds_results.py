@@ -418,13 +418,8 @@ def update_peds_dataset(place_id, day = date.today()):
         # 既存のデータセットを取得
         old_peds_df = get_peds_dataset_csv(place_id, day.year)
         # 新しいデータセットを統合
-        print(old_peds_df)
         new_peds_df = pd.concat([old_peds_df,new_peds_df],axis = 0)
-        print(new_peds_df)
         save_peds_dataset(new_peds_df, place_id, day.year)
-        # 集計結果を更新
-        aggregate_peds_results(place_id, day.year)
-        aggregate_total_peds_results(place_id = place_id, end_year = day.year)
     
 def weekly_update_pedsdata(day = date.today()):
     """ 指定した日にちから、１週間分のデータセットを更新  
@@ -435,6 +430,9 @@ def weekly_update_pedsdata(day = date.today()):
         print("[WeeklyUpdate]" + name_header.PLACE_LIST[place_id -1] + " RaceResults")
         update_peds_dataset(place_id, day)
         merge_pedsdata_with_race_results(place_id, day.year)
+        # 集計結果を更新
+        aggregate_peds_results(place_id, day.year)
+        aggregate_total_peds_results(place_id = place_id, end_year = day.year)
 
 def monthly_update_pedsdata(day = date.today()):
     """ 指定した日にちまでのその年のデータセットを更新  
@@ -445,7 +443,9 @@ def monthly_update_pedsdata(day = date.today()):
         print("[MonthlyUpdate]" + name_header.PLACE_LIST[place_id -1] + " PedsResults")
         make_peds_dataset_from_race_results(place_id, day.year)
         merge_pedsdata_with_race_results(place_id, day.year)
-
+        # 集計結果を更新
+        aggregate_peds_results(place_id, day.year)
+        aggregate_total_peds_results(place_id = place_id, end_year = day.year)
 def make_all_pedsdata(year = date.today().year):
     """ 指定した年までの、すべてのデータセットを作成 
     Args:
@@ -456,6 +456,9 @@ def make_all_pedsdata(year = date.today().year):
             print("[NewMake]" + str(y) + ":" + name_header.PLACE_LIST[place_id -1] + " PedsResults")
             make_peds_dataset_from_race_results(place_id, y)
             merge_pedsdata_with_race_results(place_id, y)
+            # 集計結果を更新
+            aggregate_peds_results(place_id, y)
+            aggregate_total_peds_results(place_id = place_id, end_year = y)
 
 def make_peds_results(year = date.today().year):
     for place_id in range(1, len(name_header.PLACE_LIST) + 1):

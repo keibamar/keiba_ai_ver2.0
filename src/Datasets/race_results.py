@@ -22,6 +22,17 @@ def race_results_error(e):
     print(__name__ + ":" + __file__)
     print(f"{e.__class__.__name__}: {e}")
 
+# --- 重複列の自動処理 ---
+def clean_columns(df):
+    # 重複列がある場合にカウント付きでリネームする
+    cols = pd.Series(df.columns)
+    for dup in cols[cols.duplicated()].unique():
+        dup_idx = cols[cols == dup].index
+        for i, idx in enumerate(dup_idx):
+            cols[idx] = f"{dup}_{i+1}"
+    df.columns = cols
+    return df
+    
 def scrape_race_results_dataframe(race_id_list):
     """ race_id_listのrace_resultsのDataFrameを作成 
         Args:
@@ -29,11 +40,17 @@ def scrape_race_results_dataframe(race_id_list):
         Returns:
             DataFrame : race_id_listのrace_results    
     """
+
     # スクレイピング
     race_results_df = pd.DataFrame()
     for race_id in tqdm(race_id_list):
-        race_results_df = pd.concat([race_results_df,scraping.scrape_race_results(race_id)],axis = 0)
-
+        new_df = scraping.scrape_race_results(race_id)
+        new_df = clean_columns(new_df)
+        base_columns = list(dict.fromkeys(list(race_results_df.columns) + list(new_df.columns)))
+        # 列の順番をそろえる
+        new_df = new_df.reindex(columns=base_columns)
+        # 結合（インデックスも無視して安全に）
+        race_results_df = pd.concat([race_results_df, new_df], axis=0)
     return race_results_df
 
 def format_race_results_dataframe(race_results_df):
@@ -46,8 +63,8 @@ def format_race_results_dataframe(race_results_df):
     # 欠損値をnanで埋める
     race_results_df.fillna(np.nan)   
     # "斤量","人気"をfloatに固定
-    race_results_df['人気'] = race_results_df['人気'].astype(float)
-    race_results_df['斤量'] = race_results_df['斤量'].astype(float)
+    # race_results_df['人気'] = race_results_df['人気'].astype(float)
+    # race_results_df['斤量'] = race_results_df['斤量'].astype(float)
     # 文字列に変換
     race_results_df = race_results_df.astype(str)
     # 重複している内容を消去
@@ -239,8 +256,10 @@ def update_race_results_dataset(place_id, day = date.today()):
     # 更新するデータセットがあれば更新
     if any(new_race_results_df):
         try:
-            new_race_results_df = pd.concat([old_race_results_df,new_race_results_df],axis = 0)
-
+            base_columns = old_race_results_df.columns
+            # 列の順番をそろえる
+            new_race_results_df = new_race_results_df.reindex(columns=base_columns)
+            new_race_results_df = pd.concat([old_race_results_df, new_race_results_df],axis = 0)
             # csv/pickleに書き込む
             save_race_results_dataset(place_id, day.year, new_race_results_df)
         except Exception as e:

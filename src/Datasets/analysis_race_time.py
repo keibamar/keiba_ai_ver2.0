@@ -25,7 +25,7 @@ def _parse_passages(pass_str):
     nums = re.findall(r'\d+', pass_str)
     return [int(n) for n in nums] if nums else []
 
-def analyze_winners_multi_years(base_dir, place_id, start_year):
+def analyze_winners_multi_years(place_id, start_year = 2019, year = date.today().year):
     """
     各年度（start_year〜今年）について analyze_winners_with_passages() を実行し、
     年ごとの結果 + 全期間平均の DataFrame を返す。
@@ -47,16 +47,16 @@ def analyze_winners_multi_years(base_dir, place_id, start_year):
     total_df : pd.DataFrame
         全期間の平均結果。
     """
-    current_year = int(date.today().year)
-    results_by_year = {}
 
-    for year in range(start_year, current_year + 1):
+    results_by_year = {}
+    base_dir = name_header.DATA_PATH + "//RaceResults//" + name_header.PLACE_LIST[int(place_id) -1] + "//"
+    for year in range(start_year, year + 1):
         csv_path = os.path.join(base_dir, f"{year}_race_results.csv")
         if not os.path.exists(csv_path):
             print(f"⚠️ {csv_path} が見つかりません。スキップします。")
             continue
-        print(f"📘 {year}年のデータを処理中 ...")
-        df_year = analyze_winners(csv_path, place_id)
+        # print(f"📘 {year}年のデータを処理中 ...")
+        df_year = analyze_winners(place_id, year)
         if not df_year.empty:
             df_year["year"] = year
             results_by_year[year] = df_year
@@ -86,15 +86,16 @@ def analyze_winners_multi_years(base_dir, place_id, start_year):
     total_df = total_df.sort_values(["race_type", "course_len", "class", "ground_state"]).reset_index(drop=True)
     total_df = total_df.reindex(columns=["race_type", "course_len", "ground_state", "class", "上り", "通過1", "通過2", "通過3", "通過4"])
 
-    print(f"✅ 全期間平均（{start_year}〜{current_year}）を作成しました。")
+    print(f"✅ {name_header.PLACE_LIST[int(place_id) - 1]} 上り/通過全期間平均（{start_year}〜{year}）を作成しました。")
     return total_df
 
-def analyze_winners(csv_path, place_id):
+def analyze_winners(place_id, year):
     """
     place_id のコース定義(name_header.COURSE_LISTS[place_id-1])に従って
     勝ち馬の「上り」と「通過1..4」を算出する。
     """
     # --- 生データ読み込み（race_id を列に） ---
+    csv_path = name_header.DATA_PATH + "//RaceResults//" + name_header.PLACE_LIST[int(place_id) -1] + "//" + f"{year}_race_results.csv"
     if os.path.isfile(csv_path):
         df_raw = pd.read_csv(csv_path, dtype=str, index_col=0).reset_index().rename(columns={"index": "race_id"})
     else:
@@ -197,19 +198,36 @@ def analyze_winners(csv_path, place_id):
 
     return df_result
 
+def winners_time_update(place_id, year):
+    # --- 使用例 ---
+    for place_id in range(1, len(name_header.PLACE_LIST) + 1):
+        # 各年の記録を計算
+        for year in range(2019,date.today().year + 1):
+            result = analyze_winners(place_id, year)
+            if not result.empty:
+                output_path = name_header.DATA_PATH + "//AverageTimes//" + name_header.PLACE_LIST[int(place_id) -1] + "//" + f"{year}_wineer_time.csv"
+                result.to_csv(output_path)
+        # totalの記録を計算
+        total_df = analyze_winners_multi_years(place_id, 2019, year)
+        total_ouutput_path = name_header.DATA_PATH + "//AverageTimes//" + name_header.PLACE_LIST[int(place_id) -1] + "//" + "total_wineer_time.csv"
+        total_df.to_csv(total_ouutput_path)
+
+def weekly_winners_time_update(year = date.today().year):
+    # --- 使用例 ---
+    for place_id in range(1, len(name_header.PLACE_LIST) + 1):
+        winners_time_update(place_id, year)
+
 if __name__ == '__main__':
     # --- 使用例 ---
     for place_id in range(1, len(name_header.PLACE_LIST) + 1):
         # 各年の記録を計算
         for year in range(2019,date.today().year + 1):
-            csv_path = name_header.DATA_PATH + "//RaceResults//" + name_header.PLACE_LIST[place_id -1] + "//" + f"{year}_race_results.csv"
-            result = analyze_winners(csv_path, place_id)
+            result = analyze_winners(place_id, year)
             if not result.empty:
-                output_path = name_header.DATA_PATH + "//AverageTimes//" + name_header.PLACE_LIST[place_id -1] + "//" + f"{year}_wineer_time.csv"
+                output_path = name_header.DATA_PATH + "//AverageTimes//" + name_header.PLACE_LIST[int(place_id) -1] + "//" + f"{year}_wineer_time.csv"
                 result.to_csv(output_path)
         # totalの記録を計算
-        base_dir = name_header.DATA_PATH + "//RaceResults//" + name_header.PLACE_LIST[place_id -1] + "//"
-        total_df = analyze_winners_multi_years(base_dir, place_id, 2019)
-        total_ouutput_path = name_header.DATA_PATH + "//AverageTimes//" + name_header.PLACE_LIST[place_id -1] + "//" + "total_wineer_time.csv"
+        total_df = analyze_winners_multi_years(place_id, 2019, year)
+        total_ouutput_path = name_header.DATA_PATH + "//AverageTimes//" + name_header.PLACE_LIST[int(place_id) -1] + "//" + "total_wineer_time.csv"
         total_df.to_csv(total_ouutput_path)
 
