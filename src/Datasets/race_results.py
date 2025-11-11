@@ -343,9 +343,14 @@ def split_race_results_by_year(place_id, year):
 
     # race_id ごとに分割して保存
     for race_id, group in df.groupby(df.index):
-        output_path = os.path.join(output_dir, f"{race_id}.csv")
-        group.to_csv(output_path, index=True)
-        print(f"保存完了: {output_path}")
+        try:
+            output_path = os.path.join(output_dir, f"{race_id}.csv")
+            # 重複している内容を消去
+            group = group.drop_duplicates(subset="馬名", keep="first")
+            group.to_csv(output_path, index=True)
+            print(f"保存完了: {output_path}")
+        except Exception :
+            print("レース結果の分割に失敗しました。", race_id)
 
 if __name__ == "__main__":
     # montly_update_race_results()
