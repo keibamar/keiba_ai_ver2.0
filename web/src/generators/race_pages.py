@@ -1308,7 +1308,7 @@ def generate_recent_same_condition_html(date_str, place_id, target_id):
         race_name = ""
         if os.path.exists(race_info_path):
             df_info = pd.read_csv(race_info_path, dtype=str)
-            match = df_info[df_info["race_id"].astype(str) == str(target_id)]
+            match = df_info[df_info["race_id"].astype(str) == str(race_id)]
             if not match.empty:
                 race_name = str(match.iloc[0]["race_name"])
 

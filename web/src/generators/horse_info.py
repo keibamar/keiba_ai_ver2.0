@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import math
+import numpy as np
 import pandas as pd
 from datetime import datetime
 from typing import Optional, Dict, Any, List, Tuple
@@ -20,7 +21,7 @@ LIBS_PATH = os.path.join(PROJECT_ROOT, "libs")
 if LIBS_PATH not in sys.path:
     sys.path.insert(0, LIBS_PATH)
 
-from config.path import HORSE_ID_MAP_PATH, PAST_PERF_PATH, HORSE_PEDS_PATH, PEDS_RESULTS_PATH
+from config.path import HORSE_ID_MAP_PATH, PAST_PERF_PATH, HORSE_PEDS_PATH, PEDS_RESULTS_PATH, TIME_INFO_PATH
 import name_header
 from race_pages import get_race_info
 
@@ -120,6 +121,66 @@ def load_horse_id_map(path: str = HORSE_ID_MAP_PATH) -> pd.DataFrame:
     df["馬名"] = df["馬名"].astype(str).str.strip()
     return df[["horse_id", "馬名"]]
 
+def get_avg_time(course_name, race_type, class_name, course_len, ground_state):
+    """
+    開催場名と条件から平均タイムを取得する関数
+
+    Args:
+        course_name (str): 開催場名（例: "中京"）
+        race_type (str): レースタイプ（例: "芝" or "ダート"）
+        class_name (str): クラス名（例: "3勝クラス", "未勝利", "オープン"）
+        course_len (int or str): 距離（例: 1800）
+        ground_state (str): 馬場状態（例: "良", "稍重", "重", "不"）
+
+    Returns:
+        float or None: 該当条件の平均タイム（存在しない場合は np.nan）
+    """
+
+    # --- 開催場からplace_id取得 ---
+    try:
+        place_id = name_header.NAME_LIST.index(course_name) + 1
+    except ValueError:
+        print(f"❌ 不明な開催場名: {course_name}")
+        return np.nan
+
+    # --- ファイルパス生成 ---
+    avg_time_path = os.path.join(TIME_INFO_PATH, name_header.PLACE_LIST[place_id - 1], "total_avg_time.csv")
+    if not os.path.exists(avg_time_path):
+        print(f"⚠️ 平均タイムファイルが見つかりません: {avg_time_path}")
+        return np.nan
+    try:
+        df = pd.read_csv(avg_time_path, dtype=str)
+    except Exception as e:
+        print(f"⚠️ CSV読み込み失敗: {avg_time_path} ({e})")
+        return np.nan
+
+    # --- 型変換 ---
+    df["course_len"] = df["course_len"].astype(str).str.strip()
+    df["avg_time"] = pd.to_numeric(df["avg_time"], errors="coerce")
+    # --- 値の調整 ---
+    if ground_state == "不良":
+        ground_state = "不"
+    if ground_state == "稍":
+        ground_state = "稍重"
+    if race_type == "ダ":
+        race_type = "ダート"
+
+    # --- 条件フィルタ ---
+    cond = (
+        (df["race_type"] == str(race_type)) &
+        (df["course_len"] == str(course_len)) &
+        (df["ground_state"] == str(ground_state)) &
+        (df["class"] == str(class_name))
+    )
+    sub = df[cond]
+
+    if sub.empty or sub["avg_time"].isna().all():
+        print(f"⚠️ 該当データなし: {course_name} {race_type} {class_name} {course_len} {ground_state}")
+        return np.nan
+
+    # --- 平均値を返す（複数一致時は平均） ---
+    return sub["avg_time"].values
+
 def get_horse_id_by_name(horse_name: str, map_df: pd.DataFrame) -> Optional[str]:
     if map_df is None or map_df.empty:
         return None
@@ -178,7 +239,6 @@ def load_past_performance(horse_id: str) -> pd.DataFrame:
     return df
 
 # ---- 解析関数 ----
-
 def peds_results_for_bloodline(place_id: int, race_type: str, course_len: int, ground_state: str, peds0_name: str) -> pd.DataFrame:
     """
     指定血統（peds0_name）の PedsResults が存在すれば dataframe を返す。
@@ -225,25 +285,27 @@ def recent_5_performances(horse_id: str) -> List[Dict[str, Any]]:
         umaban = row.get("馬番", "")
         race_num = row.get("R", "")
         race_name = row.get("レース名", row.get("レース名", ""))
+        pops = row.get("人気", "")
         result = row.get("着順", "")
         race_type = row.get("race_type", "")
-        dist = row.get("course_len", "")
+        course_len = row.get("course_len", "")
         class_name = row.get("class", "")
-        course = str(dist)
+        course = str(course_len)
         ground = row.get("ground_state","")
         time_raw = row.get("タイム", "")
         t_ms = time_str_to_ms(time_raw)
         place_match = re.search(r"[0-9]*(東京|中山|阪神|京都|札幌|函館|福島|新潟|中京|小倉)[0-9]*", row.get("開催", ""))
         course_name = place_match.group(1) if place_match else ""
-        # 着差を時間差(ms) にしようと試みる（例 '0.4' -> 0.4秒）
         diff_raw = row.get("着差", "")
-        diff_ms = None
-        try:
-            if diff_raw and diff_raw not in ["nan", ""]:
-                # 着差は '0.4'や'クビ'等のため float で取れない場合は None
-                diff_ms = int(round(float(str(diff_raw)) * 1000))
-        except:
-            diff_ms = None
+        # 同条件の平均タイムを取得
+        avg_time = get_avg_time(course_name, race_type, class_name, course_len, ground)
+        if not avg_time is np.nan:
+            try:
+                diff_avg_ms = (t_ms - avg_time) / 1000
+            except Exception:
+                diff_avg_ms = np.nan
+        else:
+            diff_avg_ms = np.nan
 
         # 通過の正規化
         heads = None
@@ -267,6 +329,7 @@ def recent_5_performances(horse_id: str) -> List[Dict[str, Any]]:
             "race_num" : race_num,
             "waku" : waku,
             "umaban" : umaban,
+            "pops" : pops,
             "result" : result,
             "course_name" : course_name,
             "course": course,
@@ -275,6 +338,7 @@ def recent_5_performances(horse_id: str) -> List[Dict[str, Any]]:
             "class_name": class_name,
             "time_raw": time_raw,
             "time_ms": t_ms,
+            "diff_avg_ms" : diff_avg_ms,
             "diff_ms": diff_raw,
             "上り": row.get("上り", None),
             "通過": passage,
@@ -559,7 +623,7 @@ def horse_report_to_html(report: Dict[str, Any]) -> str:
     # recent5
     html.append("<h4>近5走(JRAのみ)</h4>")
     if report.get("recent5"):
-        html.append("<table border='1'><tr><th>日付</th><th>開催</th><th>R</th><th>レース名</th><th>クラス</th><th>着順</th><th>枠</th><th>馬番</th><th>芝/ダート</th><th>距離</th><th>馬場</th><th>タイム</th><th>着差</th><th>上り</th><th>通過</th><th>馬体重</th></tr>")
+        html.append("<table border='1'><tr><th>日付</th><th>開催</th><th>R</th><th>レース名</th><th>クラス</th><th>着順</th><th>人気</th><th>枠</th><th>馬番</th><th>芝/ダート</th><th>距離</th><th>馬場</th><th>タイム</th><th>着差</th><th>平均勝ち時計との差</th><th>上り</th><th>通過</th><th>馬体重</th></tr>")
         for r in report["recent5"]:
             html.append("<tr>")
             html.append(f"<td>{r.get('date')}</td>")
@@ -568,6 +632,7 @@ def horse_report_to_html(report: Dict[str, Any]) -> str:
             html.append(f"<td>{r.get('race_name')}</td>")
             html.append(f"<td>{r.get('class_name')}</td>")
             html.append(f"<td>{r.get('result')}</td>")
+            html.append(f"<td>{r.get('pops')}</td>")
             html.append(f"<td>{r.get('waku')}</td>")
             html.append(f"<td>{r.get('umaban')}</td>")
             html.append(f"<td>{r.get('race_type')}</td>")
@@ -575,6 +640,7 @@ def horse_report_to_html(report: Dict[str, Any]) -> str:
             html.append(f"<td>{r.get('ground')}</td>")
             html.append(f"<td>{r.get('time_raw')}</td>")
             html.append(f"<td>{r.get('diff_ms') if r.get('diff_ms') is not None else '―'}</td>")
+            html.append(f"<td>{r.get('diff_avg_ms')}</td>")
             html.append(f"<td>{r.get('上り')}</td>")
             html.append(f"<td>{r.get('通過')}</td>")
             html.append(f"<td>{r.get('馬体重')}</td>")
