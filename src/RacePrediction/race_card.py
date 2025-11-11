@@ -122,18 +122,21 @@ def make_race_card(race_id):
         return pd.DataFrame()
     # 出走馬の過去成績と血統情報を取得
     horse_results = []
-    horse_ped = pd.DataFrame()
+    horse_peds_df = pd.DataFrame()
     horse_ids = race_card_df.at[str(race_id),"horse_id"]
     for horse_id in horse_ids:
         # 過去成績を取得
-        horse_result = horse_peds.get_horse_peds_csv(horse_id)
+        horse_result = past_performance.get_past_performance_dataset(horse_id)
         if horse_result.empty:
-            horse_result = scraping.scrape_horse_results(horse_id)
+            horse_result = past_performance.make_past_performance_dataset_from_race_results(horse_id)
             past_performance.save_past_performance_dataset(horse_id,horse_result)
-            horse_result = horse_peds.get_horse_peds_csv(horse_id)
         horse_results.append(horse_result)
         # 血統情報を取得
-        horse_ped = pd.concat([horse_ped,scraping.scrape_peds(horse_id)], axis = 1)
+        horse_ped = horse_peds.get_horse_peds_csv(horse_id)
+        if horse_ped.empty():
+            horse_ped = horse_peds.make_horse_peds_dataset(horse_id)
+            horse_peds.save_horse_peds_dataset(horse_id, horse_ped)
+        horse_peds_df = pd.concat([horse_peds_df,horse_ped], axis = 1)
 
     ###################  Todo : LightGBM用になっている  #############################      
     # 枠順、馬番を取得
@@ -143,7 +146,7 @@ def make_race_card(race_id):
     #################################################################################   
 
     # 父，母，母父のみ抽出
-    horse_peds_display = extract_peds_for_display(horse_ped) 
+    horse_peds_display = extract_peds_for_display(horse_peds_df) 
     # データセットの統合
     race_card_df = pd.concat([race_card_df.reset_index(drop = True), horse_peds_display.T.reset_index(drop = True)], axis = 1)
     race_card_df = pd.concat([race_card_df, rank_df.reset_index(drop=True)], axis = 1)

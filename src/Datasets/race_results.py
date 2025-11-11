@@ -306,6 +306,8 @@ def weekly_update_race_results(day = date.today()):
     for place_id in range(1, len(name_header.PLACE_LIST) + 1):
         print("[WeeklyUpdate]" + name_header.PLACE_LIST[place_id -1] + " RaceResults")
         update_race_results_dataset(place_id, day)
+        export_race_info_per_race(place_id, day.year)
+        split_race_results_by_year(place_id, day.year)
 
 def montly_update_race_results(day = date.today()):
     """ 指定した日にちまでのその年のデータセットを更新  

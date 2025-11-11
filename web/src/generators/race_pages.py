@@ -8,16 +8,22 @@ from datetime import date, timedelta, datetime
 # pycache を生成しない
 sys.dont_write_bytecode = True
 
-# web/src を import パスに追加（config パッケージを解決するため）
-PROJECT_SRC = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))  # web/src
-if PROJECT_SRC not in sys.path:
-    sys.path.insert(0, PROJECT_SRC)
+# # web/src を import パスに追加（config パッケージを解決するため）
+# PROJECT_SRC = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))  # web/src
+# if PROJECT_SRC not in sys.path:
+#     sys.path.insert(0, PROJECT_SRC)
 
 # プロジェクトルートを正しく計算して libs を追加（libs はプロジェクトルート直下）
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))  # project root (keiba_ai_ver2.0)
 LIBS_PATH = os.path.join(PROJECT_ROOT, "libs")
 if LIBS_PATH not in sys.path:
     sys.path.insert(0, LIBS_PATH)
+CONFIG_PATH = os.path.join(PROJECT_ROOT, "web", "src")
+if CONFIG_PATH not in sys.path:
+    sys.path.insert(0, CONFIG_PATH)
+PROJECT_SRC = os.path.join(PROJECT_ROOT, "web", "src", "generators")
+if PROJECT_SRC not in sys.path:
+    sys.path.insert(0, PROJECT_SRC)
 
 # libs を追加した後に名前ヘッダを import
 import name_header
@@ -1468,7 +1474,7 @@ def make_daily_race_card_html(race_day = date.today()):
 
 if __name__ == "__main__":
     # テスト用実行コード
-    race_day = date(2025, 10, 1)
+    race_day = date(2025, 11, 7)
     # make_daily_race_card_html(race_day)
 
     today = date.today()

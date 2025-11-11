@@ -221,10 +221,16 @@ def recent_5_performances(horse_id: str) -> List[Dict[str, Any]]:
         count += 1
         # 基本フィールド
         date_raw = row.get("日付", "")
+        waku = row.get("枠番", "")
+        umaban = row.get("馬番", "")
+        race_num = row.get("R", "")
         race_name = row.get("レース名", row.get("レース名", ""))
-        dist = row.get("距離", row.get("距離", ""))  # 表記ゆれ対応
+        result = row.get("着順", "")
+        race_type = row.get("race_type", "")
+        dist = row.get("course_len", "")
+        class_name = row.get("class", "")
         course = str(dist)
-        ground = row.get("馬場", row.get("馬 場", ""))
+        ground = row.get("ground_state","")
         time_raw = row.get("タイム", "")
         t_ms = time_str_to_ms(time_raw)
         place_match = re.search(r"[0-9]*(東京|中山|阪神|京都|札幌|函館|福島|新潟|中京|小倉)[0-9]*", row.get("開催", ""))
@@ -258,12 +264,18 @@ def recent_5_performances(horse_id: str) -> List[Dict[str, Any]]:
             "date": date_raw,
             "date_parsed": row.get("日付_parsed", None),
             "race_name": race_name,
+            "race_num" : race_num,
+            "waku" : waku,
+            "umaban" : umaban,
+            "result" : result,
             "course_name" : course_name,
             "course": course,
+            "race_type" : race_type,
             "ground": ground,
+            "class_name": class_name,
             "time_raw": time_raw,
             "time_ms": t_ms,
-            "diff_ms": diff_ms,
+            "diff_ms": diff_raw,
             "上り": row.get("上り", None),
             "通過": passage,
             "通過_norm": passage_norm,
@@ -299,7 +311,7 @@ def turf_dirt_summary(horse_id: str) -> Dict[str, Any]:
     surface_summary = {}
     for surface in ["芝", "ダート"]:
         search_word = surface[0]
-        sub = df[df.apply(lambda r: search_word in str(r.get("距離", "")), axis=1)]
+        sub = df[df.apply(lambda r: search_word in str(r.get("race_type", "")), axis=1)]
         if sub.empty:
             surface_summary[surface] = {"fastest_up": None, "fastest_up_info": None, "avg_up": None, "avg_pass_norm": None}
             continue
@@ -317,8 +329,8 @@ def turf_dirt_summary(horse_id: str) -> Dict[str, Any]:
                     "date": fastest_row.get("日付", ""),
                     "race_name": fastest_row.get("レース名", ""),
                     "course_name": course_name,
-                    "course_len": fastest_row.get("距離", ""),
-                    "馬場": fastest_row.get("馬 場", "")
+                    "course_len": fastest_row.get("course_len", ""),
+                    "馬場": fastest_row.get("ground_state", "")
                 }
             else:
                 fastest_up = None
@@ -432,12 +444,12 @@ def same_course_best_time(
             continue
        
         # --- 距離欄解析 ---
-        dist_raw = str(row.get("距離", "")).strip()
+        dist_raw = str(row.get("race_type", "")).strip()
         if dist_raw.startswith("障"):
             continue
         race_type = "芝" if "芝" in dist_raw else "ダート" if "ダ" in dist_raw else ""
-        len_match = re.search(r"(\d{3,4})", dist_raw)
-        dist = int(len_match.group(1)) if len_match else None
+
+        dist = int(row.get("course_len", ""))
         if not race_type or not dist:
             continue
 
@@ -458,7 +470,7 @@ def same_course_best_time(
         "time_str": ms_to_time_str(best_time_ms),
         "date": best_row.get("日付", ""),
         "race_name": best_row.get("レース名", ""),
-        "ground": best_row.get("馬場", best_row.get("馬 場", "")),
+        "ground": best_row.get("ground_state", best_row.get("ground_state", "")),
         "place_id": place_id,
         "info_row": best_row.to_dict() if hasattr(best_row, "to_dict") else {}
     }
@@ -545,14 +557,20 @@ def horse_report_to_html(report: Dict[str, Any]) -> str:
         html.append(pr.to_html(index=False, escape=False))
 
     # recent5
-    html.append("<h4>近5走</h4>")
+    html.append("<h4>近5走(JRAのみ)</h4>")
     if report.get("recent5"):
-        html.append("<table border='1'><tr><th>日付</th><th>開催</th><th>レース名</th><th>距離</th><th>馬場</th><th>タイム</th><th>着差</th><th>上り</th><th>通過</th><th>馬体重</th></tr>")
+        html.append("<table border='1'><tr><th>日付</th><th>開催</th><th>R</th><th>レース名</th><th>クラス</th><th>着順</th><th>枠</th><th>馬番</th><th>芝/ダート</th><th>距離</th><th>馬場</th><th>タイム</th><th>着差</th><th>上り</th><th>通過</th><th>馬体重</th></tr>")
         for r in report["recent5"]:
             html.append("<tr>")
             html.append(f"<td>{r.get('date')}</td>")
             html.append(f"<td>{r.get('course_name')}</td>")
+            html.append(f"<td>{r.get('race_num')}</td>")
             html.append(f"<td>{r.get('race_name')}</td>")
+            html.append(f"<td>{r.get('class_name')}</td>")
+            html.append(f"<td>{r.get('result')}</td>")
+            html.append(f"<td>{r.get('waku')}</td>")
+            html.append(f"<td>{r.get('umaban')}</td>")
+            html.append(f"<td>{r.get('race_type')}</td>")
             html.append(f"<td>{r.get('course')}</td>")
             html.append(f"<td>{r.get('ground')}</td>")
             html.append(f"<td>{r.get('time_raw')}</td>")

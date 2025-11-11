@@ -9,11 +9,13 @@ warnings.simplefilter('ignore')
 
 sys.dont_write_bytecode = True
 sys.path.append(r"C:\keiba_ai\keiba_ai_ver2.0\libs")
+sys.path.append(r"C:\keiba_ai\keiba_ai_ver2.0\src\Datasets")
 sys.path.append(r"C:\keiba_ai\keiba_ai_ver2.0\web\src")
 import name_header
 import post_text
 import mail_api
 
+import analysis_race_info
 import make_time_id_list
 import make_text
 import race_card
@@ -84,7 +86,7 @@ def post_daily_race_pred(race_day = date.today()):
         str_comp_time = str(comp_time.hour).zfill(2) + str(comp_time.minute).zfill(2)
         race_time = time_id_list[0][0]
         # 実行時間を過ぎていたら投稿を実行
-        if(int(race_time) <= (int(str_comp_time))):
+        if(int(race_time) <= (int(str_comp_time)) or 1):
            race_id = time_id_list[0][1]
            try:
                 # 予想の更新
@@ -92,6 +94,7 @@ def post_daily_race_pred(race_day = date.today()):
                 # csvファイルで出力
                 race_card.save_race_cards(race_card_df, race_day, race_id)
                 race_card.save_race_info_df(race_info_df, race_day, race_id)
+                analysis_race_info.update_horse_name_id_map(race_card_df)
                 # textの作成
                 make_text.make_race_text(race_day, race_id)
                 # API対策で計12レースのみ投稿
