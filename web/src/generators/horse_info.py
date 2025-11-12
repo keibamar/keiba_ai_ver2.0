@@ -239,7 +239,7 @@ def load_past_performance(horse_id: str) -> pd.DataFrame:
     return df
 
 # ---- 解析関数 ----
-def peds_results_for_bloodline(place_id: int, race_type: str, course_len: int, ground_state: str, peds0_name: str) -> pd.DataFrame:
+def peds_results_for_bloodline(place_id: int, race_type: str, course_len: int, ground_state: str, peds0_name: str ) -> pd.DataFrame:
     """
     指定血統（peds0_name）の PedsResults が存在すれば dataframe を返す。
     ファイル内の 'クラス' 列ごとにフィルタして返す（呼び出し側で利用）。
@@ -260,7 +260,7 @@ def peds_results_for_bloodline(place_id: int, race_type: str, course_len: int, g
             return res.copy()
     return pd.DataFrame()
 
-def recent_5_performances(horse_id: str) -> List[Dict[str, Any]]:
+def recent_5_performances(horse_id: str, date_str:str) -> List[Dict[str, Any]]:
     """
     PastPerformance/{horse_id}.csv から直近5走を取得して整形して返す。
     各エントリに日付、レース名、コース（距離/種別）、馬場、タイム(ms)、着差(ms)、上り、通過(正規化) 等を含む。
@@ -268,11 +268,34 @@ def recent_5_performances(horse_id: str) -> List[Dict[str, Any]]:
     df = load_past_performance(horse_id)
     if df.empty:
         return []
-    # 日付がparsedされていればそれでソート、なければ index 最後から5行
-    if "日付_parsed" in df.columns and df["日付_parsed"].notna().any():
+
+    # --- 日付の正規化 ---
+    if "日付" in df.columns:
+        df["日付_parsed"] = pd.to_datetime(df["日付"], errors="coerce")
+    else:
+        print(f"⚠️ '日付'列が見つかりません (horse_id={horse_id})")
+        return []
+
+    # --- race_day を datetime に変換 ---
+    try:
+        race_day_dt = datetime.strptime(str(date_str), "%Y%m%d")
+    except ValueError:
+        print(f"⚠️ race_dayの形式が不正です: {date_str}")
+        return []
+
+    # --- race_day より前のデータをフィルタ ---
+    df = df[df["日付_parsed"] < race_day_dt]
+
+    if df.empty:
+        return []
+
+    # --- ソート処理 ---
+    if df["日付_parsed"].notna().any():
         df_sorted = df.sort_values("日付_parsed", ascending=False)
     else:
-        df_sorted = df.copy().iloc[::-1]  # 逆順にして最新を先頭に想定
+        df_sorted = df.iloc[::-1].copy()  # 日付がNaNなら逆順で想定
+
+    # --- 最新5件などを抽出する場合 ---
     res = []
     count = 0
     for _, row in df_sorted.iterrows():
@@ -541,7 +564,7 @@ def same_course_best_time(
 
 # ---- 統合：馬ごとの全出力を作る関数 ----
 
-def build_horse_report(horse_name: str, place_id: int, race_id: str) -> Dict[str, Any]:
+def build_horse_report(horse_name: str, place_id: int, race_id: str, date_str: str) -> Dict[str, Any]:
     """
     horse_name から horse_id を特定し、①～④の情報を集めて dict で返す。
     - place_name: PedsResults の place フォルダ名 (e.g. '01_sapporo')
@@ -566,9 +589,26 @@ def build_horse_report(horse_name: str, place_id: int, race_id: str) -> Dict[str
     peds_results = None
     if peds0:
         peds_results = peds_results_for_bloodline(place_id, race_type, course_len, ground_state, peds0)
+     # --- クラスでフィルタ ---
+    filtered_df = peds_results[peds_results["クラス"].isin([race_class, "all"])].copy()
+    if filtered_df.empty:
+        print(f"⚠️ 該当クラス ({race_class}) のデータがありません。")
+        return pd.DataFrame()
+    
+    # --- 勝率・複勝率を計算 ---
+    for idx, row in filtered_df.iterrows():
+        total = int(row["1着"]) + int(row["2着"]) + int(row["3着"]) + int(row["着外"])
+        win_rate = (int(row["1着"]) / total) * 100 if total > 0 else 0.0
+        fukusho_rate = ((int(row["1着"]) + int(row["2着"]) + int(row["3着"])) / total) * 100 if total > 0 else 0.0
+        filtered_df.at[idx, "勝率"] = round(win_rate, 1)
+        filtered_df.at[idx, "複勝率"] = round(fukusho_rate, 1)
 
+    # --- 列の並びを指定（着外の横に勝率・複勝率を追加）---
+    cols = ["クラス", "血統", "1着", "2着", "3着", "着外", "勝率", "複勝率"]
+    filtered_df = filtered_df[cols]
+    
     # ② 近5走
-    recent5 = recent_5_performances(hid)
+    recent5 = recent_5_performances(hid, date_str)
 
     # ③ 芝/ダート別サマリ
     surface_summary = turf_dirt_summary(hid)
@@ -583,7 +623,7 @@ def build_horse_report(horse_name: str, place_id: int, race_id: str) -> Dict[str
         "horse_name": horse_name,
         "horse_id": hid,
         "peds0": peds0,
-        "peds_results": peds_results if (isinstance(peds_results, pd.DataFrame) and not peds_results.empty) else None,
+        "peds_results": filtered_df if (isinstance(filtered_df, pd.DataFrame) and not filtered_df.empty) else None,
         "recent5": recent5,
         "surface_summary": surface_summary,
         "same_course_best": same_course_best
@@ -600,7 +640,7 @@ def horse_report_to_html(report: Dict[str, Any]) -> str:
         return f"<div class='horse-report error'>{report['error']}</div>"
 
     html = []
-    html.append(f"<div class='horse-report'><h3>{report['horse_name']} ({report['horse_id']})</h3>")
+    # html.append(f"<div class='horse-report'><h3>{report['horse_name']} ({report['horse_id']})</h3>")
 
     # PEDs
     html.append("<h4>血統 (父)</h4>")

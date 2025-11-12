@@ -666,14 +666,36 @@ def generate_run_time_info(date_str, place_id, target_id) :
     year_run_df = read_if_exists(year_run_time_path)
     year_data_df = read_if_exists(year_data_path)
 
+    def normalize_ground_state(state):
+        if pd.isna(state):
+            return ""
+        s = str(state)
+        if "不" in s:
+            return "不良"
+        elif "稍" in s:
+            return "稍重"
+        elif "良" in s:
+            return "良"
+        elif "重" in s:
+            return "重"
+        return s
+    
     # --- 該当行取得関数 ---
     def get_row(df, cls):
         if df.empty:
             return None
+        gs = normalize_ground_state(ground_state)
+        # ground_state 候補を柔軟に設定
+        if gs == "不良":
+            gs_candidates = ["不", "不良"]
+        elif gs == "稍重":
+            gs_candidates = ["稍", "稍重"]
+        else:
+            gs_candidates = [gs]
         cond = (
             (df["race_type"] == race_type) &
             (df["course_len"].astype(str) == str(course_len)) &
-            (df["ground_state"] == ground_state) &
+            (df["ground_state"].astype(str).apply(lambda x: any(cand in x for cand in gs_candidates))) &
             (df["class"] == cls)
         )
         sub = df[cond]
@@ -1269,7 +1291,7 @@ def generate_recent_same_condition_html(date_str, place_id, target_id):
      # --- HTML構築開始 ---
     html = f"""
     <div id="recentSameCondition" style="margin-top:20px; padding:10px; border:1px solid #ccc; background:#fefefe;">
-      <h3>🏇 近10日間の同条件レース結果 ({base_type} {base_len}m)</h3>
+      <h3>🏇 先週/今週の同条件レース結果 ({base_type} {base_len}m)</h3>
     """
 
     for race_id, race_date_str, race_class, ground_state in matched_race_ids:
@@ -1411,7 +1433,8 @@ def make_race_card_html(date_str, place_id, target_id):
             report = horse_info.build_horse_report(
                 horse_name,
                 place_id,
-                target_id
+                target_id,
+                date_str
             )
             # 🧩 HTML化
             report_html = horse_info.horse_report_to_html(report)
@@ -1474,7 +1497,7 @@ def make_daily_race_card_html(race_day = date.today()):
 
 if __name__ == "__main__":
     # テスト用実行コード
-    race_day = date(2025, 11, 7)
+    race_day = date(2025, 10, 1)
     # make_daily_race_card_html(race_day)
 
     today = date.today()
