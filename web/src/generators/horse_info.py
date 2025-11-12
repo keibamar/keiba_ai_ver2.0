@@ -21,7 +21,7 @@ LIBS_PATH = os.path.join(PROJECT_ROOT, "libs")
 if LIBS_PATH not in sys.path:
     sys.path.insert(0, LIBS_PATH)
 
-from config.path import HORSE_ID_MAP_PATH, PAST_PERF_PATH, HORSE_PEDS_PATH, PEDS_RESULTS_PATH, TIME_INFO_PATH
+from config.path import HORSE_ID_MAP_PATH, PAST_PERF_PATH, HORSE_PEDS_PATH, PEDS_RESULTS_PATH, TIME_INFO_PATH, RACE_CALENDAR_FOLDER_PATH
 import name_header
 from race_pages import get_race_info
 
@@ -303,6 +303,7 @@ def recent_5_performances(horse_id: str, date_str:str) -> List[Dict[str, Any]]:
             break
         count += 1
         # 基本フィールド
+        race_id = row.get("race_id", "")
         date_raw = row.get("日付", "")
         waku = row.get("枠番", "")
         umaban = row.get("馬番", "")
@@ -344,6 +345,16 @@ def recent_5_performances(horse_id: str, date_str:str) -> List[Dict[str, Any]]:
                 heads = None
         passage = row.get("通過", row.get("通過", ""))
         passage_norm = normalize_passage(passage, heads)
+        # レース名が取得できなかった場合、race_id_listから取得する
+        if race_name is np.nan or None:
+            # レース名・時刻取得
+            race_date = datetime.strptime(date_raw, "%Y/%m/%d").strftime("%Y%m%d")
+            race_info_path = os.path.join(RACE_CALENDAR_FOLDER_PATH, f"race_time_id_list/{race_date}.csv")
+            if os.path.exists(race_info_path):
+                df_info = pd.read_csv(race_info_path, dtype=str)
+                match = df_info[df_info["race_id"].astype(str) == str(race_id)]
+                if not match.empty:
+                    race_name = str(match.iloc[0]["race_name"])
 
         res.append({
             "date": date_raw,
