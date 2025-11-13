@@ -386,7 +386,7 @@ def recent_5_performances(horse_id: str, date_str:str) -> List[Dict[str, Any]]:
         })
     return res
 
-def turf_dirt_summary(horse_id: str) -> Dict[str, Any]:
+def turf_dirt_summary(horse_id: str, date_str: str) -> Dict[str, Any]:
     """
     PastPerformance から芝/ダートごとに:
       - 最速上り (msではなく表示は上りの値そのもの。該当レース情報付)
@@ -404,6 +404,19 @@ def turf_dirt_summary(horse_id: str) -> Dict[str, Any]:
         df["上り_num"] = pd.to_numeric(df["上り"], errors="coerce")
     else:
         df["上り_num"] = pd.Series(dtype=float)
+     # --- 日付の正規化 ---
+    if "日付" in df.columns:
+        df["日付_parsed"] = pd.to_datetime(df["日付"], errors="coerce")
+    else:
+        print(f"⚠️ '日付'列が見つかりません (horse_id={horse_id})")
+        return []
+    try:
+        race_day_dt = datetime.strptime(str(date_str), "%Y%m%d")
+    except ValueError:
+        print(f"⚠️ race_dayの形式が不正です: {date_str}")
+        return []
+    # --- race_day より前のデータをフィルタ ---
+    df = df[df["日付_parsed"] < race_day_dt]
 
     # 簡単に race surface 判定 : '芝' または 'ダート' を '馬 場' カラムで判定
     surface_summary = {}
@@ -504,7 +517,8 @@ def same_course_best_time(
     horse_id: str,
     target_course_len: int,
     target_race_type: str,
-    target_place_id: int
+    target_place_id: int,
+    date_str : str
 ) -> Optional[Dict[str, Any]]:
     """
     PastPerformance から同じ開催場(place_id)、距離、馬場タイプ(芝/ダート)の持ち時計を返す。
@@ -524,6 +538,20 @@ def same_course_best_time(
         return None
 
     df = df.fillna("").astype(str)
+     # --- 日付の正規化 ---
+    if "日付" in df.columns:
+        df["日付_parsed"] = pd.to_datetime(df["日付"], errors="coerce")
+    else:
+        print(f"⚠️ '日付'列が見つかりません (horse_id={horse_id})")
+        return []
+    try:
+        race_day_dt = datetime.strptime(str(date_str), "%Y%m%d")
+    except ValueError:
+        print(f"⚠️ race_dayの形式が不正です: {date_str}")
+        return []
+    # --- race_day より前のデータをフィルタ ---
+    df = df[df["日付_parsed"] < race_day_dt]
+
     candidates = []
 
     for _, row in df.iterrows():
@@ -622,12 +650,12 @@ def build_horse_report(horse_name: str, place_id: int, race_id: str, date_str: s
     recent5 = recent_5_performances(hid, date_str)
 
     # ③ 芝/ダート別サマリ
-    surface_summary = turf_dirt_summary(hid)
+    surface_summary = turf_dirt_summary(hid, date_str)
 
     # ④ 同コースの持ち時計（もし race_type/course_len 与えられていれば）
     same_course_best = None
     if race_type and course_len:
-        same_course_best = same_course_best_time(hid, course_len, race_type, place_id)
+        same_course_best = same_course_best_time(hid, course_len, race_type, place_id, date_str)
 
     # combine
     return {
