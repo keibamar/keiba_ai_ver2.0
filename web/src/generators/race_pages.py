@@ -1496,16 +1496,21 @@ def make_daily_race_card_html(race_day = date.today()):
           make_race_card_html(date_str, place_id, race_id)
 
 if __name__ == "__main__":
-    # テスト用実行コード
-    race_day = date(2025, 10, 1)
-    # make_daily_race_card_html(race_day)
+    date_str = "20251115"
+    place_id = 3
+    target_id = "202503030301"
+    make_race_card_html(date_str, place_id, target_id)
 
-    today = date.today()
-    current = race_day
+    # # テスト用実行コード
+    # race_day = date(2025, 10, 1)
+    # # make_daily_race_card_html(race_day)
 
-    while current <= today:
-        print(f"🏇 {current} のレースカードを作成中...")
-        make_daily_race_card_html(current)
-        current += timedelta(days=1)
+    # today = date.today()
+    # current = race_day
 
-    print("🎉 すべての日付のレースカード作成が完了しました！")
+    # while current <= today:
+    #     print(f"🏇 {current} のレースカードを作成中...")
+    #     make_daily_race_card_html(current)
+    #     current += timedelta(days=1)
+
+    # print("🎉 すべての日付のレースカード作成が完了しました！")

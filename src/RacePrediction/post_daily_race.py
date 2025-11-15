@@ -86,7 +86,7 @@ def post_daily_race_pred(race_day = date.today()):
         str_comp_time = str(comp_time.hour).zfill(2) + str(comp_time.minute).zfill(2)
         race_time = time_id_list[0][0]
         # 実行時間を過ぎていたら投稿を実行
-        if(int(race_time) <= (int(str_comp_time)) or 1):
+        if(int(race_time) <= (int(str_comp_time))):
            race_id = time_id_list[0][1]
            try:
                 # 予想の更新

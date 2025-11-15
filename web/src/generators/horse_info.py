@@ -631,20 +631,20 @@ def build_horse_report(horse_name: str, place_id: int, race_id: str, date_str: s
      # --- クラスでフィルタ ---
     filtered_df = peds_results[peds_results["クラス"].isin([race_class, "all"])].copy()
     if filtered_df.empty:
-        print(f"⚠️ 該当クラス ({race_class}) のデータがありません。")
-        return pd.DataFrame()
-    
-    # --- 勝率・複勝率を計算 ---
-    for idx, row in filtered_df.iterrows():
-        total = int(row["1着"]) + int(row["2着"]) + int(row["3着"]) + int(row["着外"])
-        win_rate = (int(row["1着"]) / total) * 100 if total > 0 else 0.0
-        fukusho_rate = ((int(row["1着"]) + int(row["2着"]) + int(row["3着"])) / total) * 100 if total > 0 else 0.0
-        filtered_df.at[idx, "勝率"] = round(win_rate, 1)
-        filtered_df.at[idx, "複勝率"] = round(fukusho_rate, 1)
+        print(f"⚠️ {peds0}: 該当コース({place_id}:{race_type}{course_len}) のデータがありません。")
+        # return pd.DataFrame()
+    else :
+        # --- 勝率・複勝率を計算 ---
+        for idx, row in filtered_df.iterrows():
+            total = int(row["1着"]) + int(row["2着"]) + int(row["3着"]) + int(row["着外"])
+            win_rate = (int(row["1着"]) / total) * 100 if total > 0 else 0.0
+            fukusho_rate = ((int(row["1着"]) + int(row["2着"]) + int(row["3着"])) / total) * 100 if total > 0 else 0.0
+            filtered_df.at[idx, "勝率"] = round(win_rate, 1)
+            filtered_df.at[idx, "複勝率"] = round(fukusho_rate, 1)
 
-    # --- 列の並びを指定（着外の横に勝率・複勝率を追加）---
-    cols = ["クラス", "血統", "1着", "2着", "3着", "着外", "勝率", "複勝率"]
-    filtered_df = filtered_df[cols]
+        # --- 列の並びを指定（着外の横に勝率・複勝率を追加）---
+        cols = ["クラス", "血統", "1着", "2着", "3着", "着外", "勝率", "複勝率"]
+        filtered_df = filtered_df[cols]
     
     # ② 近5走
     recent5 = recent_5_performances(hid, date_str)

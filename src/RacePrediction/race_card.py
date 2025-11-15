@@ -133,7 +133,7 @@ def make_race_card(race_id):
         horse_results.append(horse_result)
         # 血統情報を取得
         horse_ped = horse_peds.get_horse_peds_csv(horse_id)
-        if horse_ped.empty():
+        if horse_ped.empty:
             horse_ped = horse_peds.make_horse_peds_dataset(horse_id)
             horse_peds.save_horse_peds_dataset(horse_id, horse_ped)
         horse_peds_df = pd.concat([horse_peds_df,horse_ped], axis = 1)
