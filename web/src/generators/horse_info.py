@@ -249,14 +249,16 @@ def peds_results_for_bloodline(place_id: int, race_type: str, course_len: int, g
         return pd.DataFrame()
     # normalize columns
     df.columns = [c.strip() for c in df.columns]
+    pattern = rf"\b{re.escape(peds0_name)}\b"
+
     # 血統カラムが '血統' になっている想定
     if "血統" in df.columns:
-        res = df[df["血統"].astype(str).str.contains(peds0_name, na=False, regex=False)]
+        res = df[df["血統"].astype(str).str.contains(pattern, na=False, regex=True)]
         return res.copy()
     # 列名の揺らぎがあれば try その他
     for col in df.columns:
         if "血統" in col:
-            res = df[df[col].astype(str).str.contains(peds0_name, na=False)]
+            res = df[df[col].astype(str).str.contains(pattern, na=False, regex=True)]
             return res.copy()
     return pd.DataFrame()
 
@@ -624,7 +626,7 @@ def build_horse_report(horse_name: str, place_id: int, race_id: str, date_str: s
     # ① 血統(peds_0) と PedsResults（同コースの1,2,3,着外データ）
     peds = load_horse_peds(hid)
     peds0 = peds.get("peds_0") or peds.get("peds0") or peds.get("peds_0 ", None)
-
+    peds0 = re.match(r"^\s*(\S+)", peds0).group(1) if peds0 else None
     peds_results = None
     if peds0:
         peds_results = peds_results_for_bloodline(place_id, race_type, course_len, ground_state, peds0)
