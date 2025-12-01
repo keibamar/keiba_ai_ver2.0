@@ -66,6 +66,26 @@ def save_horse_peds_dataset(horse_id, peds_df):
     except Exception as e:
             horse_peds_dataset_error(e)
 
+def normalize_horse_name_strings(s: str) -> str:
+    if not isinstance(s, str):
+        s = str(s)
+
+    # カタカナで始まる場合（全角カタカナ＋長音記号＋中点など）
+    if re.match(r'^[ァ-ヶー・ヴ]', s):
+        # 先頭のカタカナ部分だけ抽出
+        m = re.match(r'^([ァ-ヶー・ヴ]+)', s)
+        if m:
+            s = m.group(1)
+
+    # 英語で始まる場合（A-Z/a-z）
+    elif re.match(r'^[A-Za-z]', s):
+        # 括弧と中身を削除
+        s = re.sub(r'\([^)]*\)', '', s)
+
+    # 行末の空白を削除
+    s = s.strip()
+    return s
+
 def get_horse_peds_csv(horse_id):
     """ horse_idのhorse_pedsデータcsvを取得 
         Args:
@@ -75,7 +95,9 @@ def get_horse_peds_csv(horse_id):
     path = name_header.DATA_PATH + "/HorsePeds/" + str(horse_id) + '.csv'
     if os.path.isfile(path):
         df = pd.read_csv(path, index_col = 0, dtype = str)
-        df.fillna(np.nan)  
+        df.fillna(np.nan)
+        col = df.columns[0]
+        df[col] = df[col].apply(normalize_horse_name_strings)
     else :
         df = pd.DataFrame()
 
