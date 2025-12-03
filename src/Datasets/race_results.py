@@ -259,6 +259,7 @@ def update_race_results_dataset(place_id, day = date.today()):
             base_columns = old_race_results_df.columns
             # 列の順番をそろえる
             new_race_results_df = new_race_results_df.reindex(columns=base_columns)
+            new_race_results_df.fillna(np.nan) 
             new_race_results_df = pd.concat([old_race_results_df, new_race_results_df],axis = 0)
             # csv/pickleに書き込む
             save_race_results_dataset(place_id, day.year, new_race_results_df)
