@@ -1,0 +1,153 @@
+@startuml
+
+title HTML Dataset Pipeline Diagram
+left to right direction
+
+Rectangle "Averages" as Averages {
+    Rectangle "AverageFrames" as AverageFrames {
+        Rectangle "{COURSE_LIST}" as couseAF {
+            node "{year}_AverageFrames" as yearAF
+            node "{year}_AverageFrames_top3" as yearAF_top3
+            node "total_AverageFrames" as totalAF
+            node "total_AverageFrames_top3" as totalAF_top3
+        }
+    }
+
+    Rectangle "AveragePops" as AveragePops {
+        Rectangle "{COURSE_LIST}" as couseAP {
+            node "{year}_AveragePops" as yearAP
+            node "{year}_AveragePops_top3" as yearAP_top3
+            node "total_AveragePops" as totalAP
+            node "total_AveragePops_top3" as totalAP_top3
+        }
+    }
+    Rectangle "AverageTimes" as AverageTimes {
+        Rectangle "{COURSE_LIST}" as couseAT {
+            node "{year}_avg_time" as yearAT
+            node "{year}_winner_time" as yearAT_winner
+            node "total_avg_time" as totalAT
+            node "total_winner_time" as totalAT_winner
+        }
+    }
+    Rectangle "AverageWegiths" as AverageWeights {
+        Rectangle "{COURSE_LIST}" as couseAW {
+            node "{year}_winner_weight" as yearAW
+            node "total_winner_weight" as totalAW
+        }
+    }
+}
+
+Rectangle "HorsePeds" as HorsePeds {
+    node "hosrse_id" as horseIDpeds
+}
+Rectangle "PastPerformances" as PastPerformances {
+    node "horse_id" as horseIDpast
+}
+
+Rectangle "PedsResults" as PedsResults {
+    Rectangle "{COURSE_LIST}" as coursePR {
+        Rectangle "{year}" as yearPR {
+            node "{type}_len_all" as YearAllPR
+            node "{type}_len_{class}" as YearClassPR
+        }
+        Rectangle "total" as totalPR {
+            node "{type}_len_all" as TotalAllPR
+            node "{type}_len_{class}" as TotalClassPR
+        }
+    }
+}
+
+Rectangle "RaceCards" as RaceCards {
+    Rectangle "{datestr}" as dateRC {
+        node "{race_id}" as raceidRC
+    }
+}
+Rectangle "RaceInfo" as RaceInfo {
+    Rectangle "{COURSE_LIST}" as yearRaceInfo {
+        node "{race_id}" as raceIDRI
+    }
+}
+
+Rectangle "RaceResults" as RaceResults {
+    Rectangle "{COURSE_LIST}" as RaceResultsCourse {
+        Rectangle "{year}" as RaceResultsYearFolder {
+            node "{race_id}" as RaceResultsRaceID
+        } 
+    }
+}
+Rectangle "RaceReturns" as RaceReturns {
+    Rectangle "{COURSE_LIST}" as RaseReturnsCourse {
+        Rectangle "{year}" as RaseReturnsYearFolder {
+            node "{race_id}" as RaseReturnsRaceID
+        } 
+    }
+}
+
+Rectangle "time_id_list" as TimeIdList {
+    node "{date_str}" as DateTimeIdList
+}
+
+Rectangle "RacePages" as RacePages {
+    component "Navigataion" as NavHtml
+    component "RaceInfoHtml" as RaceInfoHtml
+    component "RaceCardTable" as RaceCardTable
+    component "PayOutTable" as PayOutTable
+    component "ResultTable" as ResultTable
+    Rectangle "RaceInfo" as RacePagesInfo {
+        component "RunTimeInfo" as RunTimeInfo
+        component "WeightInfo" as WeightInfo
+        component "RacePedsResults" as RacePedsResults
+        component "PopsInfo" as PopsInfo
+        component "FramesInfo" as FramesInfo
+    }
+    Rectangle "HorseInfo" {
+        component "PastInfo" as PastInfo
+        component "PedsInfo" as PedsInfo
+        component "RecentRaceInfo" as RecentRaceInfo
+    }
+}
+
+DateTimeIdList --> NavHtml
+
+raceIDRI --> RaceInfoHtml
+
+raceidRC --> RaceCardTable
+
+RaceResultsRaceID --> ResultTable
+RaseReturnsRaceID --> PayOutTable
+
+raceIDRI --> RunTimeInfo
+yearAT --> RunTimeInfo
+yearAT_winner --> RunTimeInfo
+totalAT --> RunTimeInfo
+totalAT_winner --> RunTimeInfo
+
+
+raceIDRI --> WeightInfo
+yearAW --> WeightInfo
+totalAW --> WeightInfo
+
+raceIDRI --> RacePedsResults
+YearClassPR --> RacePedsResults
+TotalClassPR --> RacePedsResults
+
+raceIDRI --> PopsInfo
+yearAP --> PopsInfo
+yearAP_top3 --> PopsInfo
+totalAP --> PopsInfo
+totalAP_top3 --> PopsInfo
+
+raceIDRI --> FramesInfo
+yearAF --> FramesInfo
+yearAF_top3 --> FramesInfo
+totalAF --> FramesInfo
+totalAF_top3 --> FramesInfo
+
+horseIDpast --> PastInfo
+totalAT --> PastInfo
+
+YearClassPR --> PedsInfo
+TotalClassPR --> PedsInfo
+
+
+@enduml
