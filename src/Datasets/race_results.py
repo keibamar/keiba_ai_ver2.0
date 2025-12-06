@@ -259,6 +259,9 @@ def update_race_results_dataset(place_id, day = date.today()):
             base_columns = old_race_results_df.columns
             # 列の順番をそろえる
             new_race_results_df = new_race_results_df.reindex(columns=base_columns)
+            # 空文字や空白を NaN に変換
+            new_race_results_df = new_race_results_df.replace(r'^\s*$', np.nan, regex=True)
+            new_race_results_df.fillna(np.nan) 
             new_race_results_df = pd.concat([old_race_results_df, new_race_results_df],axis = 0)
             # csv/pickleに書き込む
             save_race_results_dataset(place_id, day.year, new_race_results_df)
@@ -348,9 +351,10 @@ def split_race_results_by_year(place_id, year):
             # 重複している内容を消去
             group = group.drop_duplicates(subset="馬名", keep="first")
             group.to_csv(output_path, index=True)
-            print(f"保存完了: {output_path}")
+            # print(f"保存完了: {output_path}")
         except Exception :
             print("レース結果の分割に失敗しました。", race_id)
+    print(year, name_header.PLACE_LIST[place_id - 1], "CompleteResultsSplit")
 
 if __name__ == "__main__":
     # montly_update_race_results()

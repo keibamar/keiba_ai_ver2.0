@@ -422,7 +422,7 @@ def make_past_performance_dataset_from_race_results(horse_id):
     except Exception:
         pass
 
-    print(f"✅ horse_id={horse_id} の過去成績 {len(result_df)}件を整形しました。")
+    # print(f"✅ horse_id={horse_id} の過去成績 {len(result_df)}件を整形しました。")
     return result_df.reset_index(drop=True)
 
 def normalize_past_performance_format(df_old: pd.DataFrame) -> pd.DataFrame:
