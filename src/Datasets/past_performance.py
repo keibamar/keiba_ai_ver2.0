@@ -349,7 +349,7 @@ def make_past_performance_dataset_from_race_results(horse_id):
                     else:
                         margin = "-0.0"
                 else:
-                    margin = f"{diff:.1f}" if diff > 0 else ""
+                    margin = f"{diff:.1f}" if diff >= 0 else ""
 
         # 勝ち馬欄
         if str(row["着順"]) == "1":
@@ -414,7 +414,8 @@ def make_past_performance_dataset_from_race_results(horse_id):
             result_df[c] = ""
 
     result_df = result_df[out_cols]
-
+    # 重複レースの削除
+    result_df = result_df.drop_duplicates(subset="race_id", keep="last")
     # --- ソート（日付新→古） ---
     try:
         result_df["日付_dt"] = pd.to_datetime(result_df["日付"], errors="coerce")

@@ -179,7 +179,7 @@ def get_avg_time(course_name, race_type, class_name, course_len, ground_state):
         return np.nan
 
     # --- 平均値を返す（複数一致時は平均） ---
-    return sub["avg_time"].values
+    return float(sub["avg_time"].values[0])
 
 def get_horse_id_by_name(horse_name: str, map_df: pd.DataFrame) -> Optional[str]:
     if map_df is None or map_df.empty:
@@ -328,10 +328,13 @@ def recent_5_performances(horse_id: str, date_str:str) -> List[Dict[str, Any]]:
         if not avg_time is np.nan:
             try:
                 diff_avg_ms = (t_ms - avg_time) / 1000
+                diff_avg_ms = round(diff_avg_ms, 2)
             except Exception:
                 diff_avg_ms = np.nan
         else:
             diff_avg_ms = np.nan
+
+        time_raw = re.sub(r"^0:", "", time_raw)
 
         # 通過の正規化
         heads = None
