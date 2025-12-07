@@ -62,6 +62,53 @@
       padding-right: 10px;
       white-space: nowrap;
     }
+    
+    /* ========== コース別データセクション（折りたたみ） ========== */
+    .course-data-section {
+      margin-top: 20px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      background-color: #f9f9f9;
+    }
+    .course-data-header {
+      padding: 12px;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+      user-select: none;
+      font-weight: bold;
+      border-radius: 5px 5px 0 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .course-data-header:hover {
+      background-color: #0056b3;
+    }
+    .course-data-toggle {
+      font-size: 18px;
+      transition: transform 0.3s;
+    }
+    .course-data-toggle.open {
+      transform: rotate(180deg);
+    }
+    .course-data-content {
+      padding: 15px;
+      display: none;
+    }
+    .course-data-content.open {
+      display: block;
+    }
+    .data-section {
+      margin-bottom: 15px;
+      padding: 10px;
+      background-color: white;
+      border-left: 3px solid #007bff;
+    }
+    .data-section h4 {
+      margin-top: 0;
+      color: #333;
+    }
   </style>
 </head>
 <body>
@@ -69,8 +116,8 @@
     <div class="nav">
       <a href="index.html">この日の一覧に戻る</a><br>
       <div class="subnav">
-        <a href="08_kyotoR8.html">← 前のレース（3歳以上2勝クラス）</a>
-        <a href="08_kyotoR10.html">次のレース（大山崎S） →</a>
+        <a href="08_kyotoR8.html">← 京都8R:3歳以上2勝クラス</a>
+        <a href="08_kyotoR10.html">京都10R:大山崎S →</a>
       </div>
       <div class='other-places'>他場：<a href="05_tokyoR9.html">東京9R（八ケ岳特別）</a></div>
     </div>
@@ -194,327 +241,7 @@
         
     </tbody>
   </table>
-  <div id="runtimeInfo" style="margin: 20px 0; padding: 10px; border: 1px solid #ccc; background: #fafafa;">
-      <h3>🏇 コース別平均タイム情報 (芝 1400m 重 1勝クラス)</h3>
-      <table style="border-collapse: collapse; width: 100%; text-align: center;">
-        <thead>
-          <tr style="background: #f2f2f2;">
-            <th>区分</th>
-            <th>対象</th>
-            <th>平均勝ち時計</th>
-            <th>上り</th>
-            <th>通過</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td rowspan="2">全クラス</td>
-            <td>2025年平均</td>
-            <td>1:22.100</td>
-            <td>34.2</td>
-            <td><span style="color:black; font-weight:bold;">8.1</span>-<span style="color:black; font-weight:bold;">8.1</span></td>
-          </tr>
-          <tr>
-            <td>TOTAL平均</td>
-            <td>1:22.434</td>
-            <td>34.8</td>
-            <td><span style="color:black; font-weight:bold;">7.9</span>-<span style="color:black; font-weight:bold;">7.6</span></td>
-          </tr>
-          <tr>
-            <td rowspan="2">1勝クラス</td>
-            <td>2025年平均</td>
-            <td>1:22.250</td>
-            <td>33.6</td>
-            <td><span style="color:black; font-weight:bold;">10.2</span>-<span style="color:black; font-weight:bold;">10.2</span></td>
-          </tr>
-          <tr>
-            <td>TOTAL平均</td>
-            <td>1:22.833</td>
-            <td>34.4</td>
-            <td><span style="color:black; font-weight:bold;">11.2</span>-<span style="color:black; font-weight:bold;">11.2</span></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  <div id="weightInfo" style="margin: 20px 0; padding: 10px; border: 1px solid #ccc; background: #fefefe;">
-    <h3>🏇 コース別平均馬体重情報 (芝 1400m 重 1勝クラス)</h3>
-    <table style="border-collapse: collapse; width: 100%; text-align: center;">
-      <thead>
-        <tr style="background: #f2f2f2;">
-          <th>区分</th>
-          <th>対象</th>
-          <th>平均馬体重</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td rowspan="2">全クラス</td>
-          <td>2025年平均</td>
-          <td><span style="color:black; font-weight:bold;">463.0kg</span></td>
-        </tr>
-        <tr>
-          <td>TOTAL平均</td>
-          <td><span style="color:black; font-weight:bold;">475.9kg</span></td>
-        </tr>
-        <tr>
-          <td rowspan="2">1勝クラス</td>
-          <td>2025年平均</td>
-          <td><span style="color:black; font-weight:bold;">463.0kg</span></td>
-        </tr>
-        <tr>
-          <td>TOTAL平均</td>
-          <td><span style="color:black; font-weight:bold;">495.5kg</span></td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
   
-    <div class="peds-result-block"; style="margin: 20px 0; padding: 10px; border: 1px solid #ccc; background: #fefefe;">
-      <h3>🐎 血統別成績 (芝 1400m 重)</h3>
-
-      
-        <h4>全クラス 2019~2025 </h4>
-        <table class="peds-table">
-          <thead>
-            <tr><th>血統</th><th>成績(1,2,3,着外)</th><th>勝率</th><th>複勝率</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>ビッグアーサー</td>
-              <td>(3,0,1,4)</td>
-              <td>37.5%</td>
-              <td>50.0%</td>
-            </tr>
-            <tr>
-              <td>ダイワメジャー</td>
-              <td>(2,1,0,7)</td>
-              <td>20.0%</td>
-              <td>30.0%</td>
-            </tr>
-            <tr>
-              <td>ドリームジャーニー</td>
-              <td>(2,1,0,0)</td>
-              <td>66.7%</td>
-              <td>100.0%</td>
-            </tr>
-            <tr>
-              <td>ロードカナロア</td>
-              <td>(2,0,1,7)</td>
-              <td>20.0%</td>
-              <td>30.0%</td>
-            </tr>
-            <tr>
-              <td>スクリーンヒーロー</td>
-              <td>(1,1,0,1)</td>
-              <td>33.3%</td>
-              <td>66.7%</td>
-            </tr></tbody>
-        </table>
-        
-      
-        <h4>1勝クラス 2019~2025 </h4>
-        <table class="peds-table">
-          <thead>
-            <tr><th>血統</th><th>成績(1,2,3,着外)</th><th>勝率</th><th>複勝率</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>ビッグアーサー</td>
-              <td>(2,0,0,2)</td>
-              <td>50.0%</td>
-              <td>50.0%</td>
-            </tr>
-            <tr>
-              <td>ダイワメジャー</td>
-              <td>(1,1,0,1)</td>
-              <td>33.3%</td>
-              <td>66.7%</td>
-            </tr>
-            <tr>
-              <td>モズアスコット</td>
-              <td>(1,0,0,0)</td>
-              <td>100.0%</td>
-              <td>100.0%</td>
-            </tr>
-            <tr>
-              <td>ロードカナロア</td>
-              <td>(1,0,0,1)</td>
-              <td>50.0%</td>
-              <td>50.0%</td>
-            </tr>
-            <tr>
-              <td>デクラレーションオブウォー</td>
-              <td>(0,1,0,1)</td>
-              <td>0.0%</td>
-              <td>50.0%</td>
-            </tr></tbody>
-        </table>
-        
-      
-        <h4>全クラス 2025年 </h4>
-        <table class="peds-table">
-          <thead>
-            <tr><th>血統</th><th>成績(1,2,3,着外)</th><th>勝率</th><th>複勝率</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>ビッグアーサー</td>
-              <td>(2,0,0,2)</td>
-              <td>50.0%</td>
-              <td>50.0%</td>
-            </tr>
-            <tr>
-              <td>モズアスコット</td>
-              <td>(1,0,0,0)</td>
-              <td>100.0%</td>
-              <td>100.0%</td>
-            </tr>
-            <tr>
-              <td>ロードカナロア</td>
-              <td>(1,0,0,1)</td>
-              <td>50.0%</td>
-              <td>50.0%</td>
-            </tr>
-            <tr>
-              <td>ダイワメジャー</td>
-              <td>(0,1,0,1)</td>
-              <td>0.0%</td>
-              <td>50.0%</td>
-            </tr>
-            <tr>
-              <td>マクフィ Makfi(英)</td>
-              <td>(0,1,0,0)</td>
-              <td>0.0%</td>
-              <td>100.0%</td>
-            </tr></tbody>
-        </table>
-        
-      
-        <h4>1勝クラス 2025年 </h4>
-        <table class="peds-table">
-          <thead>
-            <tr><th>血統</th><th>成績(1,2,3,着外)</th><th>勝率</th><th>複勝率</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>ビッグアーサー</td>
-              <td>(2,0,0,2)</td>
-              <td>50.0%</td>
-              <td>50.0%</td>
-            </tr>
-            <tr>
-              <td>モズアスコット</td>
-              <td>(1,0,0,0)</td>
-              <td>100.0%</td>
-              <td>100.0%</td>
-            </tr>
-            <tr>
-              <td>ロードカナロア</td>
-              <td>(1,0,0,1)</td>
-              <td>50.0%</td>
-              <td>50.0%</td>
-            </tr>
-            <tr>
-              <td>ダイワメジャー</td>
-              <td>(0,1,0,1)</td>
-              <td>0.0%</td>
-              <td>50.0%</td>
-            </tr>
-            <tr>
-              <td>マクフィ Makfi(英)</td>
-              <td>(0,1,0,0)</td>
-              <td>0.0%</td>
-              <td>100.0%</td>
-            </tr></tbody>
-        </table>
-        
-    </div>
-    
-  <div id="popsInfo" style="margin: 20px 0; padding: 10px; border: 1px solid #ccc; background: #fefefe;">
-      <h3>🏇 コース別平均人気情報 (芝 1400m 重 1勝クラス)</h3>
-      <table style="border-collapse: collapse; width: 100%; text-align: center;">
-        <thead>
-          <tr style="background: #f2f2f2;">
-            <th>区分</th>
-            <th>対象</th>
-            <th>平均勝馬人気</th>
-            <th>平均着内人気</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td rowspan="2">全クラス</td>
-            <td>2025年平均</td>
-            <td><span style="color:deepskyblue; font-weight:bold;">8.9番人気</span></td>
-            <td><span style="color:deepskyblue; font-weight:bold;">7.2番人気</span></td>
-          </tr>
-          <tr>
-            <td>TOTAL平均</td>
-            <td><span style="color:black; font-weight:bold;">4.8番人気</span></td>
-            <td><span style="color:deepskyblue; font-weight:bold;">6.0番人気</span></td>
-          </tr>
-          <tr>
-            <td rowspan="2">1勝クラス</td>
-            <td>2025年平均</td>
-            <td><span style="color:deepskyblue; font-weight:bold;">8.9番人気</span></td>
-            <td><span style="color:deepskyblue; font-weight:bold;">7.2番人気</span></td>
-          </tr>
-          <tr>
-            <td>TOTAL平均</td>
-            <td><span style="color:deepskyblue; font-weight:bold;">9.0番人気</span></td>
-            <td><span style="color:deepskyblue; font-weight:bold;">6.6番人気</span></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  <div id="frameHorseInfo" style="margin:20px 0; padding:10px; border:1px solid #ccc; background:#fefefe;">
-      <h3>📊 枠番・馬番 平均情報 (芝 1400m 重 1勝クラス)</h3>
-      <table style="border-collapse:collapse; width:100%; text-align:center;">
-        <thead>
-          <tr style="background:#f2f2f2;">
-            <th>区分</th>
-            <th>対象</th>
-            <th>平均枠番(勝ち馬)</th>
-            <th>平均馬番(勝ち馬)</th>
-            <th>平均枠番(3着内)</th>
-            <th>平均馬番(3着内)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td rowspan="2">全クラス</td>
-            <td>2025年平均</td>
-            <td><span style="color:black; font-weight:bold;">3.75</span></td>
-            <td><span style="color:black; font-weight:bold;">5.75</span></td>
-            <td><span style="color:black; font-weight:bold;">4.20</span></td>
-            <td><span style="color:black; font-weight:bold;">6.80</span></td>
-          </tr>
-          <tr>
-            <td>TOTAL平均</td>
-            <td><span style="color:black; font-weight:bold;">4.52</span></td>
-            <td><span style="color:black; font-weight:bold;">6.98</span></td>
-            <td><span style="color:black; font-weight:bold;">4.51</span></td>
-            <td><span style="color:black; font-weight:bold;">6.87</span></td>
-          </tr>
-          <tr>
-            <td rowspan="2">1勝クラス</td>
-            <td>2025年平均</td>
-            <td><span style="color:black; font-weight:bold;">3.75</span></td>
-            <td><span style="color:black; font-weight:bold;">5.75</span></td>
-            <td><span style="color:black; font-weight:bold;">4.20</span></td>
-            <td><span style="color:black; font-weight:bold;">6.80</span></td>
-          </tr>
-          <tr>
-            <td>TOTAL平均</td>
-            <td><span style="color:black; font-weight:bold;">3.88</span></td>
-            <td><span style="color:black; font-weight:bold;">4.88</span></td>
-            <td><span style="color:black; font-weight:bold;">4.44</span></td>
-            <td><span style="color:black; font-weight:bold;">5.90</span></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  <div>同条件の近走レースはありません。</div>
   
     <h2>レース結果</h2>
     <table id="resultTable">
@@ -554,12 +281,12 @@
             <td>458</td>
             <td>0:1:21.8</td>
             <td>クビ</td>
-            <td style="background-color:orange;">3</td>
+            <td style="background-color:#FFA07A;">3</td>
             <td>34.1</td>
             <td>8-7</td>
             <td>4.6</td>
             <td style="color:red;">0.679</td>
-            <td style="background-color:lightblue;">2</td>
+            <td style="background-color:#B0E0E6;">2</td>
         </tr>
         
         <tr>
@@ -605,12 +332,12 @@
             <td>446</td>
             <td>0:1:22.2</td>
             <td>2.1/2</td>
-            <td style="background-color:yellow;">1</td>
+            <td style="background-color:#FFD700;">1</td>
             <td>34.6</td>
             <td>7-7</td>
             <td>2.8</td>
             <td style="color:blue;">-0.370</td>
-            <td style="background-color:orange;">3</td>
+            <td style="background-color:#FFA07A;">3</td>
         </tr>
         
         <tr>
@@ -627,7 +354,7 @@
             <td>2-2</td>
             <td>6.9</td>
             <td style="color:red;">1.009</td>
-            <td style="background-color:yellow;">1</td>
+            <td style="background-color:#FFD700;">1</td>
         </tr>
         
         <tr>
@@ -656,7 +383,7 @@
             <td>460</td>
             <td>0:1:22.8</td>
             <td>1.1/2</td>
-            <td style="background-color:lightblue;">2</td>
+            <td style="background-color:#B0E0E6;">2</td>
             <td>35.3</td>
             <td>5-5</td>
             <td>4.5</td>
@@ -732,7 +459,365 @@
       </tbody>
     </table>
     
+  
+  <!-- ========== コース別データセクション（折りたたみ可能） ========== -->
+  <div class="course-data-section">
+    <div class="course-data-header" onclick="toggleCourseData()">
+      <span>コース別データ</span>
+      <span class="course-data-toggle" id="courseDataToggle">▼</span>
+    </div>
+    <div class="course-data-content" id="courseDataContent">
+      <div class="data-section">
+        <h4>通過時間情報</h4>
+        <div id="runtimeInfo" style="margin: 20px 0; padding: 10px; border: 1px solid #ccc; background: #fafafa;">
+      <h3>🏁 コース別平均タイム情報 (芝 1400m 重 1勝クラス)</h3>
+      <table style="border-collapse: collapse; width: 100%; text-align: center;">
+        <thead>
+          <tr style="background: #f2f2f2;">
+            <th>区分</th>
+            <th>対象</th>
+            <th>平均勝ち時計</th>
+            <th>上り</th>
+            <th>通過</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td rowspan="2">全クラス</td>
+            <td>2025年平均</td>
+            <td>1:22.100</td>
+            <td>34.2</td>
+            <td><span style="color:black; font-weight:bold;">8.1</span>-<span style="color:black; font-weight:bold;">8.1</span></td>
+          </tr>
+          <tr>
+            <td>TOTAL平均</td>
+            <td>1:22.434</td>
+            <td>34.8</td>
+            <td><span style="color:black; font-weight:bold;">7.9</span>-<span style="color:black; font-weight:bold;">7.6</span></td>
+          </tr>
+          <tr>
+            <td rowspan="2">1勝クラス</td>
+            <td>2025年平均</td>
+            <td>1:22.250</td>
+            <td>33.6</td>
+            <td><span style="color:black; font-weight:bold;">10.2</span>-<span style="color:black; font-weight:bold;">10.2</span></td>
+          </tr>
+          <tr>
+            <td>TOTAL平均</td>
+            <td>1:22.833</td>
+            <td>34.4</td>
+            <td><span style="color:black; font-weight:bold;">11.2</span>-<span style="color:black; font-weight:bold;">11.2</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+      </div>
+      <div class="data-section">
+        <h4>馬体重情報</h4>
+        <div id="weightInfo" style="margin: 20px 0; padding: 10px; border: 1px solid #ccc; background: #fefefe;">
+    <h3>🏁 コース別平均馬体重情報 (芝 1400m 重 1勝クラス)</h3>
+    <table style="border-collapse: collapse; width: 100%; text-align: center;">
+      <thead>
+        <tr style="background: #f2f2f2;">
+          <th>区分</th>
+          <th>対象</th>
+          <th>平均馬体重</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td rowspan="2">全クラス</td>
+          <td>2025年平均</td>
+          <td><span style="color:black; font-weight:bold;">463.0kg</span></td>
+        </tr>
+        <tr>
+          <td>TOTAL平均</td>
+          <td><span style="color:black; font-weight:bold;">475.9kg</span></td>
+        </tr>
+        <tr>
+          <td rowspan="2">1勝クラス</td>
+          <td>2025年平均</td>
+          <td><span style="color:black; font-weight:bold;">463.0kg</span></td>
+        </tr>
+        <tr>
+          <td>TOTAL平均</td>
+          <td><span style="color:black; font-weight:bold;">495.5kg</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+      </div>
+      <div class="data-section">
+        <h4>血統情報</h4>
+        
+    <div class="peds-result-block"; style="margin: 20px 0; padding: 10px; border: 1px solid #ccc; background: #fefefe;">
+      <h3>🐎 血統別成績 (芝 1400m 重)</h3>
+
+      
+        <h4>全クラス 2019~2025 </h4>
+        <table class="peds-table">
+          <thead>
+            <tr><th>血統</th><th>成績(1,2,3,着外)</th><th>勝率</th><th>複勝率</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>ダイワメジャー</td>
+              <td>(2,1,0,7)</td>
+              <td>20.0%</td>
+              <td>30.0%</td>
+            </tr>
+            <tr>
+              <td>ドリームジャーニー</td>
+              <td>(2,1,0,0)</td>
+              <td>66.7%</td>
+              <td>100.0%</td>
+            </tr>
+            <tr>
+              <td>ビッグアーサー</td>
+              <td>(2,0,1,4)</td>
+              <td>28.6%</td>
+              <td>42.9%</td>
+            </tr>
+            <tr>
+              <td>ロードカナロア</td>
+              <td>(2,0,1,7)</td>
+              <td>20.0%</td>
+              <td>30.0%</td>
+            </tr>
+            <tr>
+              <td>スクリーンヒーロー</td>
+              <td>(1,1,0,1)</td>
+              <td>33.3%</td>
+              <td>66.7%</td>
+            </tr></tbody>
+        </table>
+        
+      
+        <h4>1勝クラス 2019~2025 </h4>
+        <table class="peds-table">
+          <thead>
+            <tr><th>血統</th><th>成績(1,2,3,着外)</th><th>勝率</th><th>複勝率</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>ダイワメジャー</td>
+              <td>(1,1,0,1)</td>
+              <td>33.3%</td>
+              <td>66.7%</td>
+            </tr>
+            <tr>
+              <td>ビッグアーサー</td>
+              <td>(1,0,0,2)</td>
+              <td>33.3%</td>
+              <td>33.3%</td>
+            </tr>
+            <tr>
+              <td>モズアスコット</td>
+              <td>(1,0,0,0)</td>
+              <td>100.0%</td>
+              <td>100.0%</td>
+            </tr>
+            <tr>
+              <td>ロードカナロア</td>
+              <td>(1,0,0,1)</td>
+              <td>50.0%</td>
+              <td>50.0%</td>
+            </tr>
+            <tr>
+              <td>デクラレーションオブウォー</td>
+              <td>(0,1,0,1)</td>
+              <td>0.0%</td>
+              <td>50.0%</td>
+            </tr></tbody>
+        </table>
+        
+      
+        <h4>全クラス 2025年 </h4>
+        <table class="peds-table">
+          <thead>
+            <tr><th>血統</th><th>成績(1,2,3,着外)</th><th>勝率</th><th>複勝率</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>ビッグアーサー</td>
+              <td>(1,0,0,2)</td>
+              <td>33.3%</td>
+              <td>33.3%</td>
+            </tr>
+            <tr>
+              <td>モズアスコット</td>
+              <td>(1,0,0,0)</td>
+              <td>100.0%</td>
+              <td>100.0%</td>
+            </tr>
+            <tr>
+              <td>ロードカナロア</td>
+              <td>(1,0,0,1)</td>
+              <td>50.0%</td>
+              <td>50.0%</td>
+            </tr>
+            <tr>
+              <td>ダイワメジャー</td>
+              <td>(0,1,0,1)</td>
+              <td>0.0%</td>
+              <td>50.0%</td>
+            </tr>
+            <tr>
+              <td>マクフィ</td>
+              <td>(0,1,0,0)</td>
+              <td>0.0%</td>
+              <td>100.0%</td>
+            </tr></tbody>
+        </table>
+        
+      
+        <h4>1勝クラス 2025年 </h4>
+        <table class="peds-table">
+          <thead>
+            <tr><th>血統</th><th>成績(1,2,3,着外)</th><th>勝率</th><th>複勝率</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>ビッグアーサー</td>
+              <td>(1,0,0,2)</td>
+              <td>33.3%</td>
+              <td>33.3%</td>
+            </tr>
+            <tr>
+              <td>モズアスコット</td>
+              <td>(1,0,0,0)</td>
+              <td>100.0%</td>
+              <td>100.0%</td>
+            </tr>
+            <tr>
+              <td>ロードカナロア</td>
+              <td>(1,0,0,1)</td>
+              <td>50.0%</td>
+              <td>50.0%</td>
+            </tr>
+            <tr>
+              <td>ダイワメジャー</td>
+              <td>(0,1,0,1)</td>
+              <td>0.0%</td>
+              <td>50.0%</td>
+            </tr>
+            <tr>
+              <td>マクフィ</td>
+              <td>(0,1,0,0)</td>
+              <td>0.0%</td>
+              <td>100.0%</td>
+            </tr></tbody>
+        </table>
+        
+    </div>
+    
+      </div>
+      <div class="data-section">
+        <h4>人気情報</h4>
+        <div id="popsInfo" style="margin: 20px 0; padding: 10px; border: 1px solid #ccc; background: #fefefe;">
+      <h3>🏁 コース別平均人気情報 (芝 1400m 重 1勝クラス)</h3>
+      <table style="border-collapse: collapse; width: 100%; text-align: center;">
+        <thead>
+          <tr style="background: #f2f2f2;">
+            <th>区分</th>
+            <th>対象</th>
+            <th>平均勝馬人気</th>
+            <th>平均着内人気</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td rowspan="2">全クラス</td>
+            <td>2025年平均</td>
+            <td><span style="color:deepskyblue; font-weight:bold;">9.4番人気</span></td>
+            <td><span style="color:deepskyblue; font-weight:bold;">7.2番人気</span></td>
+          </tr>
+          <tr>
+            <td>TOTAL平均</td>
+            <td><span style="color:black; font-weight:bold;">4.9番人気</span></td>
+            <td><span style="color:deepskyblue; font-weight:bold;">6.0番人気</span></td>
+          </tr>
+          <tr>
+            <td rowspan="2">1勝クラス</td>
+            <td>2025年平均</td>
+            <td><span style="color:deepskyblue; font-weight:bold;">9.4番人気</span></td>
+            <td><span style="color:deepskyblue; font-weight:bold;">7.2番人気</span></td>
+          </tr>
+          <tr>
+            <td>TOTAL平均</td>
+            <td><span style="color:deepskyblue; font-weight:bold;">9.2番人気</span></td>
+            <td><span style="color:deepskyblue; font-weight:bold;">6.6番人気</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+      </div>
+      <div class="data-section">
+        <h4>枠順情報</h4>
+        <div id="frameHorseInfo" style="margin:20px 0; padding:10px; border:1px solid #ccc; background:#fefefe;">
+      <h3>📊 枠番・馬番 平均情報 (芝 1400m 重 1勝クラス)</h3>
+      <table style="border-collapse:collapse; width:100%; text-align:center;">
+        <thead>
+          <tr style="background:#f2f2f2;">
+            <th>区分</th>
+            <th>対象</th>
+            <th>平均枠番(勝ち馬)</th>
+            <th>平均馬番(勝ち馬)</th>
+            <th>平均枠番(3着内)</th>
+            <th>平均馬番(3着内)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td rowspan="2">全クラス</td>
+            <td>2025年平均</td>
+            <td><span style="color:black; font-weight:bold;">4.33</span></td>
+            <td><span style="color:black; font-weight:bold;">6.33</span></td>
+            <td><span style="color:black; font-weight:bold;">4.44</span></td>
+            <td><span style="color:black; font-weight:bold;">7.11</span></td>
+          </tr>
+          <tr>
+            <td>TOTAL平均</td>
+            <td><span style="color:black; font-weight:bold;">4.63</span></td>
+            <td><span style="color:black; font-weight:bold;">7.10</span></td>
+            <td><span style="color:black; font-weight:bold;">4.56</span></td>
+            <td><span style="color:black; font-weight:bold;">6.93</span></td>
+          </tr>
+          <tr>
+            <td rowspan="2">1勝クラス</td>
+            <td>2025年平均</td>
+            <td><span style="color:black; font-weight:bold;">4.33</span></td>
+            <td><span style="color:black; font-weight:bold;">6.33</span></td>
+            <td><span style="color:black; font-weight:bold;">4.44</span></td>
+            <td><span style="color:black; font-weight:bold;">7.11</span></td>
+          </tr>
+          <tr>
+            <td>TOTAL平均</td>
+            <td><span style="color:black; font-weight:bold;">4.16</span></td>
+            <td><span style="color:black; font-weight:bold;">5.16</span></td>
+            <td><span style="color:black; font-weight:bold;">4.56</span></td>
+            <td><span style="color:black; font-weight:bold;">6.06</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+      </div>
+      <div class="data-section">
+        <h4>最近の成績</h4>
+        <div>同条件の近走レースはありません。</div>
+      </div>
+    </div>
+  </div>
+  
   <script>
+  function toggleCourseData() {
+    const content = document.getElementById("courseDataContent");
+    const toggle = document.getElementById("courseDataToggle");
+    
+    content.classList.toggle("open");
+    toggle.classList.toggle("open");
+  }
+  
   document.addEventListener("DOMContentLoaded", () => {
     // ======== スタイル設定部分 ========
     const rows = document.querySelectorAll("#raceTable tbody tr");
@@ -787,7 +872,6 @@
         indicator.style.marginLeft = "6px";
         th.appendChild(indicator);
       }
-      // indicator.textContent = currentDir === "asc" ? "▲" : "▼";
 
       // ソート処理
       rowsArray.sort((a, b) => {
@@ -820,156 +904,188 @@
     });
   });
   </script>
-<h2>出走馬 詳細レポート</h2>
 
+    <h2>出走馬 詳細レポート</h2>
+    
+    <style>
+      .horse-report-toggle {
+        cursor: pointer;
+        user-select: none;
+        padding: 12px;
+        background-color: #e3f2fd;
+        border: 1px solid #90caf9;
+        border-radius: 5px;
+        margin: 10px 0;
+        font-weight: bold;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .horse-report-toggle:hover {
+        background-color: #bbdefb;
+      }
+      .horse-report-toggle-icon {
+        font-size: 18px;
+        transition: transform 0.3s;
+      }
+      .horse-report-toggle-icon.open {
+        transform: rotate(180deg);
+      }
+      .horse-report-content {
+        display: none;
+        padding: 10px;
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        border-top: none;
+        border-radius: 0 0 5px 5px;
+      }
+      .horse-report-content.open {
+        display: block;
+      }
+    </style>
+    
             <div class="horse-report-card">
-              <h3>🐎 ベルフラム</h3>
-              <h4>血統 (父)</h4>
-<ul>
-<li>リアルスティール</li>
-</ul>
-<h4>PedsResults（同条件）</h4>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th>クラス</th>
-      <th>血統</th>
-      <th>1着</th>
-      <th>2着</th>
-      <th>3着</th>
-      <th>着外</th>
-      <th>勝率</th>
-      <th>複勝率</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>all</td>
-      <td>リアルスティール</td>
-      <td>2</td>
-      <td>3</td>
-      <td>1</td>
-      <td>15</td>
-      <td>9.5</td>
-      <td>28.6</td>
-    </tr>
-    <tr>
-      <td>1勝クラス</td>
-      <td>リアルスティール</td>
-      <td>0</td>
-      <td>1</td>
-      <td>0</td>
-      <td>3</td>
-      <td>0.0</td>
-      <td>25.0</td>
-    </tr>
-  </tbody>
-</table>
-<h4>近5走(JRAのみ)</h4>
-<table border='1'><tr><th>日付</th><th>開催</th><th>R</th><th>レース名</th><th>クラス</th><th>着順</th><th>人気</th><th>枠</th><th>馬番</th><th>芝/ダート</th><th>距離</th><th>馬場</th><th>タイム</th><th>着差</th><th>平均勝ち時計との差</th><th>上り</th><th>通過</th><th>馬体重</th></tr>
+              <div class="horse-report-toggle" onclick="toggleHorseReport('horse_report_0_1')">
+                <span>🐎[1枠1番] ベルフラム </span>
+                <span class="horse-report-toggle-icon open">▼</span>
+              </div>
+              <div class="horse-report-content open" id="horse_report_0_1">
+                <div class='horse-report' style='padding: 10px; background: #fafafa; border: 1px solid #ddd;'>
+<h4>血統 (父) : <strong>リアルスティール</strong></h4>
+<h4>🧬 京都 芝1400m (重)</h4>
+<table style='width:100%; border-collapse: collapse; text-align: center;'>
+<thead><tr style='background:#f2f2f2;'><th>クラス</th><th>血統</th><th>1着</th><th>2着</th><th>3着</th><th>着外</th><th>勝率</th><th>複勝率</th></tr></thead><tbody>
+<td><strong>all</strong></td>
+<td>リアルスティール</td>
+<td>2</td>
+<td>3</td>
+<td>1</td>
+<td>15</td>
+<td>9.5</td>
+<td>28.6</td>
+</tr>
+<td><strong>1勝クラス</strong></td>
+<td>リアルスティール</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>3</td>
+<td>0.0</td>
+<td>25.0</td>
+</tr>
+</tbody></table>
+<h4>📊 近5走成績</h4>
+<table style='width:100%; border-collapse: collapse; text-align: center; font-size: 12px;'>
+<thead><tr style='background:#f2f2f2;'><th>日付</th><th>開催</th><th>R</th><th>レース名</th><th>クラス</th><th>着順</th><th>人気</th><th>枠</th><th>馬番</th><th>種別</th><th>距離</th><th>馬場</th><th>タイム</th><th>着差</th><th>平均時計との差</th><th>上り</th><th>通過</th><th>馬体重</th></tr></thead><tbody>
 <tr>
 <td>2025/08/09</td>
 <td>新潟</td>
 <td>03</td>
 <td>2歳新馬</td>
-<td>新馬</td>
-<td>1</td>
-<td>8.0</td>
-<td>8</td>
-<td>17</td>
-<td>芝</td>
-<td>1200</td>
-<td>良</td>
-<td>0:1:09.8</td>
+<td style="background-color:#ffe6e6; padding: 2px 4px; border-radius: 3px;">新馬</td>
+<td style="background-color: #FFD700; font-weight: bold;">1</td>
+<td style="background-color: #ffffff; font-weight: bold;">8</td>
+<td style="background-color:pink; color:#000;">8</td>
+<td style="background-color:pink; color:#000;">17</td>
+<td style="background-color:#32CD32;font-weight: bold;">芝</td>
+<td style="background-color:#32CD32; font-weight: bold;">1200</td>
+<td style="background-color:#ffffff;">良</td>
+<td>1:09.8</td>
 <td>-0.4</td>
-<td>[-0.733]</td>
+<td style="color: red; font-weight: bold;">-0.73</td>
 <td>34.6</td>
 <td>6-6</td>
 <td>412</td>
 </tr>
-</table>
-<h4>芝/ダートサマリ</h4>
-<h5>芝</h5>
-<ul>
-<li>最速上り: 34.6 (info: {'date': '2025/08/09', 'race_name': '2歳新馬', 'course_name': '新潟', 'course_len': '1200', '馬場': '良'})</li>
-<li>平均上り: 34.6</li>
-<li>平均通過(正規化): [6.4, 6.4]</li>
-<li>対象レース数: 1</li>
-</ul>
-<h5>ダート</h5>
-<ul>
-<li>最速上り: None (info: None)</li>
-<li>平均上り: None</li>
-<li>平均通過(正規化): None</li>
-<li>対象レース数: None</li>
-</ul>
-<h4>同コース持ち時計</h4>
+</tbody></table>
+<h4>🏇 芝/ダートサマリ</h4>
+
+    <table border="1" style="border-collapse:collapse; text-align:center;">
+    <thead>
+        <tr>
+        <th>コース</th>
+        <th>最速上り</th>
+        <th>平均上り</th>
+        <th>平均通過位置</th>
+        <th>対象レース数</th>
+        </tr>
+    </thead>
+    <tbody>
+    
+
+            <tr>
+            <td>芝</td>
+            <td><strong>34.6</strong> <br> 2025/08/09: 2歳新馬 (新潟 1200m 良)</td>
+            <td><strong>34.6</strong></td>
+            <td>[6.4, 6.4]</td>
+            <td>1</td>
+            </tr>
+            
+
+            <tr>
+            <td>ダート</td>
+            <td>-</td>
+            <td><strong>-</strong></td>
+            <td>-</td>
+            <td>-</td>
+            </tr>
+            
+</tbody></table>
+<h4>⏱️ 京都 芝1400m 持ち時計</h4>
 <div>同コース出走データなし</div>
 </div>
+              </div>
             </div>
-            <hr>
             
             <div class="horse-report-card">
-              <h3>🐎 カイショー</h3>
-              <h4>血統 (父)</h4>
-<ul>
-<li>スワーヴリチャード</li>
-</ul>
-<h4>PedsResults（同条件）</h4>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th>クラス</th>
-      <th>血統</th>
-      <th>1着</th>
-      <th>2着</th>
-      <th>3着</th>
-      <th>着外</th>
-      <th>勝率</th>
-      <th>複勝率</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>all</td>
-      <td>スワーヴリチャード</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>16</td>
-      <td>0.0</td>
-      <td>5.9</td>
-    </tr>
-    <tr>
-      <td>1勝クラス</td>
-      <td>スワーヴリチャード</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>2</td>
-      <td>0.0</td>
-      <td>0.0</td>
-    </tr>
-  </tbody>
-</table>
-<h4>近5走(JRAのみ)</h4>
-<table border='1'><tr><th>日付</th><th>開催</th><th>R</th><th>レース名</th><th>クラス</th><th>着順</th><th>人気</th><th>枠</th><th>馬番</th><th>芝/ダート</th><th>距離</th><th>馬場</th><th>タイム</th><th>着差</th><th>平均勝ち時計との差</th><th>上り</th><th>通過</th><th>馬体重</th></tr>
+              <div class="horse-report-toggle" onclick="toggleHorseReport('horse_report_1_2')">
+                <span>🐎[2枠2番] カイショー </span>
+                <span class="horse-report-toggle-icon open">▼</span>
+              </div>
+              <div class="horse-report-content open" id="horse_report_1_2">
+                <div class='horse-report' style='padding: 10px; background: #fafafa; border: 1px solid #ddd;'>
+<h4>血統 (父) : <strong>スワーヴリチャード</strong></h4>
+<h4>🧬 京都 芝1400m (重)</h4>
+<table style='width:100%; border-collapse: collapse; text-align: center;'>
+<thead><tr style='background:#f2f2f2;'><th>クラス</th><th>血統</th><th>1着</th><th>2着</th><th>3着</th><th>着外</th><th>勝率</th><th>複勝率</th></tr></thead><tbody>
+<td><strong>all</strong></td>
+<td>スワーヴリチャード</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>15</td>
+<td>0.0</td>
+<td>0.0</td>
+</tr>
+<td><strong>1勝クラス</strong></td>
+<td>スワーヴリチャード</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>2</td>
+<td>0.0</td>
+<td>0.0</td>
+</tr>
+</tbody></table>
+<h4>📊 近5走成績</h4>
+<table style='width:100%; border-collapse: collapse; text-align: center; font-size: 12px;'>
+<thead><tr style='background:#f2f2f2;'><th>日付</th><th>開催</th><th>R</th><th>レース名</th><th>クラス</th><th>着順</th><th>人気</th><th>枠</th><th>馬番</th><th>種別</th><th>距離</th><th>馬場</th><th>タイム</th><th>着差</th><th>平均時計との差</th><th>上り</th><th>通過</th><th>馬体重</th></tr></thead><tbody>
 <tr>
 <td>2025/07/20</td>
 <td>函館</td>
 <td>11</td>
 <td>函館2歳S</td>
-<td>オープン</td>
-<td>3</td>
-<td>2.0</td>
-<td>2</td>
-<td>2</td>
-<td>芝</td>
-<td>1200</td>
-<td>良</td>
-<td>0:1:09.0</td>
+<td style="background-color:#ff8080; padding: 2px 4px; border-radius: 3px;">オープン</td>
+<td style="background-color: #FFA07A; font-weight: bold;">3</td>
+<td style="background-color: #B0E0E6; font-weight: bold;">2</td>
+<td style="background-color:black; color:#fff;">2</td>
+<td style="background-color:black; color:#fff;">2</td>
+<td style="background-color:#32CD32;font-weight: bold;">芝</td>
+<td style="background-color:#32CD32; font-weight: bold;">1200</td>
+<td style="background-color:#ffffff;">良</td>
+<td>1:09.0</td>
 <td>0.6</td>
-<td>[0.547]</td>
+<td style="color: black; font-weight: bold;">0.55</td>
 <td>34.2</td>
 <td>4-3</td>
 <td>454</td>
@@ -979,278 +1095,296 @@
 <td>函館</td>
 <td>05</td>
 <td>2歳新馬</td>
-<td>新馬</td>
-<td>1</td>
-<td>1.0</td>
-<td>1</td>
-<td>1</td>
-<td>芝</td>
-<td>1000</td>
-<td>良</td>
-<td>0:0:56.4</td>
+<td style="background-color:#ffe6e6; padding: 2px 4px; border-radius: 3px;">新馬</td>
+<td style="background-color: #FFD700; font-weight: bold;">1</td>
+<td style="background-color: #FFD700; font-weight: bold;">1</td>
+<td style="background-color:white; color:#000;">1</td>
+<td style="background-color:white; color:#000;">1</td>
+<td style="background-color:#32CD32;font-weight: bold;">芝</td>
+<td style="background-color:#32CD32; font-weight: bold;">1000</td>
+<td style="background-color:#ffffff;">良</td>
+<td>0:56.4</td>
 <td>-0.5</td>
-<td>[-1.04]</td>
+<td style="color: red; font-weight: bold;">-1.04</td>
 <td>33.9</td>
 <td>1-1</td>
 <td>452</td>
 </tr>
-</table>
-<h4>芝/ダートサマリ</h4>
-<h5>芝</h5>
-<ul>
-<li>最速上り: 33.9 (info: {'date': '2025/06/14', 'race_name': nan, 'course_name': '函館', 'course_len': '1000', '馬場': '良'})</li>
-<li>平均上り: 34.05</li>
-<li>平均通過(正規化): [3.8, 3.0]</li>
-<li>対象レース数: 2</li>
-</ul>
-<h5>ダート</h5>
-<ul>
-<li>最速上り: None (info: None)</li>
-<li>平均上り: None</li>
-<li>平均通過(正規化): None</li>
-<li>対象レース数: None</li>
-</ul>
-<h4>同コース持ち時計</h4>
+</tbody></table>
+<h4>🏇 芝/ダートサマリ</h4>
+
+    <table border="1" style="border-collapse:collapse; text-align:center;">
+    <thead>
+        <tr>
+        <th>コース</th>
+        <th>最速上り</th>
+        <th>平均上り</th>
+        <th>平均通過位置</th>
+        <th>対象レース数</th>
+        </tr>
+    </thead>
+    <tbody>
+    
+
+            <tr>
+            <td>芝</td>
+            <td><strong>33.9</strong> <br> 2025/06/14: nan (函館 1000m 良)</td>
+            <td><strong>34.05</strong></td>
+            <td>[3.8, 3.0]</td>
+            <td>2</td>
+            </tr>
+            
+
+            <tr>
+            <td>ダート</td>
+            <td>-</td>
+            <td><strong>-</strong></td>
+            <td>-</td>
+            <td>-</td>
+            </tr>
+            
+</tbody></table>
+<h4>⏱️ 京都 芝1400m 持ち時計</h4>
 <div>同コース出走データなし</div>
 </div>
+              </div>
             </div>
-            <hr>
             
             <div class="horse-report-card">
-              <h3>🐎 フルールジェンヌ</h3>
-              <h4>血統 (父)</h4>
-<ul>
-<li>ミッキーアイル</li>
-</ul>
-<h4>PedsResults（同条件）</h4>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th>クラス</th>
-      <th>血統</th>
-      <th>1着</th>
-      <th>2着</th>
-      <th>3着</th>
-      <th>着外</th>
-      <th>勝率</th>
-      <th>複勝率</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>all</td>
-      <td>ミッキーアイル</td>
-      <td>3</td>
-      <td>7</td>
-      <td>6</td>
-      <td>42</td>
-      <td>5.2</td>
-      <td>27.6</td>
-    </tr>
-    <tr>
-      <td>1勝クラス</td>
-      <td>ミッキーアイル</td>
-      <td>0</td>
-      <td>1</td>
-      <td>1</td>
-      <td>5</td>
-      <td>0.0</td>
-      <td>28.6</td>
-    </tr>
-  </tbody>
-</table>
-<h4>近5走(JRAのみ)</h4>
-<table border='1'><tr><th>日付</th><th>開催</th><th>R</th><th>レース名</th><th>クラス</th><th>着順</th><th>人気</th><th>枠</th><th>馬番</th><th>芝/ダート</th><th>距離</th><th>馬場</th><th>タイム</th><th>着差</th><th>平均勝ち時計との差</th><th>上り</th><th>通過</th><th>馬体重</th></tr>
+              <div class="horse-report-toggle" onclick="toggleHorseReport('horse_report_2_3')">
+                <span>🐎[3枠3番] フルールジェンヌ </span>
+                <span class="horse-report-toggle-icon open">▼</span>
+              </div>
+              <div class="horse-report-content open" id="horse_report_2_3">
+                <div class='horse-report' style='padding: 10px; background: #fafafa; border: 1px solid #ddd;'>
+<h4>血統 (父) : <strong>ミッキーアイル</strong></h4>
+<h4>🧬 京都 芝1400m (重)</h4>
+<table style='width:100%; border-collapse: collapse; text-align: center;'>
+<thead><tr style='background:#f2f2f2;'><th>クラス</th><th>血統</th><th>1着</th><th>2着</th><th>3着</th><th>着外</th><th>勝率</th><th>複勝率</th></tr></thead><tbody>
+<td><strong>all</strong></td>
+<td>ミッキーアイル</td>
+<td>3</td>
+<td>8</td>
+<td>6</td>
+<td>41</td>
+<td>5.2</td>
+<td>29.3</td>
+</tr>
+<td><strong>1勝クラス</strong></td>
+<td>ミッキーアイル</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>5</td>
+<td>0.0</td>
+<td>28.6</td>
+</tr>
+</tbody></table>
+<h4>📊 近5走成績</h4>
+<table style='width:100%; border-collapse: collapse; text-align: center; font-size: 12px;'>
+<thead><tr style='background:#f2f2f2;'><th>日付</th><th>開催</th><th>R</th><th>レース名</th><th>クラス</th><th>着順</th><th>人気</th><th>枠</th><th>馬番</th><th>種別</th><th>距離</th><th>馬場</th><th>タイム</th><th>着差</th><th>平均時計との差</th><th>上り</th><th>通過</th><th>馬体重</th></tr></thead><tbody>
 <tr>
 <td>2025/08/30</td>
 <td>中京</td>
 <td>05</td>
 <td>2歳新馬</td>
-<td>新馬</td>
-<td>1</td>
-<td>5.0</td>
-<td>2</td>
-<td>2</td>
-<td>芝</td>
-<td>1400</td>
-<td>良</td>
-<td>0:1:21.7</td>
+<td style="background-color:#ffe6e6; padding: 2px 4px; border-radius: 3px;">新馬</td>
+<td style="background-color: #FFD700; font-weight: bold;">1</td>
+<td style="background-color: #ffffff; font-weight: bold;">5</td>
+<td style="background-color:black; color:#fff;">2</td>
+<td style="background-color:black; color:#fff;">2</td>
+<td style="background-color:#32CD32;font-weight: bold;">芝</td>
+<td style="background-color:#32CD32; font-weight: bold;">1400</td>
+<td style="background-color:#ffffff;">良</td>
+<td>1:21.7</td>
 <td>-0.1</td>
-<td>[-0.786]</td>
+<td style="color: red; font-weight: bold;">-0.79</td>
 <td>35.6</td>
 <td>1-1</td>
 <td>458</td>
 </tr>
-</table>
-<h4>芝/ダートサマリ</h4>
-<h5>芝</h5>
-<ul>
-<li>最速上り: 35.6 (info: {'date': '2025/08/30', 'race_name': '2歳新馬', 'course_name': '中京', 'course_len': '1400', '馬場': '良'})</li>
-<li>平均上り: 35.6</li>
-<li>平均通過(正規化): [1.8, 1.8]</li>
-<li>対象レース数: 1</li>
-</ul>
-<h5>ダート</h5>
-<ul>
-<li>最速上り: None (info: None)</li>
-<li>平均上り: None</li>
-<li>平均通過(正規化): None</li>
-<li>対象レース数: None</li>
-</ul>
-<h4>同コース持ち時計</h4>
+</tbody></table>
+<h4>🏇 芝/ダートサマリ</h4>
+
+    <table border="1" style="border-collapse:collapse; text-align:center;">
+    <thead>
+        <tr>
+        <th>コース</th>
+        <th>最速上り</th>
+        <th>平均上り</th>
+        <th>平均通過位置</th>
+        <th>対象レース数</th>
+        </tr>
+    </thead>
+    <tbody>
+    
+
+            <tr>
+            <td>芝</td>
+            <td><strong>35.6</strong> <br> 2025/08/30: 2歳新馬 (中京 1400m 良)</td>
+            <td><strong>35.6</strong></td>
+            <td>[1.8, 1.8]</td>
+            <td>1</td>
+            </tr>
+            
+
+            <tr>
+            <td>ダート</td>
+            <td>-</td>
+            <td><strong>-</strong></td>
+            <td>-</td>
+            <td>-</td>
+            </tr>
+            
+</tbody></table>
+<h4>⏱️ 京都 芝1400m 持ち時計</h4>
 <div>同コース出走データなし</div>
 </div>
+              </div>
             </div>
-            <hr>
             
             <div class="horse-report-card">
-              <h3>🐎 アイニードユー</h3>
-              <h4>血統 (父)</h4>
-<ul>
-<li>ファインニードル</li>
-</ul>
-<h4>PedsResults（同条件）</h4>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th>クラス</th>
-      <th>血統</th>
-      <th>1着</th>
-      <th>2着</th>
-      <th>3着</th>
-      <th>着外</th>
-      <th>勝率</th>
-      <th>複勝率</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>all</td>
-      <td>ファインニードル</td>
-      <td>2</td>
-      <td>2</td>
-      <td>2</td>
-      <td>16</td>
-      <td>9.1</td>
-      <td>27.3</td>
-    </tr>
-    <tr>
-      <td>1勝クラス</td>
-      <td>ファインニードル</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>3</td>
-      <td>0.0</td>
-      <td>25.0</td>
-    </tr>
-  </tbody>
-</table>
-<h4>近5走(JRAのみ)</h4>
-<table border='1'><tr><th>日付</th><th>開催</th><th>R</th><th>レース名</th><th>クラス</th><th>着順</th><th>人気</th><th>枠</th><th>馬番</th><th>芝/ダート</th><th>距離</th><th>馬場</th><th>タイム</th><th>着差</th><th>平均勝ち時計との差</th><th>上り</th><th>通過</th><th>馬体重</th></tr>
+              <div class="horse-report-toggle" onclick="toggleHorseReport('horse_report_3_4')">
+                <span>🐎[4枠4番] アイニードユー </span>
+                <span class="horse-report-toggle-icon open">▼</span>
+              </div>
+              <div class="horse-report-content open" id="horse_report_3_4">
+                <div class='horse-report' style='padding: 10px; background: #fafafa; border: 1px solid #ddd;'>
+<h4>血統 (父) : <strong>ファインニードル</strong></h4>
+<h4>🧬 京都 芝1400m (重)</h4>
+<table style='width:100%; border-collapse: collapse; text-align: center;'>
+<thead><tr style='background:#f2f2f2;'><th>クラス</th><th>血統</th><th>1着</th><th>2着</th><th>3着</th><th>着外</th><th>勝率</th><th>複勝率</th></tr></thead><tbody>
+<td><strong>all</strong></td>
+<td>ファインニードル</td>
+<td>3</td>
+<td>2</td>
+<td>2</td>
+<td>16</td>
+<td>13.0</td>
+<td>30.4</td>
+</tr>
+<td><strong>1勝クラス</strong></td>
+<td>ファインニードル</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>3</td>
+<td>0.0</td>
+<td>25.0</td>
+</tr>
+</tbody></table>
+<h4>📊 近5走成績</h4>
+<table style='width:100%; border-collapse: collapse; text-align: center; font-size: 12px;'>
+<thead><tr style='background:#f2f2f2;'><th>日付</th><th>開催</th><th>R</th><th>レース名</th><th>クラス</th><th>着順</th><th>人気</th><th>枠</th><th>馬番</th><th>種別</th><th>距離</th><th>馬場</th><th>タイム</th><th>着差</th><th>平均時計との差</th><th>上り</th><th>通過</th><th>馬体重</th></tr></thead><tbody>
 <tr>
 <td>2025/08/09</td>
 <td>中京</td>
 <td>04</td>
 <td>2歳新馬</td>
-<td>新馬</td>
-<td>1</td>
-<td>1.0</td>
-<td>7</td>
-<td>8</td>
-<td>芝</td>
-<td>1400</td>
-<td>良</td>
-<td>0:1:22.3</td>
+<td style="background-color:#ffe6e6; padding: 2px 4px; border-radius: 3px;">新馬</td>
+<td style="background-color: #FFD700; font-weight: bold;">1</td>
+<td style="background-color: #FFD700; font-weight: bold;">1</td>
+<td style="background-color:orange; color:#fff;">7</td>
+<td style="background-color:orange; color:#fff;">8</td>
+<td style="background-color:#32CD32;font-weight: bold;">芝</td>
+<td style="background-color:#32CD32; font-weight: bold;">1400</td>
+<td style="background-color:#ffffff;">良</td>
+<td>1:22.3</td>
 <td>-0.2</td>
-<td>[-0.186]</td>
+<td style="color: red; font-weight: bold;">-0.19</td>
 <td>34.1</td>
 <td>2-2</td>
 <td>462</td>
 </tr>
-</table>
-<h4>芝/ダートサマリ</h4>
-<h5>芝</h5>
-<ul>
-<li>最速上り: 34.1 (info: {'date': '2025/08/09', 'race_name': '2歳新馬', 'course_name': '中京', 'course_len': '1400', '馬場': '良'})</li>
-<li>平均上り: 34.1</li>
-<li>平均通過(正規化): [3.6, 3.6]</li>
-<li>対象レース数: 1</li>
-</ul>
-<h5>ダート</h5>
-<ul>
-<li>最速上り: None (info: None)</li>
-<li>平均上り: None</li>
-<li>平均通過(正規化): None</li>
-<li>対象レース数: None</li>
-</ul>
-<h4>同コース持ち時計</h4>
+</tbody></table>
+<h4>🏇 芝/ダートサマリ</h4>
+
+    <table border="1" style="border-collapse:collapse; text-align:center;">
+    <thead>
+        <tr>
+        <th>コース</th>
+        <th>最速上り</th>
+        <th>平均上り</th>
+        <th>平均通過位置</th>
+        <th>対象レース数</th>
+        </tr>
+    </thead>
+    <tbody>
+    
+
+            <tr>
+            <td>芝</td>
+            <td><strong>34.1</strong> <br> 2025/08/09: 2歳新馬 (中京 1400m 良)</td>
+            <td><strong>34.1</strong></td>
+            <td>[3.6, 3.6]</td>
+            <td>1</td>
+            </tr>
+            
+
+            <tr>
+            <td>ダート</td>
+            <td>-</td>
+            <td><strong>-</strong></td>
+            <td>-</td>
+            <td>-</td>
+            </tr>
+            
+</tbody></table>
+<h4>⏱️ 京都 芝1400m 持ち時計</h4>
 <div>同コース出走データなし</div>
 </div>
+              </div>
             </div>
-            <hr>
             
             <div class="horse-report-card">
-              <h3>🐎 メイショウハッケイ</h3>
-              <h4>血統 (父)</h4>
-<ul>
-<li>ダイワメジャー</li>
-</ul>
-<h4>PedsResults（同条件）</h4>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th>クラス</th>
-      <th>血統</th>
-      <th>1着</th>
-      <th>2着</th>
-      <th>3着</th>
-      <th>着外</th>
-      <th>勝率</th>
-      <th>複勝率</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>all</td>
-      <td>ダイワメジャー</td>
-      <td>10</td>
-      <td>11</td>
-      <td>9</td>
-      <td>92</td>
-      <td>8.2</td>
-      <td>24.6</td>
-    </tr>
-    <tr>
-      <td>1勝クラス</td>
-      <td>ダイワメジャー</td>
-      <td>2</td>
-      <td>2</td>
-      <td>0</td>
-      <td>16</td>
-      <td>10.0</td>
-      <td>20.0</td>
-    </tr>
-  </tbody>
-</table>
-<h4>近5走(JRAのみ)</h4>
-<table border='1'><tr><th>日付</th><th>開催</th><th>R</th><th>レース名</th><th>クラス</th><th>着順</th><th>人気</th><th>枠</th><th>馬番</th><th>芝/ダート</th><th>距離</th><th>馬場</th><th>タイム</th><th>着差</th><th>平均勝ち時計との差</th><th>上り</th><th>通過</th><th>馬体重</th></tr>
+              <div class="horse-report-toggle" onclick="toggleHorseReport('horse_report_4_5')">
+                <span>🐎[5枠5番] メイショウハッケイ </span>
+                <span class="horse-report-toggle-icon open">▼</span>
+              </div>
+              <div class="horse-report-content open" id="horse_report_4_5">
+                <div class='horse-report' style='padding: 10px; background: #fafafa; border: 1px solid #ddd;'>
+<h4>血統 (父) : <strong>ダイワメジャー</strong></h4>
+<h4>🧬 京都 芝1400m (重)</h4>
+<table style='width:100%; border-collapse: collapse; text-align: center;'>
+<thead><tr style='background:#f2f2f2;'><th>クラス</th><th>血統</th><th>1着</th><th>2着</th><th>3着</th><th>着外</th><th>勝率</th><th>複勝率</th></tr></thead><tbody>
+<td><strong>all</strong></td>
+<td>ダイワメジャー</td>
+<td>10</td>
+<td>11</td>
+<td>8</td>
+<td>89</td>
+<td>8.5</td>
+<td>24.6</td>
+</tr>
+<td><strong>1勝クラス</strong></td>
+<td>ダイワメジャー</td>
+<td>2</td>
+<td>2</td>
+<td>0</td>
+<td>16</td>
+<td>10.0</td>
+<td>20.0</td>
+</tr>
+</tbody></table>
+<h4>📊 近5走成績</h4>
+<table style='width:100%; border-collapse: collapse; text-align: center; font-size: 12px;'>
+<thead><tr style='background:#f2f2f2;'><th>日付</th><th>開催</th><th>R</th><th>レース名</th><th>クラス</th><th>着順</th><th>人気</th><th>枠</th><th>馬番</th><th>種別</th><th>距離</th><th>馬場</th><th>タイム</th><th>着差</th><th>平均時計との差</th><th>上り</th><th>通過</th><th>馬体重</th></tr></thead><tbody>
 <tr>
 <td>2025/08/23</td>
 <td>中京</td>
 <td>03</td>
 <td>2歳未勝利</td>
-<td>未勝利</td>
-<td>1</td>
-<td>2.0</td>
-<td>4</td>
-<td>4</td>
-<td>芝</td>
-<td>1400</td>
-<td>良</td>
-<td>0:1:21.2</td>
+<td style="background-color:#fff0f0; padding: 2px 4px; border-radius: 3px;">未勝利</td>
+<td style="background-color: #FFD700; font-weight: bold;">1</td>
+<td style="background-color: #B0E0E6; font-weight: bold;">2</td>
+<td style="background-color:blue; color:#fff;">4</td>
+<td style="background-color:blue; color:#fff;">4</td>
+<td style="background-color:#32CD32;font-weight: bold;">芝</td>
+<td style="background-color:#32CD32; font-weight: bold;">1400</td>
+<td style="background-color:#ffffff;">良</td>
+<td>1:21.2</td>
 <td>-0.0</td>
-<td>[-0.39]</td>
+<td style="color: red; font-weight: bold;">-0.39</td>
 <td>33.6</td>
 <td>5-6</td>
 <td>458</td>
@@ -1260,104 +1394,110 @@
 <td>中京</td>
 <td>02</td>
 <td>2歳新馬</td>
-<td>新馬</td>
-<td>2</td>
-<td>2.0</td>
-<td>8</td>
-<td>9</td>
-<td>芝</td>
-<td>1200</td>
-<td>良</td>
-<td>0:1:08.9</td>
+<td style="background-color:#ffe6e6; padding: 2px 4px; border-radius: 3px;">新馬</td>
+<td style="background-color: #B0E0E6; font-weight: bold;">2</td>
+<td style="background-color: #B0E0E6; font-weight: bold;">2</td>
+<td style="background-color:pink; color:#000;">8</td>
+<td style="background-color:pink; color:#000;">9</td>
+<td style="background-color:#32CD32;font-weight: bold;">芝</td>
+<td style="background-color:#32CD32; font-weight: bold;">1200</td>
+<td style="background-color:#ffffff;">良</td>
+<td>1:08.9</td>
 <td>0.1</td>
-<td>[-0.512]</td>
+<td style="color: red; font-weight: bold;">-0.51</td>
 <td>33.9</td>
 <td>8-5</td>
 <td>462</td>
 </tr>
-</table>
-<h4>芝/ダートサマリ</h4>
-<h5>芝</h5>
-<ul>
-<li>最速上り: 33.6 (info: {'date': '2025/08/23', 'race_name': '2歳未勝利', 'course_name': '中京', 'course_len': '1400', '馬場': '良'})</li>
-<li>平均上り: 33.75</li>
-<li>平均通過(正規化): [12.2, 10.5]</li>
-<li>対象レース数: 2</li>
-</ul>
-<h5>ダート</h5>
-<ul>
-<li>最速上り: None (info: None)</li>
-<li>平均上り: None</li>
-<li>平均通過(正規化): None</li>
-<li>対象レース数: None</li>
-</ul>
-<h4>同コース持ち時計</h4>
+</tbody></table>
+<h4>🏇 芝/ダートサマリ</h4>
+
+    <table border="1" style="border-collapse:collapse; text-align:center;">
+    <thead>
+        <tr>
+        <th>コース</th>
+        <th>最速上り</th>
+        <th>平均上り</th>
+        <th>平均通過位置</th>
+        <th>対象レース数</th>
+        </tr>
+    </thead>
+    <tbody>
+    
+
+            <tr>
+            <td>芝</td>
+            <td><strong>33.6</strong> <br> 2025/08/23: 2歳未勝利 (中京 1400m 良)</td>
+            <td><strong>33.75</strong></td>
+            <td>[12.2, 10.5]</td>
+            <td>2</td>
+            </tr>
+            
+
+            <tr>
+            <td>ダート</td>
+            <td>-</td>
+            <td><strong>-</strong></td>
+            <td>-</td>
+            <td>-</td>
+            </tr>
+            
+</tbody></table>
+<h4>⏱️ 京都 芝1400m 持ち時計</h4>
 <div>同コース出走データなし</div>
 </div>
+              </div>
             </div>
-            <hr>
             
             <div class="horse-report-card">
-              <h3>🐎 ラスティングスノー</h3>
-              <h4>血統 (父)</h4>
-<ul>
-<li>モズアスコット</li>
-</ul>
-<h4>PedsResults（同条件）</h4>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th>クラス</th>
-      <th>血統</th>
-      <th>1着</th>
-      <th>2着</th>
-      <th>3着</th>
-      <th>着外</th>
-      <th>勝率</th>
-      <th>複勝率</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>all</td>
-      <td>モズアスコット</td>
-      <td>2</td>
-      <td>2</td>
-      <td>1</td>
-      <td>6</td>
-      <td>18.2</td>
-      <td>45.5</td>
-    </tr>
-    <tr>
-      <td>1勝クラス</td>
-      <td>モズアスコット</td>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>100.0</td>
-      <td>100.0</td>
-    </tr>
-  </tbody>
-</table>
-<h4>近5走(JRAのみ)</h4>
-<table border='1'><tr><th>日付</th><th>開催</th><th>R</th><th>レース名</th><th>クラス</th><th>着順</th><th>人気</th><th>枠</th><th>馬番</th><th>芝/ダート</th><th>距離</th><th>馬場</th><th>タイム</th><th>着差</th><th>平均勝ち時計との差</th><th>上り</th><th>通過</th><th>馬体重</th></tr>
+              <div class="horse-report-toggle" onclick="toggleHorseReport('horse_report_5_6')">
+                <span>🐎[6枠6番] ラスティングスノー </span>
+                <span class="horse-report-toggle-icon open">▼</span>
+              </div>
+              <div class="horse-report-content open" id="horse_report_5_6">
+                <div class='horse-report' style='padding: 10px; background: #fafafa; border: 1px solid #ddd;'>
+<h4>血統 (父) : <strong>モズアスコット</strong></h4>
+<h4>🧬 京都 芝1400m (重)</h4>
+<table style='width:100%; border-collapse: collapse; text-align: center;'>
+<thead><tr style='background:#f2f2f2;'><th>クラス</th><th>血統</th><th>1着</th><th>2着</th><th>3着</th><th>着外</th><th>勝率</th><th>複勝率</th></tr></thead><tbody>
+<td><strong>all</strong></td>
+<td>モズアスコット</td>
+<td>2</td>
+<td>2</td>
+<td>0</td>
+<td>6</td>
+<td>20.0</td>
+<td>40.0</td>
+</tr>
+<td><strong>1勝クラス</strong></td>
+<td>モズアスコット</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>100.0</td>
+<td>100.0</td>
+</tr>
+</tbody></table>
+<h4>📊 近5走成績</h4>
+<table style='width:100%; border-collapse: collapse; text-align: center; font-size: 12px;'>
+<thead><tr style='background:#f2f2f2;'><th>日付</th><th>開催</th><th>R</th><th>レース名</th><th>クラス</th><th>着順</th><th>人気</th><th>枠</th><th>馬番</th><th>種別</th><th>距離</th><th>馬場</th><th>タイム</th><th>着差</th><th>平均時計との差</th><th>上り</th><th>通過</th><th>馬体重</th></tr></thead><tbody>
 <tr>
 <td>2025/08/30</td>
 <td>札幌</td>
 <td>01</td>
 <td>2歳未勝利</td>
-<td>未勝利</td>
-<td>1</td>
-<td>2.0</td>
-<td>7</td>
-<td>7</td>
-<td>芝</td>
-<td>1500</td>
-<td>稍重</td>
-<td>0:1:31.9</td>
+<td style="background-color:#fff0f0; padding: 2px 4px; border-radius: 3px;">未勝利</td>
+<td style="background-color: #FFD700; font-weight: bold;">1</td>
+<td style="background-color: #B0E0E6; font-weight: bold;">2</td>
+<td style="background-color:orange; color:#fff;">7</td>
+<td style="background-color:orange; color:#fff;">7</td>
+<td style="background-color:#32CD32;font-weight: bold;">芝</td>
+<td style="background-color:#32CD32; font-weight: bold;">1500</td>
+<td style="background-color:#e8e8e8;">稍重</td>
+<td>1:31.9</td>
 <td>-0.3</td>
-<td>[0.9]</td>
+<td style="color: black; font-weight: bold;">0.9</td>
 <td>36.0</td>
 <td>1-1-1</td>
 <td>464</td>
@@ -1367,216 +1507,256 @@
 <td>札幌</td>
 <td>05</td>
 <td>2歳新馬</td>
-<td>新馬</td>
-<td>2</td>
-<td>5.0</td>
-<td>1</td>
-<td>1</td>
-<td>芝</td>
-<td>1500</td>
-<td>良</td>
-<td>0:1:31.2</td>
+<td style="background-color:#ffe6e6; padding: 2px 4px; border-radius: 3px;">新馬</td>
+<td style="background-color: #B0E0E6; font-weight: bold;">2</td>
+<td style="background-color: #ffffff; font-weight: bold;">5</td>
+<td style="background-color:white; color:#000;">1</td>
+<td style="background-color:white; color:#000;">1</td>
+<td style="background-color:#32CD32;font-weight: bold;">芝</td>
+<td style="background-color:#32CD32; font-weight: bold;">1500</td>
+<td style="background-color:#ffffff;">良</td>
+<td>1:31.2</td>
 <td>0.1</td>
-<td>[0.832]</td>
+<td style="color: black; font-weight: bold;">0.83</td>
 <td>35.7</td>
 <td>1-1-1</td>
 <td>456</td>
 </tr>
-</table>
-<h4>芝/ダートサマリ</h4>
-<h5>芝</h5>
-<ul>
-<li>最速上り: 35.7 (info: {'date': '2025/08/10', 'race_name': '2歳新馬', 'course_name': '札幌', 'course_len': '1500', '馬場': '良'})</li>
-<li>平均上り: 35.85</li>
-<li>平均通過(正規化): [1.9, 1.9, 1.9]</li>
-<li>対象レース数: 2</li>
-</ul>
-<h5>ダート</h5>
-<ul>
-<li>最速上り: None (info: None)</li>
-<li>平均上り: None</li>
-<li>平均通過(正規化): None</li>
-<li>対象レース数: None</li>
-</ul>
-<h4>同コース持ち時計</h4>
+</tbody></table>
+<h4>🏇 芝/ダートサマリ</h4>
+
+    <table border="1" style="border-collapse:collapse; text-align:center;">
+    <thead>
+        <tr>
+        <th>コース</th>
+        <th>最速上り</th>
+        <th>平均上り</th>
+        <th>平均通過位置</th>
+        <th>対象レース数</th>
+        </tr>
+    </thead>
+    <tbody>
+    
+
+            <tr>
+            <td>芝</td>
+            <td><strong>35.7</strong> <br> 2025/08/10: 2歳新馬 (札幌 1500m 良)</td>
+            <td><strong>35.85</strong></td>
+            <td>[1.9, 1.9, 1.9]</td>
+            <td>2</td>
+            </tr>
+            
+
+            <tr>
+            <td>ダート</td>
+            <td>-</td>
+            <td><strong>-</strong></td>
+            <td>-</td>
+            <td>-</td>
+            </tr>
+            
+</tbody></table>
+<h4>⏱️ 京都 芝1400m 持ち時計</h4>
 <div>同コース出走データなし</div>
 </div>
+              </div>
             </div>
-            <hr>
             
             <div class="horse-report-card">
-              <h3>🐎 ルージュサウダージ</h3>
-              <h4>血統 (父)</h4>
-<ul>
-<li>フィレンツェファイア</li>
-</ul>
-<h4>PedsResults（同条件）</h4>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th>クラス</th>
-      <th>血統</th>
-      <th>1着</th>
-      <th>2着</th>
-      <th>3着</th>
-      <th>着外</th>
-      <th>勝率</th>
-      <th>複勝率</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>all</td>
-      <td>フィレンツェファイア</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>2</td>
-      <td>0.0</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <td>1勝クラス</td>
-      <td>フィレンツェファイア</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>0.0</td>
-      <td>0.0</td>
-    </tr>
-  </tbody>
-</table>
-<h4>近5走(JRAのみ)</h4>
-<table border='1'><tr><th>日付</th><th>開催</th><th>R</th><th>レース名</th><th>クラス</th><th>着順</th><th>人気</th><th>枠</th><th>馬番</th><th>芝/ダート</th><th>距離</th><th>馬場</th><th>タイム</th><th>着差</th><th>平均勝ち時計との差</th><th>上り</th><th>通過</th><th>馬体重</th></tr>
+              <div class="horse-report-toggle" onclick="toggleHorseReport('horse_report_6_7')">
+                <span>🐎[7枠7番] ルージュサウダージ </span>
+                <span class="horse-report-toggle-icon open">▼</span>
+              </div>
+              <div class="horse-report-content open" id="horse_report_6_7">
+                <div class='horse-report' style='padding: 10px; background: #fafafa; border: 1px solid #ddd;'>
+<h4>血統 (父) : <strong>フィレンツェファイア</strong></h4>
+<h4>🧬 京都 芝1400m (重)</h4>
+<table style='width:100%; border-collapse: collapse; text-align: center;'>
+<thead><tr style='background:#f2f2f2;'><th>クラス</th><th>血統</th><th>1着</th><th>2着</th><th>3着</th><th>着外</th><th>勝率</th><th>複勝率</th></tr></thead><tbody>
+<td><strong>all</strong></td>
+<td>フィレンツェファイア</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>2</td>
+<td>0.0</td>
+<td>0.0</td>
+</tr>
+<td><strong>1勝クラス</strong></td>
+<td>フィレンツェファイア</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0.0</td>
+<td>0.0</td>
+</tr>
+</tbody></table>
+<h4>📊 近5走成績</h4>
+<table style='width:100%; border-collapse: collapse; text-align: center; font-size: 12px;'>
+<thead><tr style='background:#f2f2f2;'><th>日付</th><th>開催</th><th>R</th><th>レース名</th><th>クラス</th><th>着順</th><th>人気</th><th>枠</th><th>馬番</th><th>種別</th><th>距離</th><th>馬場</th><th>タイム</th><th>着差</th><th>平均時計との差</th><th>上り</th><th>通過</th><th>馬体重</th></tr></thead><tbody>
 <tr>
 <td>2025/06/15</td>
 <td>函館</td>
 <td>05</td>
 <td>2歳新馬</td>
-<td>新馬</td>
-<td>1</td>
-<td>2.0</td>
-<td>3</td>
-<td>3</td>
-<td>芝</td>
-<td>1200</td>
-<td>良</td>
-<td>0:1:08.4</td>
+<td style="background-color:#ffe6e6; padding: 2px 4px; border-radius: 3px;">新馬</td>
+<td style="background-color: #FFD700; font-weight: bold;">1</td>
+<td style="background-color: #B0E0E6; font-weight: bold;">2</td>
+<td style="background-color:red; color:#fff;">3</td>
+<td style="background-color:red; color:#fff;">3</td>
+<td style="background-color:#32CD32;font-weight: bold;">芝</td>
+<td style="background-color:#32CD32; font-weight: bold;">1200</td>
+<td style="background-color:#ffffff;">良</td>
+<td>1:08.4</td>
 <td>-0.2</td>
-<td>[-1.642]</td>
+<td style="color: red; font-weight: bold;">-1.64</td>
 <td>34.3</td>
 <td>4-4</td>
 <td>462</td>
 </tr>
-</table>
-<h4>芝/ダートサマリ</h4>
-<h5>芝</h5>
-<ul>
-<li>最速上り: 34.3 (info: {'date': '2025/06/15', 'race_name': nan, 'course_name': '函館', 'course_len': '1200', '馬場': '良'})</li>
-<li>平均上り: 34.3</li>
-<li>平均通過(正規化): [8.0, 8.0]</li>
-<li>対象レース数: 1</li>
-</ul>
-<h5>ダート</h5>
-<ul>
-<li>最速上り: None (info: None)</li>
-<li>平均上り: None</li>
-<li>平均通過(正規化): None</li>
-<li>対象レース数: None</li>
-</ul>
-<h4>同コース持ち時計</h4>
+</tbody></table>
+<h4>🏇 芝/ダートサマリ</h4>
+
+    <table border="1" style="border-collapse:collapse; text-align:center;">
+    <thead>
+        <tr>
+        <th>コース</th>
+        <th>最速上り</th>
+        <th>平均上り</th>
+        <th>平均通過位置</th>
+        <th>対象レース数</th>
+        </tr>
+    </thead>
+    <tbody>
+    
+
+            <tr>
+            <td>芝</td>
+            <td><strong>34.3</strong> <br> 2025/06/15: 2歳新馬 (函館 1200m 良)</td>
+            <td><strong>34.3</strong></td>
+            <td>[8.0, 8.0]</td>
+            <td>1</td>
+            </tr>
+            
+
+            <tr>
+            <td>ダート</td>
+            <td>-</td>
+            <td><strong>-</strong></td>
+            <td>-</td>
+            <td>-</td>
+            </tr>
+            
+</tbody></table>
+<h4>⏱️ 京都 芝1400m 持ち時計</h4>
 <div>同コース出走データなし</div>
 </div>
+              </div>
             </div>
-            <hr>
             
             <div class="horse-report-card">
-              <h3>🐎 ファムマルキーズ</h3>
-              <h4>血統 (父)</h4>
-<ul>
-<li>キタサンブラック</li>
-</ul>
-<h4>PedsResults（同条件）</h4>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th>クラス</th>
-      <th>血統</th>
-      <th>1着</th>
-      <th>2着</th>
-      <th>3着</th>
-      <th>着外</th>
-      <th>勝率</th>
-      <th>複勝率</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>all</td>
-      <td>キタサンブラック</td>
-      <td>4</td>
-      <td>1</td>
-      <td>4</td>
-      <td>11</td>
-      <td>20.0</td>
-      <td>45.0</td>
-    </tr>
-    <tr>
-      <td>1勝クラス</td>
-      <td>キタサンブラック</td>
-      <td>2</td>
-      <td>0</td>
-      <td>2</td>
-      <td>2</td>
-      <td>33.3</td>
-      <td>66.7</td>
-    </tr>
-  </tbody>
-</table>
-<h4>近5走(JRAのみ)</h4>
-<table border='1'><tr><th>日付</th><th>開催</th><th>R</th><th>レース名</th><th>クラス</th><th>着順</th><th>人気</th><th>枠</th><th>馬番</th><th>芝/ダート</th><th>距離</th><th>馬場</th><th>タイム</th><th>着差</th><th>平均勝ち時計との差</th><th>上り</th><th>通過</th><th>馬体重</th></tr>
+              <div class="horse-report-toggle" onclick="toggleHorseReport('horse_report_7_8')">
+                <span>🐎[8枠8番] ファムマルキーズ </span>
+                <span class="horse-report-toggle-icon open">▼</span>
+              </div>
+              <div class="horse-report-content open" id="horse_report_7_8">
+                <div class='horse-report' style='padding: 10px; background: #fafafa; border: 1px solid #ddd;'>
+<h4>血統 (父) : <strong>キタサンブラック</strong></h4>
+<h4>🧬 京都 芝1400m (重)</h4>
+<table style='width:100%; border-collapse: collapse; text-align: center;'>
+<thead><tr style='background:#f2f2f2;'><th>クラス</th><th>血統</th><th>1着</th><th>2着</th><th>3着</th><th>着外</th><th>勝率</th><th>複勝率</th></tr></thead><tbody>
+<td><strong>all</strong></td>
+<td>キタサンブラック</td>
+<td>3</td>
+<td>1</td>
+<td>3</td>
+<td>9</td>
+<td>18.8</td>
+<td>43.8</td>
+</tr>
+<td><strong>1勝クラス</strong></td>
+<td>キタサンブラック</td>
+<td>1</td>
+<td>0</td>
+<td>2</td>
+<td>2</td>
+<td>20.0</td>
+<td>60.0</td>
+</tr>
+</tbody></table>
+<h4>📊 近5走成績</h4>
+<table style='width:100%; border-collapse: collapse; text-align: center; font-size: 12px;'>
+<thead><tr style='background:#f2f2f2;'><th>日付</th><th>開催</th><th>R</th><th>レース名</th><th>クラス</th><th>着順</th><th>人気</th><th>枠</th><th>馬番</th><th>種別</th><th>距離</th><th>馬場</th><th>タイム</th><th>着差</th><th>平均時計との差</th><th>上り</th><th>通過</th><th>馬体重</th></tr></thead><tbody>
 <tr>
 <td>2025/06/08</td>
 <td>阪神</td>
 <td>05</td>
 <td>2歳新馬</td>
-<td>新馬</td>
-<td>1</td>
-<td>1.0</td>
-<td>3</td>
-<td>3</td>
-<td>芝</td>
-<td>1400</td>
-<td>良</td>
-<td>0:1:21.8</td>
+<td style="background-color:#ffe6e6; padding: 2px 4px; border-radius: 3px;">新馬</td>
+<td style="background-color: #FFD700; font-weight: bold;">1</td>
+<td style="background-color: #FFD700; font-weight: bold;">1</td>
+<td style="background-color:red; color:#fff;">3</td>
+<td style="background-color:red; color:#fff;">3</td>
+<td style="background-color:#32CD32;font-weight: bold;">芝</td>
+<td style="background-color:#32CD32; font-weight: bold;">1400</td>
+<td style="background-color:#ffffff;">良</td>
+<td>1:21.8</td>
 <td>-0.2</td>
-<td>[-0.767]</td>
+<td style="color: red; font-weight: bold;">-0.77</td>
 <td>34.2</td>
 <td>6-4</td>
 <td>436</td>
 </tr>
-</table>
-<h4>芝/ダートサマリ</h4>
-<h5>芝</h5>
-<ul>
-<li>最速上り: 34.2 (info: {'date': '2025/06/08', 'race_name': nan, 'course_name': '阪神', 'course_len': '1400', '馬場': '良'})</li>
-<li>平均上り: 34.2</li>
-<li>平均通過(正規化): [9.8, 6.5]</li>
-<li>対象レース数: 1</li>
-</ul>
-<h5>ダート</h5>
-<ul>
-<li>最速上り: None (info: None)</li>
-<li>平均上り: None</li>
-<li>平均通過(正規化): None</li>
-<li>対象レース数: None</li>
-</ul>
-<h4>同コース持ち時計</h4>
+</tbody></table>
+<h4>🏇 芝/ダートサマリ</h4>
+
+    <table border="1" style="border-collapse:collapse; text-align:center;">
+    <thead>
+        <tr>
+        <th>コース</th>
+        <th>最速上り</th>
+        <th>平均上り</th>
+        <th>平均通過位置</th>
+        <th>対象レース数</th>
+        </tr>
+    </thead>
+    <tbody>
+    
+
+            <tr>
+            <td>芝</td>
+            <td><strong>34.2</strong> <br> 2025/06/08: 2歳新馬 (阪神 1400m 良)</td>
+            <td><strong>34.2</strong></td>
+            <td>[9.8, 6.5]</td>
+            <td>1</td>
+            </tr>
+            
+
+            <tr>
+            <td>ダート</td>
+            <td>-</td>
+            <td><strong>-</strong></td>
+            <td>-</td>
+            <td>-</td>
+            </tr>
+            
+</tbody></table>
+<h4>⏱️ 京都 芝1400m 持ち時計</h4>
 <div>同コース出走データなし</div>
 </div>
+              </div>
             </div>
-            <hr>
             
+    <script>
+    function toggleHorseReport(reportId) {
+      const content = document.getElementById(reportId);
+      const toggle = content.previousElementSibling.querySelector('.horse-report-toggle-icon');
+      
+      content.classList.toggle('open');
+      toggle.classList.toggle('open');
+    }
+    </script>
+    
 </body>
 </html>

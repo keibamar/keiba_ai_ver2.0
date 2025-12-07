@@ -186,6 +186,7 @@ def build_nav_html(output_dir, date_str, place_id, target_id):
         df_place = df_info[df_info["race_id"].astype(str).str.startswith(str(target_id)[:10])]
         df_place = df_place.sort_values("race_id").reset_index(drop=True)
         race_ids = df_place["race_id"].astype(str).tolist()
+        place_name = name_header.NAME_LIST[place_id - 1]
 
         if str(target_id) in race_ids:
             idx = race_ids.index(str(target_id))
@@ -198,7 +199,7 @@ def build_nav_html(output_dir, date_str, place_id, target_id):
                 prev_num = int(str(prev["race_id"])[-2:])
                 prev_file = f"{name_header.PLACE_LIST[place_id - 1]}R{prev_num}.html"
                 if os.path.exists(os.path.join(out_dir, prev_file)):
-                    prev_link = f'<a href="{prev_file}">← 前のレース（{prev_name}）</a>'
+                    prev_link = f'<a href="{prev_file}">← {place_name}{prev_num}R:{prev_name}</a>'
                 else:
                     prev_link = f'<span class="disabled">← 前のレース（{prev_name}）</span>'
 
@@ -209,7 +210,7 @@ def build_nav_html(output_dir, date_str, place_id, target_id):
                 nxt_num = int(str(nxt["race_id"])[-2:])
                 next_file = f"{name_header.PLACE_LIST[place_id - 1]}R{nxt_num}.html"
                 if os.path.exists(os.path.join(out_dir, next_file)):
-                    next_link = f'<a href="{next_file}">次のレース（{nxt_name}） →</a>'
+                    next_link = f'<a href="{next_file}">{place_name}{nxt_num}R:{nxt_name} →</a>'
                 else:
                     next_link = f'<span class="disabled">次のレース（{nxt_name}） →</span>'
 

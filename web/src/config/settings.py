@@ -10,9 +10,9 @@ WAKU_COLORS = {
 }
 
 RANK_COLORS = {
-    "1": "yellow",  # 白
-    "2": "lightblue",  # 黒
-    "3": "orange",  # 赤
+    "1": "#FFD700",      # 金色
+    "2": "#B0E0E6",      # 水色
+    "3": "#FFA07A",      # オレンジ
 }
 
 

@@ -831,7 +831,7 @@ def horse_report_to_html(report: Dict[str, Any]) -> str:
         for _, row in pr.iterrows():
             class_name = row.get("クラス", "")
             html.append(f"<td><strong>{class_name}</strong></td>")
-            html.append(f"<td>{row.get('血統', '-')}</td>")
+            html.append(f"<td>{extract_peds_name(row.get('血統', '-'))}</td>")
             html.append(f"<td>{row.get('1着', '-')}</td>")
             html.append(f"<td>{row.get('2着', '-')}</td>")
             html.append(f"<td>{row.get('3着', '-')}</td>")
@@ -877,11 +877,11 @@ def horse_report_to_html(report: Dict[str, Any]) -> str:
             class_html = f'<td style="background-color:{class_bg_color}; padding: 2px 4px; border-radius: 3px;">{class_name}</td>'
             
             # レースタイプの色付け
-            race_type = r.get('race_type', '-')
-            race_type_color = get_race_type_color(race_type)
-            race_type_html = f'<td style="background-color:{race_type_color};font-weight: bold;">{race_type}</td>'
-            course_len = r.get('course', '-')
-            course_html = f'<td style="background-color:{race_type_color}; font-weight: bold;">{course_len}</td>'
+            recent_race_type = r.get('race_type', '-')
+            race_type_color = get_race_type_color(recent_race_type)
+            race_type_html = f'<td style="background-color:{race_type_color};font-weight: bold;">{recent_race_type}</td>'
+            rescent_course_len = r.get('course', '-')
+            course_html = f'<td style="background-color:{race_type_color}; font-weight: bold;">{rescent_course_len}</td>'
 
             # 馬場状態の色付け
             ground_state = r.get('ground', '-')
@@ -915,7 +915,7 @@ def horse_report_to_html(report: Dict[str, Any]) -> str:
         html.append("<div>直近5走データなし</div>")
 
     # surface summary
-    html.append("<h4>⏱🏇 芝/ダートサマリ</h4>")
+    html.append("<h4>🏇 芝/ダートサマリ</h4>")
     html.append("""
     <table border="1" style="border-collapse:collapse; text-align:center;">
     <thead>
