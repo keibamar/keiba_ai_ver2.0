@@ -109,6 +109,46 @@
       margin-top: 0;
       color: #333;
     }
+    
+    /* ========== 馬レポートセクション ========== */
+    .horse-report-card {
+      margin: 10px 0;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      background-color: #fff;
+    }
+    .horse-report-toggle {
+      cursor: pointer;
+      user-select: none;
+      padding: 12px;
+      background-color: #e3f2fd;
+      border: none;
+      border-bottom: 1px solid #90caf9;
+      border-radius: 5px 5px 0 0;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .horse-report-toggle:hover {
+      background-color: #bbdefb;
+    }
+    .horse-report-toggle-icon {
+      font-size: 18px;
+      transition: transform 0.3s;
+    }
+    .horse-report-toggle-icon.open {
+      transform: rotate(180deg);
+    }
+    .horse-report-content {
+      display: none;
+      padding: 10px;
+      background-color: #f9f9f9;
+      border-radius: 0 0 5px 5px;
+    }
+    .horse-report-content.open {
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -146,7 +186,7 @@
         <tr>
           <td>1</td>
           <td>1</td>
-          <td>ダノンフェアレディ</td>
+          <td><a href="javascript:void(0);" onclick="scrollToReport('horse_report_0_1')" style="color: blue; text-decoration: underline; cursor: pointer;">ダノンフェアレディ</a></td>
           <td>牝3</td>
           <td>55.0</td>
           <td>坂井</td>
@@ -158,7 +198,7 @@
         <tr>
           <td>1</td>
           <td>2</td>
-          <td>ルージュソリテール</td>
+          <td><a href="javascript:void(0);" onclick="scrollToReport('horse_report_1_2')" style="color: blue; text-decoration: underline; cursor: pointer;">ルージュソリテール</a></td>
           <td>牝3</td>
           <td>55.0</td>
           <td>北村友</td>
@@ -170,7 +210,7 @@
         <tr>
           <td>2</td>
           <td>3</td>
-          <td>ジョスラン</td>
+          <td><a href="javascript:void(0);" onclick="scrollToReport('horse_report_2_3')" style="color: blue; text-decoration: underline; cursor: pointer;">ジョスラン</a></td>
           <td>牝3</td>
           <td>55.0</td>
           <td>岩田望</td>
@@ -182,7 +222,7 @@
         <tr>
           <td>2</td>
           <td>4</td>
-          <td>レーゼドラマ</td>
+          <td><a href="javascript:void(0);" onclick="scrollToReport('horse_report_3_4')" style="color: blue; text-decoration: underline; cursor: pointer;">レーゼドラマ</a></td>
           <td>牝3</td>
           <td>55.0</td>
           <td>藤岡佑</td>
@@ -194,7 +234,7 @@
         <tr>
           <td>3</td>
           <td>5</td>
-          <td>ブラウンラチェット</td>
+          <td><a href="javascript:void(0);" onclick="scrollToReport('horse_report_4_5')" style="color: blue; text-decoration: underline; cursor: pointer;">ブラウンラチェット</a></td>
           <td>牝3</td>
           <td>55.0</td>
           <td>池添</td>
@@ -206,7 +246,7 @@
         <tr>
           <td>3</td>
           <td>6</td>
-          <td>ケリフレッドアスク</td>
+          <td><a href="javascript:void(0);" onclick="scrollToReport('horse_report_5_6')" style="color: blue; text-decoration: underline; cursor: pointer;">ケリフレッドアスク</a></td>
           <td>牝3</td>
           <td>55.0</td>
           <td>西塚</td>
@@ -218,7 +258,7 @@
         <tr>
           <td>4</td>
           <td>7</td>
-          <td>クリノメイ</td>
+          <td><a href="javascript:void(0);" onclick="scrollToReport('horse_report_6_7')" style="color: blue; text-decoration: underline; cursor: pointer;">クリノメイ</a></td>
           <td>牝3</td>
           <td>55.0</td>
           <td>酒井</td>
@@ -230,7 +270,7 @@
         <tr>
           <td>4</td>
           <td>8</td>
-          <td>テレサ</td>
+          <td><a href="javascript:void(0);" onclick="scrollToReport('horse_report_7_8')" style="color: blue; text-decoration: underline; cursor: pointer;">テレサ</a></td>
           <td>牝3</td>
           <td>55.0</td>
           <td>松山</td>
@@ -242,7 +282,7 @@
         <tr>
           <td>5</td>
           <td>9</td>
-          <td>マピュース</td>
+          <td><a href="javascript:void(0);" onclick="scrollToReport('horse_report_8_9')" style="color: blue; text-decoration: underline; cursor: pointer;">マピュース</a></td>
           <td>牝3</td>
           <td>55.0</td>
           <td>横山武</td>
@@ -254,7 +294,7 @@
         <tr>
           <td>5</td>
           <td>10</td>
-          <td>エリカエクスプレス</td>
+          <td><a href="javascript:void(0);" onclick="scrollToReport('horse_report_9_10')" style="color: blue; text-decoration: underline; cursor: pointer;">エリカエクスプレス</a></td>
           <td>牝3</td>
           <td>55.0</td>
           <td>武豊</td>
@@ -266,7 +306,7 @@
         <tr>
           <td>6</td>
           <td>11</td>
-          <td>エンブロイダリー</td>
+          <td><a href="javascript:void(0);" onclick="scrollToReport('horse_report_10_11')" style="color: blue; text-decoration: underline; cursor: pointer;">エンブロイダリー</a></td>
           <td>牝3</td>
           <td>55.0</td>
           <td>ルメール</td>
@@ -278,7 +318,7 @@
         <tr>
           <td>6</td>
           <td>12</td>
-          <td>ヴーレヴー</td>
+          <td><a href="javascript:void(0);" onclick="scrollToReport('horse_report_11_12')" style="color: blue; text-decoration: underline; cursor: pointer;">ヴーレヴー</a></td>
           <td>牝3</td>
           <td>55.0</td>
           <td>菱田</td>
@@ -290,7 +330,7 @@
         <tr>
           <td>7</td>
           <td>13</td>
-          <td>セナスタイル</td>
+          <td><a href="javascript:void(0);" onclick="scrollToReport('horse_report_12_13')" style="color: blue; text-decoration: underline; cursor: pointer;">セナスタイル</a></td>
           <td>牝3</td>
           <td>55.0</td>
           <td>岩田康</td>
@@ -302,7 +342,7 @@
         <tr>
           <td>7</td>
           <td>14</td>
-          <td>ビップデイジー</td>
+          <td><a href="javascript:void(0);" onclick="scrollToReport('horse_report_13_14')" style="color: blue; text-decoration: underline; cursor: pointer;">ビップデイジー</a></td>
           <td>牝3</td>
           <td>55.0</td>
           <td>西村淳</td>
@@ -314,7 +354,7 @@
         <tr>
           <td>7</td>
           <td>15</td>
-          <td>インヴォーグ</td>
+          <td><a href="javascript:void(0);" onclick="scrollToReport('horse_report_14_15')" style="color: blue; text-decoration: underline; cursor: pointer;">インヴォーグ</a></td>
           <td>牝3</td>
           <td>55.0</td>
           <td>団野</td>
@@ -326,7 +366,7 @@
         <tr>
           <td>8</td>
           <td>16</td>
-          <td>ランフォーヴァウ</td>
+          <td><a href="javascript:void(0);" onclick="scrollToReport('horse_report_15_16')" style="color: blue; text-decoration: underline; cursor: pointer;">ランフォーヴァウ</a></td>
           <td>牝3</td>
           <td>55.0</td>
           <td>小崎</td>
@@ -338,7 +378,7 @@
         <tr>
           <td>8</td>
           <td>17</td>
-          <td>カムニャック</td>
+          <td><a href="javascript:void(0);" onclick="scrollToReport('horse_report_16_17')" style="color: blue; text-decoration: underline; cursor: pointer;">カムニャック</a></td>
           <td>牝3</td>
           <td>55.0</td>
           <td>川田</td>
@@ -350,7 +390,7 @@
         <tr>
           <td>8</td>
           <td>18</td>
-          <td>パラディレーヌ</td>
+          <td><a href="javascript:void(0);" onclick="scrollToReport('horse_report_17_18')" style="color: blue; text-decoration: underline; cursor: pointer;">パラディレーヌ</a></td>
           <td>牝3</td>
           <td>55.0</td>
           <td>丹内</td>
@@ -1281,104 +1321,8 @@
     </div>
   </div>
   
-  <script>
-  function toggleCourseData() {
-    const content = document.getElementById("courseDataContent");
-    const toggle = document.getElementById("courseDataToggle");
-    
-    content.classList.toggle("open");
-    toggle.classList.toggle("open");
-  }
-  
-  document.addEventListener("DOMContentLoaded", () => {
-    // ======== スタイル設定部分 ========
-    const rows = document.querySelectorAll("#raceTable tbody tr");
-    rows.forEach(row => {
-      const waku = parseInt(row.children[0].innerText);
-      row.children[0].classList.add(`waku-${waku}`);
-      row.children[1].classList.add(`waku-${waku}`);
-      const rank = parseInt(row.children[8].innerText);
-      if (rank === 1) row.children[8].classList.add("rank-1");
-      if (rank === 2) row.children[8].classList.add("rank-2");
-      if (rank === 3) row.children[8].classList.add("rank-3");
-      const score = parseFloat(row.children[7].innerText);
-      if (score >= 0.1) row.children[7].classList.add("score-high");
-      if (score < 0 && score >= -1) row.children[7].classList.add("score-low");
-      if (score < -1) row.children[7].classList.add("score-verylow");
-    });
-    // ======== ソート機能部分 ========
-    const table = document.getElementById("raceTable");
-    const headers = table.querySelectorAll("th");
-
-    function getCellValue(tr, idx) {
-      const val = tr.children[idx].innerText.trim();
-      return isNaN(val) ? val : Number(val);
-    }
-
-    function clearSortIndicators() {
-      headers.forEach(th => {
-        const ind = th.querySelector(".sort-ind");
-        if (ind) ind.textContent = "";
-      });
-    }
-
-    function sortTable(colIndex, th) {
-      const tbody = table.tBodies[0];
-      const rowsArray = Array.from(tbody.querySelectorAll("tr"));
-
-      // 前回の状態を取得（デフォルト asc）
-      const currentDir = th.dataset.sortDir === "asc" ? "desc" : "asc";
-      th.dataset.sortDir = currentDir;
-
-      // 他ヘッダの矢印をリセット
-      headers.forEach(header => {
-        if (header !== th) header.dataset.sortDir = "";
-      });
-
-      // ソート方向アイコン
-      clearSortIndicators();
-      let indicator = th.querySelector(".sort-ind");
-      if (!indicator) {
-        indicator = document.createElement("span");
-        indicator.classList.add("sort-ind");
-        indicator.style.marginLeft = "6px";
-        th.appendChild(indicator);
-      }
-
-      // ソート処理
-      rowsArray.sort((a, b) => {
-        const A = getCellValue(a, colIndex);
-        const B = getCellValue(b, colIndex);
-        if (typeof A === "number" && typeof B === "number") {
-          return currentDir === "asc" ? A - B : B - A;
-        } else {
-          return currentDir === "asc"
-            ? A.toString().localeCompare(B)
-            : B.toString().localeCompare(A);
-        }
-      });
-
-      // 並び替え反映
-      rowsArray.forEach(r => tbody.appendChild(r));
-    }
-
-    // ======== 対象列にクリックイベントを追加 ========
-    [1, 8].forEach(idx => {
-      const th = headers[idx];
-      if (th) {
-        th.style.cursor = "pointer";
-        const indicator = document.createElement("span");
-        indicator.classList.add("sort-ind");
-        indicator.style.marginLeft = "6px";
-        th.appendChild(indicator);
-        th.addEventListener("click", () => sortTable(idx, th));
-      }
-    });
-  });
-  </script>
-
-    <h2>出走馬 詳細レポート</h2>
-    
+  <h2 id="horseReportsSection">出走馬 詳細レポート</h2>
+  <div id="horseReportsContainer">
     <style>
       .horse-report-toggle {
         cursor: pointer;
@@ -1418,7 +1362,7 @@
     
             <div class="horse-report-card">
               <div class="horse-report-toggle" onclick="toggleHorseReport('horse_report_0_1')">
-                <span>🐎[1枠1番] ダノンフェアレディ </span>
+                <span>🐎 [1枠1番] ダノンフェアレディ</span>
                 <span class="horse-report-toggle-icon open">▼</span>
               </div>
               <div class="horse-report-content open" id="horse_report_0_1">
@@ -1591,7 +1535,7 @@
             
             <div class="horse-report-card">
               <div class="horse-report-toggle" onclick="toggleHorseReport('horse_report_1_2')">
-                <span>🐎[1枠2番] ルージュソリテール </span>
+                <span>🐎 [1枠2番] ルージュソリテール</span>
                 <span class="horse-report-toggle-icon open">▼</span>
               </div>
               <div class="horse-report-content open" id="horse_report_1_2">
@@ -1744,7 +1688,7 @@
             
             <div class="horse-report-card">
               <div class="horse-report-toggle" onclick="toggleHorseReport('horse_report_2_3')">
-                <span>🐎[2枠3番] ジョスラン </span>
+                <span>🐎 [2枠3番] ジョスラン</span>
                 <span class="horse-report-toggle-icon open">▼</span>
               </div>
               <div class="horse-report-content open" id="horse_report_2_3">
@@ -1897,7 +1841,7 @@
             
             <div class="horse-report-card">
               <div class="horse-report-toggle" onclick="toggleHorseReport('horse_report_3_4')">
-                <span>🐎[2枠4番] レーゼドラマ </span>
+                <span>🐎 [2枠4番] レーゼドラマ</span>
                 <span class="horse-report-toggle-icon open">▼</span>
               </div>
               <div class="horse-report-content open" id="horse_report_3_4">
@@ -2073,7 +2017,7 @@
             
             <div class="horse-report-card">
               <div class="horse-report-toggle" onclick="toggleHorseReport('horse_report_4_5')">
-                <span>🐎[3枠5番] ブラウンラチェット </span>
+                <span>🐎 [3枠5番] ブラウンラチェット</span>
                 <span class="horse-report-toggle-icon open">▼</span>
               </div>
               <div class="horse-report-content open" id="horse_report_4_5">
@@ -2226,7 +2170,7 @@
             
             <div class="horse-report-card">
               <div class="horse-report-toggle" onclick="toggleHorseReport('horse_report_5_6')">
-                <span>🐎[3枠6番] ケリフレッドアスク </span>
+                <span>🐎 [3枠6番] ケリフレッドアスク</span>
                 <span class="horse-report-toggle-icon open">▼</span>
               </div>
               <div class="horse-report-content open" id="horse_report_5_6">
@@ -2399,7 +2343,7 @@
             
             <div class="horse-report-card">
               <div class="horse-report-toggle" onclick="toggleHorseReport('horse_report_6_7')">
-                <span>🐎[4枠7番] クリノメイ </span>
+                <span>🐎 [4枠7番] クリノメイ</span>
                 <span class="horse-report-toggle-icon open">▼</span>
               </div>
               <div class="horse-report-content open" id="horse_report_6_7">
@@ -2552,7 +2496,7 @@
             
             <div class="horse-report-card">
               <div class="horse-report-toggle" onclick="toggleHorseReport('horse_report_7_8')">
-                <span>🐎[4枠8番] テレサ </span>
+                <span>🐎 [4枠8番] テレサ</span>
                 <span class="horse-report-toggle-icon open">▼</span>
               </div>
               <div class="horse-report-content open" id="horse_report_7_8">
@@ -2725,7 +2669,7 @@
             
             <div class="horse-report-card">
               <div class="horse-report-toggle" onclick="toggleHorseReport('horse_report_8_9')">
-                <span>🐎[5枠9番] マピュース </span>
+                <span>🐎 [5枠9番] マピュース</span>
                 <span class="horse-report-toggle-icon open">▼</span>
               </div>
               <div class="horse-report-content open" id="horse_report_8_9">
@@ -2898,7 +2842,7 @@
             
             <div class="horse-report-card">
               <div class="horse-report-toggle" onclick="toggleHorseReport('horse_report_9_10')">
-                <span>🐎[5枠10番] エリカエクスプレス </span>
+                <span>🐎 [5枠10番] エリカエクスプレス</span>
                 <span class="horse-report-toggle-icon open">▼</span>
               </div>
               <div class="horse-report-content open" id="horse_report_9_10">
@@ -3071,7 +3015,7 @@
             
             <div class="horse-report-card">
               <div class="horse-report-toggle" onclick="toggleHorseReport('horse_report_10_11')">
-                <span>🐎[6枠11番] エンブロイダリー </span>
+                <span>🐎 [6枠11番] エンブロイダリー</span>
                 <span class="horse-report-toggle-icon open">▼</span>
               </div>
               <div class="horse-report-content open" id="horse_report_10_11">
@@ -3244,7 +3188,7 @@
             
             <div class="horse-report-card">
               <div class="horse-report-toggle" onclick="toggleHorseReport('horse_report_11_12')">
-                <span>🐎[6枠12番] ヴーレヴー </span>
+                <span>🐎 [6枠12番] ヴーレヴー</span>
                 <span class="horse-report-toggle-icon open">▼</span>
               </div>
               <div class="horse-report-content open" id="horse_report_11_12">
@@ -3417,7 +3361,7 @@
             
             <div class="horse-report-card">
               <div class="horse-report-toggle" onclick="toggleHorseReport('horse_report_12_13')">
-                <span>🐎[7枠13番] セナスタイル </span>
+                <span>🐎 [7枠13番] セナスタイル</span>
                 <span class="horse-report-toggle-icon open">▼</span>
               </div>
               <div class="horse-report-content open" id="horse_report_12_13">
@@ -3550,7 +3494,7 @@
             
             <div class="horse-report-card">
               <div class="horse-report-toggle" onclick="toggleHorseReport('horse_report_13_14')">
-                <span>🐎[7枠14番] ビップデイジー </span>
+                <span>🐎 [7枠14番] ビップデイジー</span>
                 <span class="horse-report-toggle-icon open">▼</span>
               </div>
               <div class="horse-report-content open" id="horse_report_13_14">
@@ -3723,7 +3667,7 @@
             
             <div class="horse-report-card">
               <div class="horse-report-toggle" onclick="toggleHorseReport('horse_report_14_15')">
-                <span>🐎[7枠15番] インヴォーグ </span>
+                <span>🐎 [7枠15番] インヴォーグ</span>
                 <span class="horse-report-toggle-icon open">▼</span>
               </div>
               <div class="horse-report-content open" id="horse_report_14_15">
@@ -3896,7 +3840,7 @@
             
             <div class="horse-report-card">
               <div class="horse-report-toggle" onclick="toggleHorseReport('horse_report_15_16')">
-                <span>🐎[8枠16番] ランフォーヴァウ </span>
+                <span>🐎 [8枠16番] ランフォーヴァウ</span>
                 <span class="horse-report-toggle-icon open">▼</span>
               </div>
               <div class="horse-report-content open" id="horse_report_15_16">
@@ -4069,7 +4013,7 @@
             
             <div class="horse-report-card">
               <div class="horse-report-toggle" onclick="toggleHorseReport('horse_report_16_17')">
-                <span>🐎[8枠17番] カムニャック </span>
+                <span>🐎 [8枠17番] カムニャック</span>
                 <span class="horse-report-toggle-icon open">▼</span>
               </div>
               <div class="horse-report-content open" id="horse_report_16_17">
@@ -4242,7 +4186,7 @@
             
             <div class="horse-report-card">
               <div class="horse-report-toggle" onclick="toggleHorseReport('horse_report_17_18')">
-                <span>🐎[8枠18番] パラディレーヌ </span>
+                <span>🐎 [8枠18番] パラディレーヌ</span>
                 <span class="horse-report-toggle-icon open">▼</span>
               </div>
               <div class="horse-report-content open" id="horse_report_17_18">
@@ -4412,16 +4356,120 @@
 </div>
               </div>
             </div>
-            
-    <script>
-    function toggleHorseReport(reportId) {
-      const content = document.getElementById(reportId);
-      const toggle = content.previousElementSibling.querySelector('.horse-report-toggle-icon');
-      
-      content.classList.toggle('open');
-      toggle.classList.toggle('open');
-    }
-    </script>
+            </div>
+  
+  <script>
+  function toggleCourseData() {
+    const content = document.getElementById("courseDataContent");
+    const toggle = document.getElementById("courseDataToggle");
     
+    content.classList.toggle("open");
+    toggle.classList.toggle("open");
+  }
+
+  function toggleHorseReport(reportId) {
+    const content = document.getElementById(reportId);
+    const toggle = content.previousElementSibling.querySelector('.horse-report-toggle-icon');
+    
+    content.classList.toggle('open');
+    toggle.classList.toggle('open');
+  }
+
+  function scrollToReport(reportId) {
+    // 詳細レポートセクションまでスクロール
+    const element = document.getElementById(reportId);
+    if (element) {
+      element.classList.add('open');
+      element.previousElementSibling.querySelector('.horse-report-toggle-icon').classList.add('open');
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+  
+  document.addEventListener("DOMContentLoaded", () => {
+    // ======== スタイル設定部分 ========
+    const rows = document.querySelectorAll("#raceTable tbody tr");
+    rows.forEach(row => {
+      const waku = parseInt(row.children[0].innerText);
+      row.children[0].classList.add(`waku-${waku}`);
+      row.children[1].classList.add(`waku-${waku}`);
+      const rank = parseInt(row.children[8].innerText);
+      if (rank === 1) row.children[8].classList.add("rank-1");
+      if (rank === 2) row.children[8].classList.add("rank-2");
+      if (rank === 3) row.children[8].classList.add("rank-3");
+      const score = parseFloat(row.children[7].innerText);
+      if (score >= 0.1) row.children[7].classList.add("score-high");
+      if (score < 0 && score >= -1) row.children[7].classList.add("score-low");
+      if (score < -1) row.children[7].classList.add("score-verylow");
+    });
+    // ======== ソート機能部分 ========
+    const table = document.getElementById("raceTable");
+    const headers = table.querySelectorAll("th");
+
+    function getCellValue(tr, idx) {
+      const val = tr.children[idx].innerText.trim();
+      return isNaN(val) ? val : Number(val);
+    }
+
+    function clearSortIndicators() {
+      headers.forEach(th => {
+        const ind = th.querySelector(".sort-ind");
+        if (ind) ind.textContent = "";
+      });
+    }
+
+    function sortTable(colIndex, th) {
+      const tbody = table.tBodies[0];
+      const rowsArray = Array.from(tbody.querySelectorAll("tr"));
+
+      // 前回の状態を取得（デフォルト asc）
+      const currentDir = th.dataset.sortDir === "asc" ? "desc" : "asc";
+      th.dataset.sortDir = currentDir;
+
+      // 他ヘッダの矢印をリセット
+      headers.forEach(header => {
+        if (header !== th) header.dataset.sortDir = "";
+      });
+
+      // ソート方向アイコン
+      clearSortIndicators();
+      let indicator = th.querySelector(".sort-ind");
+      if (!indicator) {
+        indicator = document.createElement("span");
+        indicator.classList.add("sort-ind");
+        indicator.style.marginLeft = "6px";
+        th.appendChild(indicator);
+      }
+
+      // ソート処理
+      rowsArray.sort((a, b) => {
+        const A = getCellValue(a, colIndex);
+        const B = getCellValue(b, colIndex);
+        if (typeof A === "number" && typeof B === "number") {
+          return currentDir === "asc" ? A - B : B - A;
+        } else {
+          return currentDir === "asc"
+            ? A.toString().localeCompare(B)
+            : B.toString().localeCompare(A);
+        }
+      });
+
+      // 並び替え反映
+      rowsArray.forEach(r => tbody.appendChild(r));
+    }
+
+    // ======== 対象列にクリックイベントを追加 ========
+    [1, 8].forEach(idx => {
+      const th = headers[idx];
+      if (th) {
+        th.style.cursor = "pointer";
+        const indicator = document.createElement("span");
+        indicator.classList.add("sort-ind");
+        indicator.style.marginLeft = "6px";
+        th.appendChild(indicator);
+        th.addEventListener("click", () => sortTable(idx, th));
+      }
+    });
+  });
+  </script>
 </body>
 </html>

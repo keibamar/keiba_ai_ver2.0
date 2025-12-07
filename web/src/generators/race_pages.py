@@ -133,7 +133,7 @@ def build_table_rows(df):
     if df is None or df.empty:
         return ""
     rows = ""
-    for _, row in df.iterrows():
+    for idx, (_, row) in enumerate(df.iterrows()):
         # 安全に値を取り出す
         waku = int(row['枠']) if '枠' in row and pd.notna(row['枠']) else ""
         umaban = int(row['馬番']) if '馬番' in row and pd.notna(row['馬番']) else ""
@@ -156,11 +156,15 @@ def build_table_rows(df):
         except Exception:
             rank_fmt = rank
 
+        # 馬名をクリック可能にする（詳細レポートへのリンク）
+        unique_id = f"horse_report_{idx}_{umaban}"
+        name_html = f'<a href="javascript:void(0);" onclick="scrollToReport(\'{unique_id}\')" style="color: blue; text-decoration: underline; cursor: pointer;">{html.escape(str(name))}</a>'
+
         rows += f"""
         <tr>
           <td>{waku}</td>
           <td>{umaban}</td>
-          <td>{html.escape(str(name))}</td>
+          <td>{name_html}</td>
           <td>{seirei}</td>
           <td>{kinryo}</td>
           <td>{jockey}</td>
@@ -378,6 +382,46 @@ def build_html_content(date_display, place_id, race_num, race_name, race_time, n
       margin-top: 0;
       color: #333;
     }}
+    
+    /* ========== 馬レポートセクション ========== */
+    .horse-report-card {{
+      margin: 10px 0;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      background-color: #fff;
+    }}
+    .horse-report-toggle {{
+      cursor: pointer;
+      user-select: none;
+      padding: 12px;
+      background-color: #e3f2fd;
+      border: none;
+      border-bottom: 1px solid #90caf9;
+      border-radius: 5px 5px 0 0;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }}
+    .horse-report-toggle:hover {{
+      background-color: #bbdefb;
+    }}
+    .horse-report-toggle-icon {{
+      font-size: 18px;
+      transition: transform 0.3s;
+    }}
+    .horse-report-toggle-icon.open {{
+      transform: rotate(180deg);
+    }}
+    .horse-report-content {{
+      display: none;
+      padding: 10px;
+      background-color: #f9f9f9;
+      border-radius: 0 0 5px 5px;
+    }}
+    .horse-report-content.open {{
+      display: block;
+    }}
   </style>
 </head>
 <body>
@@ -442,6 +486,9 @@ def build_html_content(date_display, place_id, race_num, race_name, race_time, n
     </div>
   </div>
   
+  <h2 id="horseReportsSection">出走馬 詳細レポート</h2>
+  <div id="horseReportsContainer"></div>
+  
   <script>
   function toggleCourseData() {{
     const content = document.getElementById("courseDataContent");
@@ -449,6 +496,24 @@ def build_html_content(date_display, place_id, race_num, race_name, race_time, n
     
     content.classList.toggle("open");
     toggle.classList.toggle("open");
+  }}
+
+  function toggleHorseReport(reportId) {{
+    const content = document.getElementById(reportId);
+    const toggle = content.previousElementSibling.querySelector('.horse-report-toggle-icon');
+    
+    content.classList.toggle('open');
+    toggle.classList.toggle('open');
+  }}
+
+  function scrollToReport(reportId) {{
+    // 詳細レポートセクションまでスクロール
+    const element = document.getElementById(reportId);
+    if (element) {{
+      element.classList.add('open');
+      element.previousElementSibling.querySelector('.horse-report-toggle-icon').classList.add('open');
+      element.scrollIntoView({{ behavior: 'smooth', block: 'start' }});
+    }}
   }}
   
   document.addEventListener("DOMContentLoaded", () => {{
@@ -1570,7 +1635,7 @@ def make_race_card_html(date_str, place_id, target_id):
             horse_reports_html += f"""
             <div class="horse-report-card">
               <div class="horse-report-toggle" onclick="toggleHorseReport('{unique_id}')">
-                <span>🐎[{waku}枠{umaban}番] {horse_name} </span>
+                <span>🐎 [{waku}枠{umaban}番] {horse_name}</span>
                 <span class="horse-report-toggle-icon open">▼</span>
               </div>
               <div class="horse-report-content open" id="{unique_id}">
@@ -1607,24 +1672,10 @@ def make_race_card_html(date_str, place_id, target_id):
         f"<p>{course_info_text}</p>\n  <p>発走時刻:"
     )
 
-    # 🧩 各馬の詳細レポートを race_page 下部に追加（折りたたみ機能付き）
-    horse_reports_section = f"""
-    <h2>出走馬 詳細レポート</h2>
-    {horse_reports_html}
-    <script>
-    function toggleHorseReport(reportId) {{
-      const content = document.getElementById(reportId);
-      const toggle = content.previousElementSibling.querySelector('.horse-report-toggle-icon');
-      
-      content.classList.toggle('open');
-      toggle.classList.toggle('open');
-    }}
-    </script>
-    """
-    
+    # 🧩 各馬の詳細レポートを race_page に追加（折りたたみ機能付き）
     html_content = html_content.replace(
-        "</body>",
-        f"{horse_reports_section}\n</body>"
+        '<div id="horseReportsContainer"></div>',
+        f'<div id="horseReportsContainer">{horse_reports_html}</div>'
     )
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
