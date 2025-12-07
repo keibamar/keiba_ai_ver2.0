@@ -23,7 +23,15 @@ if LIBS_PATH not in sys.path:
 
 from config.path import HORSE_ID_MAP_PATH, PAST_PERF_PATH, HORSE_PEDS_PATH, PEDS_RESULTS_PATH, TIME_INFO_PATH, RACE_CALENDAR_FOLDER_PATH
 import name_header
-from race_pages import get_race_info
+import race_pages
+
+try:
+    from config.settings import RANK_COLORS, WAKU_COLORS
+except Exception:
+    # templates.py の定義名が異なる／未定義の場合のフォールバック
+    from config import templates as templates_mod
+    RANK_COLORS = getattr(templates_mod, "RANK_COLORS", {})
+    WAKU_COLORS = getattr(templates_mod, "WAKU_COLORS", {})
 
 # ---- ユーティリティ ----
 
@@ -262,6 +270,19 @@ def peds_results_for_bloodline(place_id: int, race_type: str, course_len: int, g
             return res.copy()
     return pd.DataFrame()
 
+# NaN 判定して "-" に置き換え
+def safe_value(val):
+    if val is None:
+        return "-"
+    try:
+        if isinstance(val, float) and math.isnan(val):
+            return "-"
+        if pd.isna(val):
+            return "-"
+    except Exception:
+        pass
+    return val
+
 def recent_5_performances(horse_id: str, date_str:str) -> List[Dict[str, Any]]:
     """
     PastPerformance/{horse_id}.csv から直近5走を取得して整形して返す。
@@ -312,6 +333,10 @@ def recent_5_performances(horse_id: str, date_str:str) -> List[Dict[str, Any]]:
         race_num = row.get("R", "")
         race_name = row.get("レース名", row.get("レース名", ""))
         pops = row.get("人気", "")
+        try:
+            pops = int(float(pops))
+        except:
+            pops = pops
         result = row.get("着順", "")
         race_type = row.get("race_type", "")
         course_len = row.get("course_len", "")
@@ -333,8 +358,10 @@ def recent_5_performances(horse_id: str, date_str:str) -> List[Dict[str, Any]]:
                 diff_avg_ms = np.nan
         else:
             diff_avg_ms = np.nan
-
-        time_raw = re.sub(r"^0:", "", time_raw)
+        try:
+            time_raw = re.sub(r"^0:", "", time_raw)
+        except Exception:
+            time_raw = np.nan
 
         # 通過の正規化
         heads = None
@@ -362,32 +389,32 @@ def recent_5_performances(horse_id: str, date_str:str) -> List[Dict[str, Any]]:
                     race_name = str(match.iloc[0]["race_name"])
 
         res.append({
-            "date": date_raw,
-            "date_parsed": row.get("日付_parsed", None),
-            "race_name": race_name,
-            "race_num" : race_num,
-            "waku" : waku,
-            "umaban" : umaban,
-            "pops" : pops,
-            "result" : result,
-            "course_name" : course_name,
-            "course": course,
-            "race_type" : race_type,
-            "ground": ground,
-            "class_name": class_name,
-            "time_raw": time_raw,
-            "time_ms": t_ms,
-            "diff_avg_ms" : diff_avg_ms,
-            "diff_ms": diff_raw,
-            "上り": row.get("上り", None),
-            "通過": passage,
-            "通過_norm": passage_norm,
-            "馬体重": row.get("馬体重", None),
-            "枠": row.get("枠 番", row.get("枠 番", row.get("枠", None))),
-            "馬番": row.get("馬 番", row.get("馬 番", row.get("馬番", None))),
-            "人気": row.get("人 気", row.get("人 気", row.get("人気", None))),
-            "着順": row.get("着 順", row.get("着 順", row.get("着順", None))),
-            "斤量": row.get("斤 量", row.get("斤 量", row.get("斤量", None))),
+            "date": safe_value(date_raw),
+            "date_parsed": safe_value(row.get("日付_parsed", None)),
+            "race_name": safe_value(race_name),
+            "race_num" : safe_value(race_num),
+            "waku" : safe_value(waku),
+            "umaban" : safe_value(umaban),
+            "pops" : safe_value(pops),
+            "result" : safe_value(result),
+            "course_name" : safe_value(course_name),
+            "course": safe_value(course),
+            "race_type" : safe_value(race_type),
+            "ground": safe_value(ground),
+            "class_name": safe_value(class_name),
+            "time_raw": safe_value(time_raw),
+            "time_ms": safe_value(t_ms),
+            "diff_avg_ms" : safe_value(diff_avg_ms),
+            "diff_ms": safe_value(diff_raw),
+            "上り": safe_value(row.get("上り", None)),
+            "通過": safe_value(passage),
+            "通過_norm": safe_value(passage_norm),
+            "馬体重": safe_value(row.get("馬体重", None)),
+            "枠": safe_value(row.get("枠 番", row.get("枠 番", row.get("枠", None)))),
+            "馬番": safe_value(row.get("馬 番", row.get("馬 番", row.get("馬番", None)))),
+            "人気": safe_value(row.get("人 気", row.get("人 気", row.get("人気", None)))),
+            "着順": safe_value(row.get("着 順", row.get("着 順", row.get("着順", None)))),
+            "斤量": safe_value(row.get("斤 量", row.get("斤 量", row.get("斤量", None)))),
         })
     return res
 
@@ -476,12 +503,20 @@ def turf_dirt_summary(horse_id: str, date_str: str) -> Dict[str, Any]:
             norm_list.append(arr)
 
         avg_pass_norm = calc_average_norm_passages(norm_list)
-        
+
+        # データの正規化
+        avg_up = safe_value(avg_up)
+        try:
+            avg_up = round(float(avg_up), 2) 
+        except:
+            avg_up = "-"
+        avg_pass_norm = safe_value(avg_pass_norm)
+
         surface_summary[surface] = {
             "fastest_up": fastest_up,
             "fastest_up_info": fastest_info,
-            "avg_up": round(float(avg_up), 2) if avg_up is not None else None,
-            "avg_pass_norm": avg_pass_norm if avg_pass_norm is not None else None,
+            "avg_up": avg_up,
+            "avg_pass_norm": avg_pass_norm,
             "count": len(sub)
         }
     return surface_summary
@@ -617,7 +652,7 @@ def build_horse_report(horse_name: str, place_id: int, race_id: str, date_str: s
     """
     # --- 基準レース情報取得 ---
     year = race_id[:4]
-    race_type, course_len, ground_state, race_class = get_race_info(year, place_id, race_id)
+    race_type, course_len, ground_state, race_class = race_pages.get_race_info(year, place_id, race_id)
     if race_type == None and course_len == None and ground_state == None and race_class == None:
         return
     
@@ -667,6 +702,11 @@ def build_horse_report(horse_name: str, place_id: int, race_id: str, date_str: s
         "horse_name": horse_name,
         "horse_id": hid,
         "peds0": peds0,
+        "place_id": place_id,
+        "race_type" : race_type, 
+        "course_len" : course_len, 
+        "ground_state": ground_state, 
+        "race_class" :race_class,
         "peds_results": filtered_df if (isinstance(filtered_df, pd.DataFrame) and not filtered_df.empty) else None,
         "recent5": recent5,
         "surface_summary": surface_summary,
@@ -674,87 +714,211 @@ def build_horse_report(horse_name: str, place_id: int, race_id: str, date_str: s
     }
 
 # ---- HTML 整形（簡易） ----
+def get_time_diff_color(diff_str):
+    """
+    平均勝ち時計との差で色を返す
+    - マイナスなら赤
+    - 0.5秒以内なら オレンジ
+    - それ以上なら 黒
+    """
+    try:
+        diff_str = str(diff_str).strip()
+        if not diff_str or diff_str == "―":
+            return "black"
+        
+        diff_str_clean = diff_str.replace("秒", "").strip()
+        diff_val = float(diff_str_clean)
+        
+        if diff_val < 0:
+            return "red"        # マイナス = 赤（速い）
+        elif 0 <= diff_val <= 0.2:
+            return "orange"     # 0.2秒以内 = オレンジ（ほぼ同等）
+        else:
+            return "black"      # 0.2秒以上 = 黒（遅い）
+    except:
+        return "black"
+
+def get_class_color(class_name):
+    """クラスに基づいて背景色を返す"""
+    class_colors = {
+        "未勝利": "#fff0f0",    # 薄赤
+        "新馬": "#ffe6e6",      # 少し濃い赤
+        "1勝クラス": "#ffcccc", # さらに濃い赤
+        "2勝クラス": "#ffb3b3", # もっと濃い赤
+        "3勝クラス": "#ff9999", # さらに濃い赤
+        "オープン": "#ff8080"   # 濃い赤
+    }
+    return class_colors.get(class_name, "#ffffff")
+
+def get_race_type_color(race_type):
+    """レースタイプに基づいて背景色を返す"""
+    race_type_color = "#ffffff"
+    if "ダ" in race_type:
+        race_type_color = "#D2691E"
+    elif "芝" in race_type:
+        race_type_color = "#32CD32"
+    elif "障" in race_type:
+        race_type_color = "#8B4513"
+    return race_type_color
+
+def get_ground_state_color(ground_state):
+    """馬場状態に基づいて背景色を返す"""
+    ground_state_color = "#ffffff"
+    if "稍" in ground_state:
+        ground_state_color = "#e8e8e8"
+    elif "重" in ground_state:
+        ground_state_color = "#b0b0b0"
+    elif "不" in ground_state:
+        ground_state_color = "#808080"
+    return ground_state_color
 
 def horse_report_to_html(report: Dict[str, Any]) -> str:
     """
-    build_horse_report の出力からシンプルな HTML を作る。
-    表示は必要に応じてカスタムしてください。
+    build_horse_report の出力からスタイル付きHTML を作る。
+    色付けロジック:
+    - 着順、人気: 1着=黄色、2着=水色、3着=オレンジ
+    - 平均時計との差: マイナス=赤、0.5秒以内=オレンジ、それ以上=黒
+    - クラス: 未勝利→新馬→1勝→2勝→3勝→オープンで色が濃くなる
+    - 枠番・馬番: 数字のみに色付け
     """
     if "error" in report:
         return f"<div class='horse-report error'>{report['error']}</div>"
 
     html = []
-    # html.append(f"<div class='horse-report'><h3>{report['horse_name']} ({report['horse_id']})</h3>")
+    html.append("<div class='horse-report' style='padding: 10px; background: #fafafa; border: 1px solid #ddd;'>")
 
     # PEDs
-    html.append("<h4>血統 (父)</h4>")
     p = report.get("peds0", {})
     if p:
-        html.append("<ul>")
-        html.append(f"<li>{p}</li>")
-        html.append("</ul>")
+        html.append(f"<h4>血統 (父) : <strong>{p}</strong></h4>")
     else:
-        html.append("<div>血統データなし</div>")
-
+        html.append("<h4>血統 (父) : - </h4>")
+    
+    race_type =  report.get("race_type", "-")
+    course_len =  report.get("course_len", "-")
+    ground_state =  report.get("ground_state", "-")
+    place_id =  report.get("place_id", "-")
+    place_num = name_header.NAME_LIST[place_id - 1]
     # PedsResults（summary）
     pr = report.get("peds_results")
-    if pr is None:
-        html.append("<div>同系統の PedsResults データなし</div>")
+    if pr is None or (isinstance(pr, pd.DataFrame) and pr.empty):
+        html.append("<div>血統データなし</div>")
     else:
-        html.append("<h4>PedsResults（同条件）</h4>")
-        html.append(pr.to_html(index=False, escape=False))
+        html.append(f"<h4>📊 {place_num} {race_type}{course_len}m ({ground_state})</h4>")
+        html.append("<table style='width:100%; border-collapse: collapse; text-align: center;'>")
+        html.append("<thead><tr style='background:#f2f2f2;'><th>クラス</th><th>血統</th><th>1着</th><th>2着</th><th>3着</th><th>着外</th><th>勝率</th><th>複勝率</th></tr></thead><tbody>")
+        
+        for _, row in pr.iterrows():
+            class_name = row.get("クラス", "")
+            html.append(f"<td><strong>{class_name}</strong></td>")
+            html.append(f"<td>{row.get('血統', '―')}</td>")
+            html.append(f"<td>{row.get('1着', '―')}</td>")
+            html.append(f"<td>{row.get('2着', '―')}</td>")
+            html.append(f"<td>{row.get('3着', '―')}</td>")
+            html.append(f"<td>{row.get('着外', '―')}</td>")
+            html.append(f"<td>{row.get('勝率', '―')}</td>")
+            html.append(f"<td>{row.get('複勝率', '―')}</td>")
+            html.append("</tr>")
+        
+        html.append("</tbody></table>")
 
     # recent5
-    html.append("<h4>近5走(JRAのみ)</h4>")
+    html.append("<h4>📊 近5走成績</h4>")
     if report.get("recent5"):
-        html.append("<table border='1'><tr><th>日付</th><th>開催</th><th>R</th><th>レース名</th><th>クラス</th><th>着順</th><th>人気</th><th>枠</th><th>馬番</th><th>芝/ダート</th><th>距離</th><th>馬場</th><th>タイム</th><th>着差</th><th>平均勝ち時計との差</th><th>上り</th><th>通過</th><th>馬体重</th></tr>")
+        html.append("<table style='width:100%; border-collapse: collapse; text-align: center; font-size: 12px;'>")
+        html.append("<thead><tr style='background:#f2f2f2;'><th>日付</th><th>開催</th><th>R</th><th>レース名</th><th>クラス</th><th>着順</th><th>人気</th><th>枠</th><th>馬番</th><th>種別</th><th>距離</th><th>馬場</th><th>タイム</th><th>着差</th><th>平均時計との差</th><th>上り</th><th>通過</th><th>馬体重</th></tr></thead><tbody>")
+        
         for r in report["recent5"]:
+            # 着順の色付け
+            finish = r.get("result", "―")
+            finish_color =  RANK_COLORS.get(finish, "#ffffff")
+            finish_html = f'<td style="background-color: {finish_color}; font-weight: bold;">{finish}</td>'
+            
+            # 人気の色付け
+            popularity = str(r.get("pops", "―"))
+            pop_color = RANK_COLORS.get(popularity, "#ffffff")
+            pop_html = f'<td style="background-color: {pop_color}; font-weight: bold;">{popularity}</td>'
+            
+            # 平均時計との差の色付け
+            diff_avg = r.get("diff_avg_ms", "―")
+            diff_color = get_time_diff_color(diff_avg)
+            diff_html = f'<td style="color: {diff_color}; font-weight: bold;">{diff_avg}</td>'
+            
+            # 枠番・馬番の色付け
+            waku = r.get("waku", "―")
+            umaban = r.get("umaban", "―")
+            waku_color = WAKU_COLORS.get(waku, "#ffffff")
+            waku_html = f'<td style="background-color:{waku_color}; color:{"#fff" if waku in ["2","3","4","7"] else "#000"};">{waku}</td>'
+            umaban_html =  f'<td style="background-color:{waku_color}; color:{"#fff" if waku in ["2","3","4","7"] else "#000"};">{umaban}</td>'
+
+            # クラスの色付け
+            class_name = r.get("class_name", "")
+            class_bg_color = get_class_color(class_name)
+            class_html = f'<td style="background-color:{class_bg_color}; padding: 2px 4px; border-radius: 3px;">{class_name}</td>'
+            
+            # レースタイプの色付け
+            race_type = r.get('race_type', '―')
+            race_type_color = get_race_type_color(race_type)
+            race_type_html = f'<td style="background-color:{race_type_color};font-weight: bold;">{race_type}</td>'
+            course_len = r.get('course', '―')
+            course_html = f'<td style="background-color:{race_type_color}; font-weight: bold;">{course_len}</td>'
+
+            # 馬場状態の色付け
+            ground_state = r.get('ground', '―')
+            ground_state_color = get_ground_state_color(ground_state)
+            ground_state_html = f'<td style="background-color:{ground_state_color};">{ground_state}</td>'
+
+
             html.append("<tr>")
-            html.append(f"<td>{r.get('date')}</td>")
-            html.append(f"<td>{r.get('course_name')}</td>")
-            html.append(f"<td>{r.get('race_num')}</td>")
-            html.append(f"<td>{r.get('race_name')}</td>")
-            html.append(f"<td>{r.get('class_name')}</td>")
-            html.append(f"<td>{r.get('result')}</td>")
-            html.append(f"<td>{r.get('pops')}</td>")
-            html.append(f"<td>{r.get('waku')}</td>")
-            html.append(f"<td>{r.get('umaban')}</td>")
-            html.append(f"<td>{r.get('race_type')}</td>")
-            html.append(f"<td>{r.get('course')}</td>")
-            html.append(f"<td>{r.get('ground')}</td>")
-            html.append(f"<td>{r.get('time_raw')}</td>")
-            html.append(f"<td>{r.get('diff_ms') if r.get('diff_ms') is not None else '―'}</td>")
-            html.append(f"<td>{r.get('diff_avg_ms')}</td>")
-            html.append(f"<td>{r.get('上り')}</td>")
-            html.append(f"<td>{r.get('通過')}</td>")
-            html.append(f"<td>{r.get('馬体重')}</td>")
+            html.append(f"<td>{r.get('date', '―')}</td>")
+            html.append(f"<td>{r.get('course_name', '―')}</td>")
+            html.append(f"<td>{r.get('race_num', '―')}</td>")
+            html.append(f"<td>{r.get('race_name', '―')}</td>")
+            html.append(f"{class_html}")
+            html.append(f"{finish_html}")
+            html.append(f"{pop_html}")
+            html.append(f"{waku_html}")
+            html.append(f"{umaban_html}")
+            html.append(f"{race_type_html}")
+            html.append(f"{course_html}")
+            html.append(f"{ground_state_html}")
+            html.append(f"<td>{r.get('time_raw', '―')}</td>")
+            html.append(f"<td>{r.get('diff_ms', '―')}</td>")
+            html.append(f"{diff_html}")
+            html.append(f"<td>{r.get('上り', '―')}</td>")
+            html.append(f"<td>{r.get('通過', '―')}</td>")
+            html.append(f"<td>{r.get('馬体重', '―')}</td>")
             html.append("</tr>")
-        html.append("</table>")
+        
+        html.append("</tbody></table>")
     else:
         html.append("<div>直近5走データなし</div>")
 
     # surface summary
-    html.append("<h4>芝/ダートサマリ</h4>")
+    html.append("<h4>⏱️ 芝/ダートサマリ</h4>")
     for surf in ["芝", "ダート"]:
-        s = report["surface_summary"].get(surf, {})
+        s = report.get("surface_summary", {}).get(surf, {})
         html.append(f"<h5>{surf}</h5>")
         if s:
             html.append("<ul>")
-            html.append(f"<li>最速上り: {s.get('fastest_up')} (info: {s.get('fastest_up_info')})</li>")
-            html.append(f"<li>平均上り: {s.get('avg_up')}</li>")
-            html.append(f"<li>平均通過(正規化): {s.get('avg_pass_norm')}</li>")
-            html.append(f"<li>対象レース数: {s.get('count')}</li>")
+            fastest_up = s.get("fastest_up")
+            fastest_info = s.get("fastest_up_info")
+            if fastest_up:
+                html.append(f"<li>最速上り: <strong>{fastest_up}</strong>  {fastest_info.get('date', '―')}: {fastest_info.get('race_name', '―')} ({fastest_info.get('course_name', '―')} {fastest_info.get('course_len', '―')}m {fastest_info.get('馬場', '―')})</li>")
+            html.append(f"<li>平均上り: <strong>{s.get('avg_up', '―')}</strong></li>")
+            html.append(f"<li>平均通過位置: {s.get('avg_pass_norm', '―')}</li>")
+            html.append(f"<li>対象レース数: {s.get('count', '―')}</li>")
             html.append("</ul>")
         else:
             html.append("<div>データなし</div>")
 
     # same course best
     scb = report.get("same_course_best")
-    html.append("<h4>同コース持ち時計</h4>")
+    html.append("<h4>🏁 同コース持ち時計</h4>")
     if scb:
         html.append("<ul>")
-        html.append(f"<li>time: {scb.get('time_str')} ({scb.get('time_ms')} ms)</li>")
-        html.append(f"<li>date: {scb.get('date')} race: {scb.get('race_name')} ground: {scb.get('ground')}</li>")
+        html.append(f"<li>{scb.get('date', '―')}: {scb.get('race_name', '―')} </li>")
+        html.append(f"<li>タイム: <strong>{scb.get('time_str', '―')}</strong>(馬場: {scb.get('ground', '―')})</li>")
         html.append("</ul>")
     else:
         html.append("<div>同コース出走データなし</div>")
@@ -766,11 +930,12 @@ def horse_report_to_html(report: Dict[str, Any]) -> str:
 if __name__ == "__main__":
     # 例: raceページで「サトノシャムロック」を処理する場合
     # place_name と condition_file は呼び出し側の命名規則に合わせて指定
-    place_id = 5
-    condition_file = "ダート_1400m_良"   # PedsResults/{place_name}/Total/ダート_1400m_良.csv
-    horse_name = "セラード"
+    place_id = 8
+    horse_name = "シュバルツマサムネ"
+    race_id ="202508030610"
+    dates_str = "20251018"
     # race_type/course_len を与えると同コースの持ち時計も探す
-    report = build_horse_report(horse_name, place_id, condition_file, race_type="ダート", course_len=1400)
-    # print(report)
-    html = horse_report_to_html(report)
-    print(html)  # 先頭だけ確認
+    report = build_horse_report(horse_name, place_id, race_id, dates_str)
+    print(report)
+    # html = horse_report_to_html(report)
+    # print(html)  # 先頭だけ確認

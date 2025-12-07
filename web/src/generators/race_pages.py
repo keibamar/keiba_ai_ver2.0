@@ -330,6 +330,53 @@ def build_html_content(date_display, place_id, race_num, race_name, race_time, n
       padding-right: 10px;
       white-space: nowrap;
     }}
+    
+    /* ========== コース別データセクション（折りたたみ） ========== */
+    .course-data-section {{
+      margin-top: 20px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      background-color: #f9f9f9;
+    }}
+    .course-data-header {{
+      padding: 12px;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+      user-select: none;
+      font-weight: bold;
+      border-radius: 5px 5px 0 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }}
+    .course-data-header:hover {{
+      background-color: #0056b3;
+    }}
+    .course-data-toggle {{
+      font-size: 18px;
+      transition: transform 0.3s;
+    }}
+    .course-data-toggle.open {{
+      transform: rotate(180deg);
+    }}
+    .course-data-content {{
+      padding: 15px;
+      display: none;
+    }}
+    .course-data-content.open {{
+      display: block;
+    }}
+    .data-section {{
+      margin-bottom: 15px;
+      padding: 10px;
+      background-color: white;
+      border-left: 3px solid #007bff;
+    }}
+    .data-section h4 {{
+      margin-top: 0;
+      color: #333;
+    }}
   </style>
 </head>
 <body>
@@ -356,15 +403,53 @@ def build_html_content(date_display, place_id, race_num, race_name, race_time, n
       {table_rows}
     </tbody>
   </table>
-  {run_time_info}
-  {weight_info}
-  {peds_info}
-  {pops_info}
-  {frames_info}
-  {recent_html}
+  
   {result_table_html}
   {payout_table_html}
+  
+  <!-- ========== コース別データセクション（折りたたみ可能） ========== -->
+  <div class="course-data-section">
+    <div class="course-data-header" onclick="toggleCourseData()">
+      <span>コース別データ</span>
+      <span class="course-data-toggle" id="courseDataToggle">▼</span>
+    </div>
+    <div class="course-data-content" id="courseDataContent">
+      <div class="data-section">
+        <h4>通過時間情報</h4>
+        {run_time_info}
+      </div>
+      <div class="data-section">
+        <h4>馬体重情報</h4>
+        {weight_info}
+      </div>
+      <div class="data-section">
+        <h4>血統情報</h4>
+        {peds_info}
+      </div>
+      <div class="data-section">
+        <h4>人気情報</h4>
+        {pops_info}
+      </div>
+      <div class="data-section">
+        <h4>枠順情報</h4>
+        {frames_info}
+      </div>
+      <div class="data-section">
+        <h4>最近の成績</h4>
+        {recent_html}
+      </div>
+    </div>
+  </div>
+  
   <script>
+  function toggleCourseData() {{
+    const content = document.getElementById("courseDataContent");
+    const toggle = document.getElementById("courseDataToggle");
+    
+    content.classList.toggle("open");
+    toggle.classList.toggle("open");
+  }}
+  
   document.addEventListener("DOMContentLoaded", () => {{
     // ======== スタイル設定部分 ========
     const rows = document.querySelectorAll("#raceTable tbody tr");
@@ -419,7 +504,6 @@ def build_html_content(date_display, place_id, race_num, race_name, race_time, n
         indicator.style.marginLeft = "6px";
         th.appendChild(indicator);
       }}
-      // indicator.textContent = currentDir === "asc" ? "▲" : "▼";
 
       // ソート処理
       rowsArray.sort((a, b) => {{
@@ -464,13 +548,13 @@ def build_html_content(date_display, place_id, race_num, race_name, race_time, n
     table_rows=table_rows,
     run_time_info=run_time_info,
     weight_info=weight_info,
-    peds_info = peds_info,
-    pops_info = pops_info,
-    frames_info = frames_info,
-    recent_html = recent_html,
+    peds_info=peds_info,
+    pops_info=pops_info,
+    frames_info=frames_info,
+    recent_html=recent_html,
     result_table_html=result_table_html,
     payout_table_html=payout_table_html,
-    )
+)
 
 def generate_result_table(df) :
     if df.empty:
@@ -484,7 +568,8 @@ def generate_result_table(df) :
         horse = html.escape(str(row["馬名"]))
         jockey = html.escape(str(row["騎手"]))
         horse_weight = row["馬体重"] if "馬体重" in row and pd.notna(row["馬体重"]) else ""
-        time = row["タイム"]
+        time = row["タイム"]        # ...existing code...
+
         diff = row["着差"] if pd.notna(row["着差"]) else ""
         pop = str(int(float(row["人気"]))) if pd.notna(row["人気"]) else ""
         last_3f = row["上り"] if "上り" in row and pd.notna(row["上り"]) else ""
@@ -769,7 +854,7 @@ def generate_run_time_info(date_str, place_id, target_id) :
     # --- HTML整形 ---
     run_time_info_html = f"""
     <div id="runtimeInfo" style="margin: 20px 0; padding: 10px; border: 1px solid #ccc; background: #fafafa;">
-      <h3>🏇 コース別平均タイム情報 ({race_type} {course_len}m {ground_state} {race_class})</h3>
+      <h3>🏁 コース別平均タイム情報 ({race_type} {course_len}m {ground_state} {race_class})</h3>
       <table style="border-collapse: collapse; width: 100%; text-align: center;">
         <thead>
           <tr style="background: #f2f2f2;">
@@ -874,7 +959,7 @@ def generate_weight_info(date_str, place_id, target_id):
   # --- HTML生成 ---
   weight_info_html = f"""
   <div id="weightInfo" style="margin: 20px 0; padding: 10px; border: 1px solid #ccc; background: #fefefe;">
-    <h3>🏇 コース別平均馬体重情報 ({race_type} {course_len}m {ground_state} {race_class})</h3>
+    <h3>🏁 コース別平均馬体重情報 ({race_type} {course_len}m {ground_state} {race_class})</h3>
     <table style="border-collapse: collapse; width: 100%; text-align: center;">
       <thead>
         <tr style="background: #f2f2f2;">
@@ -926,7 +1011,7 @@ def generate_peds_result_html(date_str, place_id, target_id):
     if total_df.empty and year_df.empty:
         return f"""
         <div class="peds-result-block"; style="margin: 20px 0; padding: 10px; border: 1px solid #ccc; background: #fefefe;">
-          <h3>🐎 血統別成績 ({race_type} {course_len}m {ground_state})</h3>
+          <h3>🐎 コース別血統成績 ({race_type} {course_len}m {ground_state})</h3>
           <p style="color:#888;">データが存在しません。</p>
         </div>
         """
@@ -1067,7 +1152,7 @@ def generate_pops_info(date_str, place_id, target_id):
     # --- HTML生成 ---
     pops_info_html = f"""
     <div id="popsInfo" style="margin: 20px 0; padding: 10px; border: 1px solid #ccc; background: #fefefe;">
-      <h3>🏇 コース別平均人気情報 ({race_type} {course_len}m {ground_state} {race_class})</h3>
+      <h3>🏁 コース別平均人気情報 ({race_type} {course_len}m {ground_state} {race_class})</h3>
       <table style="border-collapse: collapse; width: 100%; text-align: center;">
         <thead>
           <tr style="background: #f2f2f2;">
@@ -1291,7 +1376,7 @@ def generate_recent_same_condition_html(date_str, place_id, target_id):
      # --- HTML構築開始 ---
     html = f"""
     <div id="recentSameCondition" style="margin-top:20px; padding:10px; border:1px solid #ccc; background:#fefefe;">
-      <h3>🏇 先週/今週の同条件レース結果 ({base_type} {base_len}m)</h3>
+      <h3>🏁 先週/今週の同条件レース結果 ({base_type} {base_len}m)</h3>
     """
 
     for race_id, race_date_str, race_class, ground_state in matched_race_ids:
@@ -1496,21 +1581,21 @@ def make_daily_race_card_html(race_day = date.today()):
           make_race_card_html(date_str, place_id, race_id)
 
 if __name__ == "__main__":
-    date_str = "20251115"
-    place_id = 3
-    target_id = "202503030301"
-    make_race_card_html(date_str, place_id, target_id)
+    # date_str = "20251115"
+    # place_id = 3
+    # target_id = "202503030301"
+    # make_race_card_html(date_str, place_id, target_id)
 
-    # # テスト用実行コード
-    # race_day = date(2025, 10, 1)
-    # # make_daily_race_card_html(race_day)
+    # テスト用実行コード
+    race_day = date(2025, 10, 1)
+    # make_daily_race_card_html(race_day)
 
-    # today = date.today()
-    # current = race_day
+    today = date(2025, 12, 1)
+    current = race_day
 
-    # while current <= today:
-    #     print(f"🏇 {current} のレースカードを作成中...")
-    #     make_daily_race_card_html(current)
-    #     current += timedelta(days=1)
+    while current <= today:
+        print(f"🏇 {current} のレースカードを作成中...")
+        make_daily_race_card_html(current)
+        current += timedelta(days=1)
 
-    # print("🎉 すべての日付のレースカード作成が完了しました！")
+    print("🎉 すべての日付のレースカード作成が完了しました！")
