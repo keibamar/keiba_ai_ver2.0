@@ -76,9 +76,9 @@ def time_str_to_ms(t: str) -> Optional[int]:
         return None
 
 def ms_to_time_str(ms: Optional[int]) -> str:
-    """ミリ秒 -> 'M:SS.s' 表示（msがNoneは '―'）"""
+    """ミリ秒 -> 'M:SS.s' 表示（msがNoneは '-'）"""
     if ms is None:
-        return "―"
+        return "-"
     sec = ms / 1000.0
     m = int(sec // 60)
     s = sec - m * 60
@@ -272,7 +272,7 @@ def peds_results_for_bloodline(place_id: int, race_type: str, course_len: int, g
 
 # NaN 判定して "-" に置き換え
 def safe_value(val):
-    if val is None:
+    if val is None or val is "None":
         return "-"
     try:
         if isinstance(val, float) and math.isnan(val):
@@ -641,8 +641,28 @@ def same_course_best_time(
         "info_row": best_row.to_dict() if hasattr(best_row, "to_dict") else {}
     }
 
-# ---- 統合：馬ごとの全出力を作る関数 ----
+# 血統名を抽出する
+def extract_peds_name(peds0: str) -> str | None:
+    if not peds0:
+        return None
+    
+    # 前後の空白を削除
+    peds0 = peds0.strip()
+    
+    # 先頭がカタカナならカタカナ部分だけ抽出
+    match = re.match(r"^([\u30A0-\u30FFー]+)", peds0)
+    if match:
+        return match.group(1)
+    
+    # 先頭が英字なら英字部分だけ抽出
+    match = re.match(r"^([A-Za-z\s]+)", peds0)
+    if match:
+        return match.group(1).strip()
+    
+    # どちらでもなければそのまま返す
+    return peds0
 
+# ---- 統合：馬ごとの全出力を作る関数 ----
 def build_horse_report(horse_name: str, place_id: int, race_id: str, date_str: str) -> Dict[str, Any]:
     """
     horse_name から horse_id を特定し、①～④の情報を集めて dict で返す。
@@ -664,7 +684,7 @@ def build_horse_report(horse_name: str, place_id: int, race_id: str, date_str: s
     # ① 血統(peds_0) と PedsResults（同コースの1,2,3,着外データ）
     peds = load_horse_peds(hid)
     peds0 = peds.get("peds_0") or peds.get("peds0") or peds.get("peds_0 ", None)
-    peds0 = re.match(r"^\s*(\S+)", peds0).group(1) if peds0 else None
+    peds0 = extract_peds_name(peds0)
     peds_results = None
     if peds0:
         peds_results = peds_results_for_bloodline(place_id, race_type, course_len, ground_state, peds0)
@@ -723,7 +743,7 @@ def get_time_diff_color(diff_str):
     """
     try:
         diff_str = str(diff_str).strip()
-        if not diff_str or diff_str == "―":
+        if not diff_str or diff_str == "-":
             return "black"
         
         diff_str_clean = diff_str.replace("秒", "").strip()
@@ -804,20 +824,20 @@ def horse_report_to_html(report: Dict[str, Any]) -> str:
     if pr is None or (isinstance(pr, pd.DataFrame) and pr.empty):
         html.append("<div>血統データなし</div>")
     else:
-        html.append(f"<h4>📊 {place_num} {race_type}{course_len}m ({ground_state})</h4>")
+        html.append(f"<h4>🧬 {place_num} {race_type}{course_len}m ({ground_state})</h4>")
         html.append("<table style='width:100%; border-collapse: collapse; text-align: center;'>")
         html.append("<thead><tr style='background:#f2f2f2;'><th>クラス</th><th>血統</th><th>1着</th><th>2着</th><th>3着</th><th>着外</th><th>勝率</th><th>複勝率</th></tr></thead><tbody>")
         
         for _, row in pr.iterrows():
             class_name = row.get("クラス", "")
             html.append(f"<td><strong>{class_name}</strong></td>")
-            html.append(f"<td>{row.get('血統', '―')}</td>")
-            html.append(f"<td>{row.get('1着', '―')}</td>")
-            html.append(f"<td>{row.get('2着', '―')}</td>")
-            html.append(f"<td>{row.get('3着', '―')}</td>")
-            html.append(f"<td>{row.get('着外', '―')}</td>")
-            html.append(f"<td>{row.get('勝率', '―')}</td>")
-            html.append(f"<td>{row.get('複勝率', '―')}</td>")
+            html.append(f"<td>{row.get('血統', '-')}</td>")
+            html.append(f"<td>{row.get('1着', '-')}</td>")
+            html.append(f"<td>{row.get('2着', '-')}</td>")
+            html.append(f"<td>{row.get('3着', '-')}</td>")
+            html.append(f"<td>{row.get('着外', '-')}</td>")
+            html.append(f"<td>{row.get('勝率', '-')}</td>")
+            html.append(f"<td>{row.get('複勝率', '-')}</td>")
             html.append("</tr>")
         
         html.append("</tbody></table>")
@@ -830,23 +850,23 @@ def horse_report_to_html(report: Dict[str, Any]) -> str:
         
         for r in report["recent5"]:
             # 着順の色付け
-            finish = r.get("result", "―")
+            finish = r.get("result", "-")
             finish_color =  RANK_COLORS.get(finish, "#ffffff")
             finish_html = f'<td style="background-color: {finish_color}; font-weight: bold;">{finish}</td>'
             
             # 人気の色付け
-            popularity = str(r.get("pops", "―"))
+            popularity = str(r.get("pops", "-"))
             pop_color = RANK_COLORS.get(popularity, "#ffffff")
             pop_html = f'<td style="background-color: {pop_color}; font-weight: bold;">{popularity}</td>'
             
             # 平均時計との差の色付け
-            diff_avg = r.get("diff_avg_ms", "―")
+            diff_avg = r.get("diff_avg_ms", "-")
             diff_color = get_time_diff_color(diff_avg)
             diff_html = f'<td style="color: {diff_color}; font-weight: bold;">{diff_avg}</td>'
             
             # 枠番・馬番の色付け
-            waku = r.get("waku", "―")
-            umaban = r.get("umaban", "―")
+            waku = r.get("waku", "-")
+            umaban = r.get("umaban", "-")
             waku_color = WAKU_COLORS.get(waku, "#ffffff")
             waku_html = f'<td style="background-color:{waku_color}; color:{"#fff" if waku in ["2","3","4","7"] else "#000"};">{waku}</td>'
             umaban_html =  f'<td style="background-color:{waku_color}; color:{"#fff" if waku in ["2","3","4","7"] else "#000"};">{umaban}</td>'
@@ -857,23 +877,23 @@ def horse_report_to_html(report: Dict[str, Any]) -> str:
             class_html = f'<td style="background-color:{class_bg_color}; padding: 2px 4px; border-radius: 3px;">{class_name}</td>'
             
             # レースタイプの色付け
-            race_type = r.get('race_type', '―')
+            race_type = r.get('race_type', '-')
             race_type_color = get_race_type_color(race_type)
             race_type_html = f'<td style="background-color:{race_type_color};font-weight: bold;">{race_type}</td>'
-            course_len = r.get('course', '―')
+            course_len = r.get('course', '-')
             course_html = f'<td style="background-color:{race_type_color}; font-weight: bold;">{course_len}</td>'
 
             # 馬場状態の色付け
-            ground_state = r.get('ground', '―')
+            ground_state = r.get('ground', '-')
             ground_state_color = get_ground_state_color(ground_state)
             ground_state_html = f'<td style="background-color:{ground_state_color};">{ground_state}</td>'
 
 
             html.append("<tr>")
-            html.append(f"<td>{r.get('date', '―')}</td>")
-            html.append(f"<td>{r.get('course_name', '―')}</td>")
-            html.append(f"<td>{r.get('race_num', '―')}</td>")
-            html.append(f"<td>{r.get('race_name', '―')}</td>")
+            html.append(f"<td>{r.get('date', '-')}</td>")
+            html.append(f"<td>{r.get('course_name', '-')}</td>")
+            html.append(f"<td>{r.get('race_num', '-')}</td>")
+            html.append(f"<td>{r.get('race_name', '-')}</td>")
             html.append(f"{class_html}")
             html.append(f"{finish_html}")
             html.append(f"{pop_html}")
@@ -882,12 +902,12 @@ def horse_report_to_html(report: Dict[str, Any]) -> str:
             html.append(f"{race_type_html}")
             html.append(f"{course_html}")
             html.append(f"{ground_state_html}")
-            html.append(f"<td>{r.get('time_raw', '―')}</td>")
-            html.append(f"<td>{r.get('diff_ms', '―')}</td>")
+            html.append(f"<td>{r.get('time_raw', '-')}</td>")
+            html.append(f"<td>{r.get('diff_ms', '-')}</td>")
             html.append(f"{diff_html}")
-            html.append(f"<td>{r.get('上り', '―')}</td>")
-            html.append(f"<td>{r.get('通過', '―')}</td>")
-            html.append(f"<td>{r.get('馬体重', '―')}</td>")
+            html.append(f"<td>{r.get('上り', '-')}</td>")
+            html.append(f"<td>{r.get('通過', '-')}</td>")
+            html.append(f"<td>{r.get('馬体重', '-')}</td>")
             html.append("</tr>")
         
         html.append("</tbody></table>")
@@ -895,30 +915,56 @@ def horse_report_to_html(report: Dict[str, Any]) -> str:
         html.append("<div>直近5走データなし</div>")
 
     # surface summary
-    html.append("<h4>⏱️ 芝/ダートサマリ</h4>")
+    html.append("<h4>⏱🏇 芝/ダートサマリ</h4>")
+    html.append("""
+    <table border="1" style="border-collapse:collapse; text-align:center;">
+    <thead>
+        <tr>
+        <th>コース</th>
+        <th>最速上り</th>
+        <th>平均上り</th>
+        <th>平均通過位置</th>
+        <th>対象レース数</th>
+        </tr>
+    </thead>
+    <tbody>
+    """)
+
     for surf in ["芝", "ダート"]:
         s = report.get("surface_summary", {}).get(surf, {})
-        html.append(f"<h5>{surf}</h5>")
         if s:
-            html.append("<ul>")
             fastest_up = s.get("fastest_up")
-            fastest_info = s.get("fastest_up_info")
+            fastest_info = s.get("fastest_up_info", {})
+            fastest_text = "-"
             if fastest_up:
-                html.append(f"<li>最速上り: <strong>{fastest_up}</strong>  {fastest_info.get('date', '―')}: {fastest_info.get('race_name', '―')} ({fastest_info.get('course_name', '―')} {fastest_info.get('course_len', '―')}m {fastest_info.get('馬場', '―')})</li>")
-            html.append(f"<li>平均上り: <strong>{s.get('avg_up', '―')}</strong></li>")
-            html.append(f"<li>平均通過位置: {s.get('avg_pass_norm', '―')}</li>")
-            html.append(f"<li>対象レース数: {s.get('count', '―')}</li>")
-            html.append("</ul>")
+                fastest_text = f"<strong>{fastest_up}</strong> <br> {fastest_info.get('date', '-')}: {fastest_info.get('race_name', '-')} ({fastest_info.get('course_name', '-')} {fastest_info.get('course_len', '-')}m {fastest_info.get('馬場', '-')})"
+            
+            html.append(f"""
+            <tr>
+            <td>{surf}</td>
+            <td>{fastest_text}</td>
+            <td><strong>{safe_value(s.get('avg_up', '-'))}</strong></td>
+            <td>{safe_value(s.get('avg_pass_norm', '-'))}</td>
+            <td>{s.get('count', '-')}</td>
+            </tr>
+            """)
         else:
-            html.append("<div>データなし</div>")
+            html.append(f"""
+            <tr>
+            <td>{surf}</td>
+            <td colspan="4">データなし</td>
+            </tr>
+            """)
+
+    html.append("</tbody></table>")
 
     # same course best
     scb = report.get("same_course_best")
-    html.append("<h4>🏁 同コース持ち時計</h4>")
+    html.append(f"<h4>⏱️ {place_num} {race_type}{course_len}m 持ち時計</h4>")
     if scb:
         html.append("<ul>")
-        html.append(f"<li>{scb.get('date', '―')}: {scb.get('race_name', '―')} </li>")
-        html.append(f"<li>タイム: <strong>{scb.get('time_str', '―')}</strong>(馬場: {scb.get('ground', '―')})</li>")
+        html.append(f"<li>{scb.get('date', '-')}: {scb.get('race_name', '-')} </li>")
+        html.append(f"<li>タイム: <strong>{scb.get('time_str', '-')}</strong>(馬場: {scb.get('ground', '-')})</li>")
         html.append("</ul>")
     else:
         html.append("<div>同コース出走データなし</div>")

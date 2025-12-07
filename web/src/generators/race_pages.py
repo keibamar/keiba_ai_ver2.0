@@ -1506,9 +1506,49 @@ def make_race_card_html(date_str, place_id, target_id):
     # 近走の結果を取得
     recent_html = generate_recent_same_condition_html(date_str, place_id, target_id)
 
-    # --- 各馬の詳細レポートを生成 ---
-    horse_reports_html = ""
-    for _, row in df.iterrows():
+    # --- 各馬の詳細レポートを生成（折りたたみ可能に） ---
+    horse_reports_html = """
+    <style>
+      .horse-report-toggle {
+        cursor: pointer;
+        user-select: none;
+        padding: 12px;
+        background-color: #e3f2fd;
+        border: 1px solid #90caf9;
+        border-radius: 5px;
+        margin: 10px 0;
+        font-weight: bold;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .horse-report-toggle:hover {
+        background-color: #bbdefb;
+      }
+      .horse-report-toggle-icon {
+        font-size: 18px;
+        transition: transform 0.3s;
+      }
+      .horse-report-toggle-icon.open {
+        transform: rotate(180deg);
+      }
+      .horse-report-content {
+        display: none;
+        padding: 10px;
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        border-top: none;
+        border-radius: 0 0 5px 5px;
+      }
+      .horse-report-content.open {
+        display: block;
+      }
+    </style>
+    """
+
+    for idx, (_, row) in enumerate(df.iterrows()):
+        waku = str(row.get("枠", "")).strip()
+        umaban = str(row.get("馬番", "")).strip()
         horse_name = str(row.get("馬名", "")).strip()
         if not horse_name:
             continue
@@ -1523,12 +1563,19 @@ def make_race_card_html(date_str, place_id, target_id):
             )
             # 🧩 HTML化
             report_html = horse_info.horse_report_to_html(report)
+            
+            # 折りたたみセクションでラップ
+            unique_id = f"horse_report_{idx}_{umaban}"
             horse_reports_html += f"""
             <div class="horse-report-card">
-              <h3>🐎 {horse_name}</h3>
-              {report_html}
+              <div class="horse-report-toggle" onclick="toggleHorseReport('{unique_id}')">
+                <span>🐎[{waku}枠{umaban}番] {horse_name} </span>
+                <span class="horse-report-toggle-icon open">▼</span>
+              </div>
+              <div class="horse-report-content open" id="{unique_id}">
+                {report_html}
+              </div>
             </div>
-            <hr>
             """
         except Exception as e:
             print(f"❌ {horse_name} のレポート作成に失敗: {e}")
@@ -1559,10 +1606,24 @@ def make_race_card_html(date_str, place_id, target_id):
         f"<p>{course_info_text}</p>\n  <p>発走時刻:"
     )
 
-    # 🧩 各馬の詳細レポートを race_page 下部に追加
+    # 🧩 各馬の詳細レポートを race_page 下部に追加（折りたたみ機能付き）
+    horse_reports_section = f"""
+    <h2>出走馬 詳細レポート</h2>
+    {horse_reports_html}
+    <script>
+    function toggleHorseReport(reportId) {{
+      const content = document.getElementById(reportId);
+      const toggle = content.previousElementSibling.querySelector('.horse-report-toggle-icon');
+      
+      content.classList.toggle('open');
+      toggle.classList.toggle('open');
+    }}
+    </script>
+    """
+    
     html_content = html_content.replace(
         "</body>",
-        f"<h2>出走馬 詳細レポート</h2>\n{horse_reports_html}\n</body>"
+        f"{horse_reports_section}\n</body>"
     )
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -1590,7 +1651,7 @@ if __name__ == "__main__":
     race_day = date(2025, 10, 1)
     # make_daily_race_card_html(race_day)
 
-    today = date(2025, 12, 1)
+    today = date.today()
     current = race_day
 
     while current <= today:
