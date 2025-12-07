@@ -460,27 +460,21 @@ def build_html_content(date_display, place_id, race_num, race_name, race_time, n
     </div>
     <div class="course-data-content" id="courseDataContent">
       <div class="data-section">
-        <h4>通過時間情報</h4>
         {run_time_info}
       </div>
       <div class="data-section">
-        <h4>馬体重情報</h4>
         {weight_info}
       </div>
       <div class="data-section">
-        <h4>血統情報</h4>
         {peds_info}
       </div>
       <div class="data-section">
-        <h4>人気情報</h4>
         {pops_info}
       </div>
       <div class="data-section">
-        <h4>枠順情報</h4>
         {frames_info}
       </div>
       <div class="data-section">
-        <h4>最近の成績</h4>
         {recent_html}
       </div>
     </div>
@@ -920,7 +914,7 @@ def generate_run_time_info(date_str, place_id, target_id) :
     # --- HTML整形 ---
     run_time_info_html = f"""
     <div id="runtimeInfo" style="margin: 20px 0; padding: 10px; border: 1px solid #ccc; background: #fafafa;">
-      <h3>🏁 コース別平均タイム情報 ({race_type} {course_len}m {ground_state} {race_class})</h3>
+      <h3>🕐 コース別平均タイム情報 ({race_type} {course_len}m {ground_state} {race_class})</h3>
       <table style="border-collapse: collapse; width: 100%; text-align: center;">
         <thead>
           <tr style="background: #f2f2f2;">
@@ -1025,14 +1019,14 @@ def generate_weight_info(date_str, place_id, target_id):
   # --- HTML生成 ---
   weight_info_html = f"""
   <div id="weightInfo" style="margin: 20px 0; padding: 10px; border: 1px solid #ccc; background: #fefefe;">
-    <h3>🏁 コース別平均馬体重情報 ({race_type} {course_len}m {ground_state} {race_class})</h3>
+    <h3>🐎 コース別平均馬体重情報 ({race_type} {course_len}m {ground_state} {race_class})</h3>
     <table style="border-collapse: collapse; width: 100%; text-align: center;">
       <thead>
         <tr style="background: #f2f2f2;">
           <th>区分</th>
           <th>対象</th>
           <th>平均馬体重</th>
-        </tr>
+        </t🐎
       </thead>
       <tbody>
         <tr>
@@ -1129,7 +1123,7 @@ def generate_peds_result_html(date_str, place_id, target_id):
     # --- 出力HTML作成 ---
     html = f"""
     <div class="peds-result-block"; style="margin: 20px 0; padding: 10px; border: 1px solid #ccc; background: #fefefe;">
-      <h3>🐎 血統別成績 ({race_type} {course_len}m {ground_state})</h3>
+      <h3>🧬 血統別成績 ({race_type} {course_len}m {ground_state})</h3>
 
       {make_table_html(total_df, "all", f"全クラス 2019~{year}")}
       {make_table_html(total_df, race_class, f"{race_class} 2019~{year}")}
@@ -1218,7 +1212,7 @@ def generate_pops_info(date_str, place_id, target_id):
     # --- HTML生成 ---
     pops_info_html = f"""
     <div id="popsInfo" style="margin: 20px 0; padding: 10px; border: 1px solid #ccc; background: #fefefe;">
-      <h3>🏁 コース別平均人気情報 ({race_type} {course_len}m {ground_state} {race_class})</h3>
+      <h3>📊 コース別平均人気情報 ({race_type} {course_len}m {ground_state} {race_class})</h3>
       <table style="border-collapse: collapse; width: 100%; text-align: center;">
         <thead>
           <tr style="background: #f2f2f2;">
