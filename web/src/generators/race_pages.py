@@ -1409,7 +1409,7 @@ def generate_recent_same_condition_html(date_str, place_id, target_id):
 
     # --- 日付処理 ---
     base_date = datetime.strptime(date_str, "%Y%m%d")
-    recent_days = [base_date - timedelta(days=i) for i in range(1, 11)]
+    recent_days = sorted([base_date - timedelta(days=i) for i in range(1, 11)])
     matched_race_ids = []
     # --- 各日付ごとに処理 ---
     for race_day in recent_days:
@@ -1436,7 +1436,7 @@ def generate_recent_same_condition_html(date_str, place_id, target_id):
      # --- HTML構築開始 ---
     html = f"""
     <div id="recentSameCondition" style="margin-top:20px; padding:10px; border:1px solid #ccc; background:#fefefe;">
-      <h3>🏁 先週/今週の同条件レース結果 ({base_type} {base_len}m)</h3>
+      <h3>🏁 先週/今週の{name_header.NAME_LIST[place_id - 1]} {base_type} {base_len}m レース結果</h3>
     """
 
     for race_id, race_date_str, race_class, ground_state in matched_race_ids:
@@ -1478,11 +1478,11 @@ def generate_recent_same_condition_html(date_str, place_id, target_id):
             match = df_info[df_info["race_id"].astype(str) == str(race_id)]
             if not match.empty:
                 race_name = str(match.iloc[0]["race_name"])
-
+        race_date_dsp = datetime.strptime(race_date_str, "%Y%m%d").strftime("%Y/%m/%d")
         # --- HTML組み立て ---
         html += f"""
         <div style="margin-top:10px; padding:5px; border:1px solid #ddd;">
-          <h4>{race_date_str}:{race_num}R {race_name} {type}{len}m {race_class_name} ({ground})</h4>
+          <h4>{race_date_dsp}:{race_num}R {race_name} {type}{len}m {race_class_name} ({ground})</h4>
           <table style="width:100%; border-collapse:collapse; text-align:center; font-size:14px;">
             <thead>
               <tr style="background:#f2f2f2;">
@@ -1493,18 +1493,55 @@ def generate_recent_same_condition_html(date_str, place_id, target_id):
         """
 
         for i, row in df_top3.iterrows():
-            html += f"""
-              <tr>
-                <td>{i + 1}</td>
-                <td>{row["馬名"]}</td>
-                <td>{row["タイム"]}</td>
-                <td>{row["人気"]}</td>
-                <td>{row["単勝"]}</td>
-                <td>{row["上り"]}</td>
-                <td>{row["通過"]}</td>
-                <td>{row["馬体重"]}</td>
-              </tr>
-            """
+          # 順位の色付け
+          result_rank = int(i + 1)
+          result_rank_text_color = RANK_COLORS.get(str(result_rank), "#ffffff")
+          result_rank_html = f'<td style="background-color: {result_rank_text_color}; font-weight: bold;">{result_rank}</td>'
+          # 人気の色付け
+          popularity = str(row["人気"]).strip()
+          # 2桁人気は赤色のテキスト
+          try :
+            popularity = int(float(popularity))
+            pop_color = RANK_COLORS.get(str(popularity), "#ffffff")
+            pop_text_color = "red" if  popularity >= 10 else "black"
+          except :
+              pop_text_color = "black"
+          pop_html = f'<td style="background-color: {pop_color}; color: {pop_text_color}; font-weight: bold;">{popularity}</td>'
+          
+          # 単勝オッズの色付け
+          odds_str = str(row["単勝"]).strip()
+          try:
+              odds_val = float(odds_str)
+              if odds_val >= 50:
+                  odds_color = "red"
+              elif odds_val >= 30:
+                  odds_color = "orange"
+              elif odds_val < 5:
+                  odds_color = "blue"
+              else:
+                  odds_color = "black"
+          except:
+              odds_color = "black"
+          odds_html = f'<td style="color: {odds_color}; font-weight: bold;">{odds_str}</td>'
+          # 時間表記を修正
+          time_raw = row["タイム"]
+          try:
+            time_raw = re.sub(r"^0:", "", time_raw)
+          except Exception:
+            time_raw = time_raw
+
+          html += f"""
+            <tr>
+              {result_rank_html}
+              <td>{row["馬名"]}</td>
+              <td>{time_raw}</td>
+              {pop_html}
+              {odds_html}
+              <td>{row["上り"]}</td>
+              <td>{row["通過"]}</td>
+              <td>{row["馬体重"]}</td>
+            </tr>
+          """
 
         html += "</tbody></table></div>"
 
