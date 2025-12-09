@@ -159,34 +159,10 @@ def get_past_race_id(horse_result):
         Returns:
             race_id_list : race_idのリスト
     """
-    # print(len(horse_result))
-    race_id_list = []
-    for i in range(len(horse_result)):
-        # 年の取得
-        date = horse_result.at[i,"日付"]
-        # print(date)
-        year = re.findall(r"\d+", date)[0]
-        # print(year)
-
-        # 開催情報の取得
-        kaisai = horse_result.at[i,"開催"]
-        # print(kaisai)
-        course = re.sub(r"[0-9]+", "", kaisai)
-        course_id = -1
-        for id in range(len(name_header.NAME_LIST)):
-            if course == name_header.NAME_LIST[id]:
-                course_id = id + 1
-                break
-
-        if course_id > 0:
-            times = re.findall(r"\d+", kaisai)[0]
-            day = re.findall(r"\d+", kaisai)[1]
-            race = horse_result.at[i,"R"]
-            race_id = str(year) + str(course_id).zfill(2) + str(times).zfill(2) + str(day).zfill(2) + str(race).zfill(2)
-            
-        else : 
-            race_id = str("nan")    
-        race_id_list.append(race_id)
+    if horse_result.empty:
+        race_id_list = []
+    else :
+        race_id_list = horse_result["race_id"].tolist()
     
     return race_id_list
 
@@ -294,7 +270,7 @@ def make_past_performance_dataset_from_race_results(horse_id):
     # 対象馬のみ抽出
     df = full_df[full_df["horse_id"] == str(horse_id)].copy()
     if df.empty:
-        print(f"❌ horse_id={horse_id} のデータが見つかりません。")
+        print(f"⚠ horse_id={horse_id} のデータが見つかりません。")
         return pd.DataFrame()
 
     # --- race_idごとに他馬データを参照して派生情報を生成 ---

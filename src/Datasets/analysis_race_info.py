@@ -690,7 +690,7 @@ def add_horse_name_id_map(horse_id, horse_name):
     name_exists = horse_name in existing_df["馬名"].values
 
     if id_exists and name_exists:
-        print(f"✅ 既に登録済み: {horse_name} ({horse_id})")
+        # print(f"✅ 既に登録済み: {horse_name} ({horse_id})")
         return
     elif id_exists and not name_exists:
         print(f"⚠️ ID重複: {horse_id} が既に存在します（別名）。登録をスキップします。")

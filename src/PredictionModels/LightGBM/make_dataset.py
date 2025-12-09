@@ -156,18 +156,18 @@ def get_past_race_info_data(race_info_df):
             # レース結果を取得(time_df(コース、距離、馬場), time_df(同クラス),"course_flag1", "len_flag1", "type_flag1", "state_flag1", "class_flag1" )
             df_time = get_time_info(race_info_df.iloc[i])
 
-            if "除" in str(race_info_df.at[i,"着 順"]) or  "取" in str(race_info_df.at[i,"着 順"]):
+            if "除" in str(race_info_df.at[i,"着順"]) or  "取" in str(race_info_df.at[i,"着順"]):
                 df_time.append(np.nan) 
                 df_time.append(np.nan)
-            elif  "中" in str(race_info_df.at[i,"着 順"]) or "失" in str(race_info_df.at[i,"着 順"]):
-                df_time.append(float(re.sub(r"\D", "", race_info_df.at[i,"人 気"])))
+            elif  "中" in str(race_info_df.at[i,"着順"]) or "失" in str(race_info_df.at[i,"着順"]):
+                df_time.append(float(re.sub(r"\D", "", race_info_df.at[i,"人気"])))
                 df_time.append(np.nan)  
-            elif np.isnan(float(race_info_df.at[i,"人 気"])):
+            elif np.isnan(float(race_info_df.at[i,"人気"])):
                 df_time.append(np.nan)
                 df_time.append(np.nan)  
             else:
-                df_time.append(float(re.sub(r"\D", "", race_info_df.at[i,"人 気"]))) 
-                df_time.append(float(re.sub(r"\D", "", race_info_df.at[i,"着 順"])))
+                df_time.append(float(re.sub(r"\D", "", race_info_df.at[i,"人気"]))) 
+                df_time.append(float(re.sub(r"\D", "", race_info_df.at[i,"着順"])))
             race_score_list.append(df_time)
             
         else:

@@ -141,7 +141,7 @@ def get_course_info(result):
     if place_id < 0:
         return[place_id, " "," "," "," "]
     # レース情報を取得
-    race_info = result["距離"]
+    race_info = result["course_len"]
     if "芝" in race_info:
         race_type = "芝"
     elif "ダ" in race_info:
@@ -151,26 +151,27 @@ def get_course_info(result):
     course_len = re.sub(r"\D","",race_info)
 
     # 馬場状態を取得
-    ground_state = result["馬 場"]
+    ground_state = result["ground_state"]
     if ground_state in "稍":
         ground_state = "稍重"
     if ground_state in "不":
         ground_state = "不良"
 
     # クラスを取得
-    race_name = result["レース名"]
-    if "新馬" in race_name:
-        race_class = "新馬"
-    elif "未勝利" in race_name:
-        race_class = "未勝利"
-    elif "1勝クラス" in race_name or "１勝クラス" in race_name:
-        race_class = "1勝クラス"
-    elif "2勝クラス" in race_name or "２勝クラス" in race_name:
-        race_class = "2勝クラス"
-    elif "3勝クラス" in race_name or "３勝クラス" in race_name:
-        race_class = "3勝クラス"
-    else :
-        race_class = "オープン"
+    race_class = result["class"]
+    # race_name = result["レース名"]
+    # if "新馬" in race_name:
+    #     race_class = "新馬"
+    # elif "未勝利" in race_name:
+    #     race_class = "未勝利"
+    # elif "1勝クラス" in race_name or "１勝クラス" in race_name:
+    #     race_class = "1勝クラス"
+    # elif "2勝クラス" in race_name or "２勝クラス" in race_name:
+    #     race_class = "2勝クラス"
+    # elif "3勝クラス" in race_name or "３勝クラス" in race_name:
+    #     race_class = "3勝クラス"
+    # else :
+    #     race_class = "オープン"
 
     return [place_id, race_type, course_len, ground_state, race_class]
 

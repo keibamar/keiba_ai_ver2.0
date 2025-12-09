@@ -134,12 +134,14 @@ def make_race_card(race_id):
         # 過去成績を取得
         horse_result = past_performance.get_past_performance_dataset(horse_id)
         if horse_result.empty:
+            print("make past performance data:", horse_id)
             horse_result = past_performance.make_past_performance_dataset_from_race_results(horse_id)
             past_performance.save_past_performance_dataset(horse_id,horse_result)
         horse_results.append(horse_result)
         # 血統情報を取得
         horse_ped = horse_peds.get_horse_peds_csv(horse_id)
         if horse_ped.empty:
+            print("make horse_ped data:", horse_id)
             horse_ped = horse_peds.make_horse_peds_dataset(horse_id)
             horse_ped = horse_peds.delete_invalid_strings(horse_ped)
             horse_peds.save_horse_peds_dataset(horse_id, horse_ped)
