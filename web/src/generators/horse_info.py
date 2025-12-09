@@ -272,7 +272,7 @@ def peds_results_for_bloodline(place_id: int, race_type: str, course_len: int, g
 
 # NaN 判定して "-" に置き換え
 def safe_value(val):
-    if val is None or val is "None":
+    if val is None or val == "None":
         return "-"
     try:
         if isinstance(val, float) and math.isnan(val):

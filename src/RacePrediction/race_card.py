@@ -120,6 +120,12 @@ def make_race_card(race_id):
     if race_info_df.empty or race_card_df.empty:
         print("Miss Make Race card")
         return pd.DataFrame()
+    # 欠けている列を追加してデフォルト値を設定
+    for col, default in {"weather": "-", "ground_state": "良"}.items():
+        if col not in race_info_df.columns:
+            race_info_df[col] = default
+        else:
+            race_info_df[col] = race_info_df[col].fillna(default)
     # 出走馬の過去成績と血統情報を取得
     horse_results = []
     horse_peds_df = pd.DataFrame()

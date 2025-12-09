@@ -1724,22 +1724,14 @@ def make_daily_race_card_html(race_day = date.today()):
       for race_id in race_id_list:
           make_race_card_html(date_str, place_id, race_id)
 
-if __name__ == "__main__":
-    # date_str = "20251115"
-    # place_id = 3
-    # target_id = "202503030301"
-    # make_race_card_html(date_str, place_id, target_id)
-
-    # テスト用実行コード
-    race_day = date(2025, 10, 1)
-    # make_daily_race_card_html(race_day)
-
-    today = date.today()
-    current = race_day
-
-    while current <= today:
-        print(f"🏇 {current} のレースカードを作成中...")
-        make_daily_race_card_html(current)
-        current += timedelta(days=1)
-
+def make_up_to_date_race_card_html(start_day = date(2025,10,1), today = date.today()):
+    while start_day <= today:
+        print(f"🏇 {start_day} のレースカードを作成中...")
+        make_daily_race_card_html(start_day)
+        start_day += timedelta(days=1)
     print("🎉 すべての日付のレースカード作成が完了しました！")
+
+if __name__ == "__main__":
+  # 今日のhtmlを作成
+  race_day = date.today()
+  make_daily_race_card_html(race_day)

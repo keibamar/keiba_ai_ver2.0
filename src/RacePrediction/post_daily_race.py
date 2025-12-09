@@ -81,8 +81,8 @@ def post_daily_race_pred(race_day = date.today()):
     last_race_by_place = {}
 
     while(any(time_id_list)):
-        # レース10分前に投稿
-        comp_time = datetime.datetime.now() + timedelta(minutes=10)
+        # レース20分前に投稿
+        comp_time = datetime.datetime.now() + timedelta(minutes=20)
         str_comp_time = str(comp_time.hour).zfill(2) + str(comp_time.minute).zfill(2)
         race_time = time_id_list[0][0]
         # 実行時間を過ぎていたら投稿を実行
