@@ -28,7 +28,7 @@ function renderCalendar(year, month) {
     const dateStr = `${year}${String(month+1).padStart(2,"0")}${String(d).padStart(2,"0")}`;
     let link = "";
     if (window.racedays && window.racedays.includes(dateStr)) {
-      link = `<a href="/web/site/${dateStr}/index.html">${d}</a>`;
+      link = `<a href="/web/site/races/${dateStr}/index.html">${d}</a>`;
     } else {
       link = d;
     }
