@@ -1,0 +1,94 @@
+@startuml
+
+title MakeTimeIDList
+
+participant "bat/TodayRace" as bat
+
+box src/RacePrediction/make_time_id_list #LightBlue
+participant "main" as main
+participant "make_time_id_list" as make_time_id_list
+participant "get_race_time" as get_race_time
+participant "get_race_name" as get_race_name
+participant "sort_time" as sort_time
+box API  #LightBlue
+participant "save_time_id_list" as save_time_id_list
+end box
+end box
+
+box src/RacePrediction/race_card #LightBlue
+participant "get_race_info" as get_race_info
+end box
+
+box "src/lib/get_race_id" #LightCyan
+participant "get_daily_id" as get_daily_id
+end box
+box "src/lib/scraping" #LightCyan
+participant "scrape_race_card" as scrape_race_card
+end box
+
+box DataBase
+database "texts/race_calendar" as RaceCalendar
+end box
+
+box NetKeiba #LightGoldenRodYellow
+database "NetKeiba" as NetKeiba
+end box
+
+
+bat -> main
+activate main
+    main -[dotted]> make_time_id_list : race_day
+    activate make_time_id_list
+        ' race_id_listの取得
+        make_time_id_list -[dotted]> get_daily_id : race_day
+        activate get_daily_id
+            get_daily_id -[dotted]> RaceCalendar : year
+            activate RaceCalendar
+                RaceCalendar -> get_daily_id : RaceCalendar
+            deactivate RaceCalendar
+            get_daily_id -> make_time_id_list : race_id_list
+        deactivate get_daily_id
+        
+        ' race_infoの取得
+        make_time_id_list -[dotted]> get_race_info : race_id
+        activate get_race_info
+            get_race_info -[dotted]> scrape_race_card : race_id
+            activate scrape_race_card
+                scrape_race_card -[dotted]> NetKeiba
+                activate NetKeiba
+                    NetKeiba -> scrape_race_card : df_RaceCard
+                deactivate NetKeiba
+                scrape_race_card -> get_race_info : race_info, df_race_info, df_race_card
+            deactivate scrape_race_card
+            get_race_info -> make_time_id_list : race_info
+        deactivate get_race_info
+
+        ' time_id_listの作成   
+        make_time_id_list -> get_race_time : race_info
+        activate get_race_time
+            get_race_time -> make_time_id_list : race_time
+        deactivate get_race_time
+
+        make_time_id_list -> get_race_name : race_info
+        activate get_race_name
+            get_race_name -> make_time_id_list : race_name
+        deactivate get_race_name
+
+        make_time_id_list -> sort_time : time_id_list
+        activate sort_time
+            sort_time -> make_time_id_list : time_id_list
+        deactivate sort_time
+        
+        make_time_id_list -> main : time_id_list
+    deactivate make_time_id_list
+
+    ' time_id_listの保存
+    main -> save_time_id_list : race_day, time_id_list
+    activate save_time_id_list
+        save_time_id_list -[#Red]> RaceCalendar : time_id_list
+    deactivate save_time_id_list
+
+deactivate main
+
+
+@enduml
