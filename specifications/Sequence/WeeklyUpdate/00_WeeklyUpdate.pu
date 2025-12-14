@@ -1,0 +1,68 @@
+@startuml
+
+title Weekly Update
+
+participant "bat/Datasets" as bat
+box src/Datasets #LightBlue
+participant "weekly_update" as weekly_update
+participant "race_results" as race_results
+participant "horse_peds" as horse_peds
+participant "peds_results" as peds_results
+participant "average_time" as average_time
+participant "analysis_race_time" as race_time
+participant "analysis_race_info" as race_info
+participant "past_performance" as past_performance
+end box
+
+box DataBase
+database "Data/RaceResults" as DBRaceResults
+database "Data/HorsePeds" as DBHorsePeds
+database "Data/PedsResults" as DBPedsReults
+database "Data/AverageTimes" as DBAverageTime
+database "Data/AverageFrames" as DBAverageFrames
+database "Data/AveragePops" as DBAveragePops
+database "Data/AverageWeights" as DBAverageWeights
+database "Data/PastPerformance" as DBPastPerformance
+end box
+
+bat -> weekly_update 
+activate weekly_update
+
+weekly_update -> race_results
+activate race_results
+weekly_update -> DBRaceResults
+deactivate race_results
+
+weekly_update -> horse_peds
+activate  horse_peds
+horse_peds -> DBHorsePeds
+deactivate horse_peds
+
+weekly_update -> peds_results
+activate  peds_results
+peds_results -> DBPedsReults
+deactivate peds_results
+
+weekly_update -> average_time
+activate  average_time
+average_time -> DBAverageTime
+deactivate average_time
+
+weekly_update -> race_time
+activate  race_time
+race_time -> DBAverageTime
+deactivate race_time
+
+weekly_update -> race_info
+activate  race_info
+race_info -> DBAverageFrames
+race_info -> DBAveragePops
+race_info -> DBAverageWeights
+deactivate race_info
+
+weekly_update -> past_performance
+activate  past_performance
+past_performance -> DBPastPerformance
+deactivate past_performance
+
+@enduml

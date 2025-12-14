@@ -1,0 +1,67 @@
+box "src/Datasets/analysis_race_info" #LightBlue
+' participant "weekly_update_average_pops" as weekly_update_average_pops
+' participant "weekly_update_winners_weight" as weekly_update_winners_weight
+' participant "weekly_update_average_frame_and_horse" as weekly_update_average_frame_and_horse
+participant "weekly_update_horse_name_id_map" as weekly_update_horse_name_id_map
+
+' participant "update_average_pops" as update_average_pops
+' participant "update_winners_weight" as update_winners_weight
+' participant "update_average_frame_and_horse" as update_average_frame_and_horse
+participant "update_horse_name_id_map_from_results" as update_horse_name_id_map_from_results
+
+' participant "analyze_average_pop_multi_years" as analyze_average_pop_multi_years
+' participant "analyze_average_pops" as analyze_average_pops
+
+' participant "analyze_winner_weights_multi_years" as analyze_winner_weights_multi_years
+' participant "analyze_winner_weights" as analyze_winner_weights
+
+' participant "analyze_frame_and_horse_multi_years" as analyze_frame_and_horse_multi_years
+' participant "analyze_frame_and_horse_top3_multi_years" as analyze_frame_and_horse_top3_multi_years
+' participant "analyze_average_frame_and_horse" as analyze_average_frame_and_horse
+' participant "analyze_average_frame_and_horse_top3" as analyze_average_frame_and_horse_top3
+
+
+box "API"  #LightBlue
+' participant "save_annual_average_datasets" as save_annual_average_datasets
+' participant "save_total_average_datasets" as save_total_average_datasets
+end box
+end box
+
+box "src/Datasets/race_results" #LightBlue
+participant "get_race_results_csv"  as get_race_results_csv
+end box
+
+' box "src/lib/get_race_id" #LightCyan
+' participant "get_past_weekly_id" as get_past_weekly_id
+' end box
+
+box DataBase
+database "Data/RaceResults" as DBRaceResults
+' database "Data/AveragePops" as DBAveragePops
+' database "Data/AverageWeights" as DBAverageWeights
+' database "Data/AverageFrames" as DBAverageFrames
+database "Data/HorseIDMap" as horse_id_map
+end box
+
+box NetKeiba #LightGoldenRodYellow
+database "NetKeiba" as NetKeiba
+end box
+
+activate weekly_update_horse_name_id_map 
+
+' 年間平均タイムデータの作成
+weekly_update_horse_name_id_map -> update_horse_name_id_map_from_results : place_id, year
+activate update_horse_name_id_map_from_results
+    ' 各年の記録を計算 1位
+    update_horse_name_id_map_from_results -[dotted]> DBRaceResults : place_id, year
+    activate DBRaceResults
+        DBRaceResults -> update_horse_name_id_map_from_results : race_results_df
+    deactivate DBRaceResults
+
+    update_horse_name_id_map_from_results -[#Red]> horse_id_map : horse_id_map
+        activate horse_id_map
+        deactivate horse_id_map    
+
+deactivate update_horse_name_id_map_from_results
+
+deactivate weekly_update_horse_name_id_map

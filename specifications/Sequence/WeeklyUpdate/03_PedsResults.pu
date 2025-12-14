@@ -1,0 +1,208 @@
+box "src/Datasets/race_results" #LightBlue
+participant "weekly_update_pedsdata" as weekly_update
+participant "update_peds_dataset" as update_peds_dataset
+participant "get_peds_dataset_from_horse_id_list" as get_peds_dataset_from_horse_id_list
+participant "merge_pedsdata_with_race_results" as merge_pedsdata_with_race_results
+participant "aggregate_peds_results" as aggregate_peds_results
+participant "aggregate_total_peds_results" as aggregate_total_peds_results
+participant "output_results" as output_results
+box "API"  #LightBlue
+participant "get_peds_dataset_csv" as get_peds_dataset_csv
+participant "save_peds_dataset" as save_peds_dataset
+end box
+end box
+
+
+box "src/Datasets/past_performance" #DarkCyan
+participant "get_horse_id_list_from_race_id_list"  as get_horse_id_list_from_race_id_list
+participant "get_horse_id_from_race_id" as get_horse_id_from_race_id
+end box
+
+box "src/Datasets/race_results" #LightBlue
+participant "get_race_results_csv"  as get_race_results_csv
+end box
+
+box "src/Datasets/peds_results" #LightBlue
+participant "get_peds_data_dataset_csv"  as get_peds_data_dataset_csv
+end box
+
+box "src/lib/get_race_id" #LightCyan
+participant "get_past_weekly_id" as get_past_weekly_id
+end box
+
+' box "src/lib/scraping" #LightCyan
+' participant "scrape_race_results" as scrape_race_results
+' end box
+
+box "src/lib/horse_peds" #SkyBlue
+participant "get_horse_peds_csv" as get_horse_peds_csv
+end box
+
+
+box DataBase
+database "Data/RaceResults" as DBRaceResults
+' database "Data/RaceInfo" as DBRaceInfo
+database "Data/PedsResults" as DBPedsResults
+database "Data/PedsResults/Course" as DBPedsResultsCourse
+database "Data/HorsePeds" as DBHorsePeds
+database "texts/race_calendar" as RaceCalendar
+end box
+
+box NetKeiba #LightGoldenRodYellow
+database "NetKeiba" as NetKeiba
+end box
+
+' peds_Datasetsの作成
+activate weekly_update 
+weekly_update -> update_peds_dataset
+    
+    activate update_peds_dataset
+        ' race_id_listの取得
+        update_peds_dataset -[dotted]> get_past_weekly_id : place_id, day
+            activate get_past_weekly_id
+            get_past_weekly_id -[dotted]> RaceCalendar : place_id, race_day
+                activate RaceCalendar
+                RaceCalendar -> get_past_weekly_id : race_id_list
+                deactivate RaceCalendar
+            get_past_weekly_id -> update_peds_dataset : race_id_list
+            deactivate get_past_weekly_id
+
+        ' horse_id_listの取得
+        update_peds_dataset -[dotted]> get_horse_id_list_from_race_id_list : race_id_list
+        activate get_horse_id_list_from_race_id_list
+            get_horse_id_list_from_race_id_list -[dotted]> get_horse_id_from_race_id : race_id
+            activate get_horse_id_from_race_id
+                get_horse_id_from_race_id -[dotted]> get_race_results_csv : place_id, year
+                activate get_race_results_csv
+                get_race_results_csv -[dotted]> DBRaceResults : place_id, year
+                        activate DBRaceResults
+                        DBRaceResults -> get_race_results_csv : race_results
+                        deactivate  DBRaceResults
+                get_race_results_csv -> get_horse_id_from_race_id : horse_id_list
+                deactivate get_race_results_csv
+            get_horse_id_from_race_id -> get_horse_id_list_from_race_id_list : horse_id_list
+            deactivate get_horse_id_from_race_id
+        get_horse_id_list_from_race_id_list -> update_peds_dataset : horse_id_list
+        deactivate get_horse_id_list_from_race_id_list
+        
+        ' peds_dataの作成
+        update_peds_dataset -[dotted]> get_peds_dataset_from_horse_id_list : horse_id_list
+            activate get_peds_dataset_from_horse_id_list
+                get_peds_dataset_from_horse_id_list -[dotted]> get_horse_peds_csv : horse_id
+                    activate get_horse_peds_csv
+                        get_horse_peds_csv -[dotted]> DBHorsePeds : horse_id
+                            activate DBHorsePeds
+                                DBHorsePeds -> get_horse_peds_csv : horse_peds_df
+                            deactivate DBHorsePeds
+                        get_horse_peds_csv -> get_peds_dataset_from_horse_id_list : horse_peds_df
+                    deactivate get_horse_peds_csv
+                    get_peds_dataset_from_horse_id_list -> update_peds_dataset : new_peds_df
+            deactivate get_peds_dataset_from_horse_id_list
+        
+        ' old_peds_dataの取得
+        update_peds_dataset -[dotted]> get_peds_dataset_csv : place_id, day.year
+            activate get_peds_dataset_csv
+                get_peds_dataset_csv -[dotted]> DBPedsResults : place_id, year
+                    activate DBPedsResults
+                    DBPedsResults -> get_peds_dataset_csv : PedsResultsDF
+                    deactivate DBPedsResults
+                get_peds_dataset_csv -> update_peds_dataset : old_peds_df
+            deactivate get_peds_dataset_csv
+        
+        ' peds_dataの保存
+        update_peds_dataset -> save_peds_dataset : new_peds_df, place_id, day.year
+            activate save_peds_dataset
+                save_peds_dataset -[#Red]> DBPedsResults : new_peds_df
+                activate DBPedsResults
+                deactivate DBPedsResults
+            deactivate save_peds_dataset
+    deactivate update_peds_dataset
+
+' peds_Resultsの作成
+weekly_update -> merge_pedsdata_with_race_results : place_id, day.year
+    activate merge_pedsdata_with_race_results
+    merge_pedsdata_with_race_results -[dotted]> get_race_results_csv : place_id, year
+        activate get_race_results_csv
+            get_race_results_csv -[dotted]> DBRaceResults : place_id, year
+                activate DBRaceResults
+                    DBRaceResults -> get_race_results_csv : df_RaceResults
+                deactivate DBRaceResults
+            get_race_results_csv -> merge_pedsdata_with_race_results : df_course
+        deactivate get_race_results_csv
+    
+    merge_pedsdata_with_race_results -[dotted]> get_peds_dataset_csv : place_id, year
+        activate get_peds_dataset_csv
+            get_peds_dataset_csv -[dotted]> DBPedsResults : place_id, year
+                activate DBPedsResults
+                    DBPedsResults -> get_peds_dataset_csv : df_PedsResults
+                deactivate DBPedsResults
+            get_peds_dataset_csv -> merge_pedsdata_with_race_results : df_PedsResults
+        deactivate get_peds_dataset_csv
+    
+    merge_pedsdata_with_race_results -[dotted]> get_horse_peds_csv : horse_id
+        activate get_horse_peds_csv
+            get_horse_peds_csv -[dotted]> DBHorsePeds : horse_id
+                activate DBHorsePeds
+                    DBHorsePeds -> get_horse_peds_csv : df_HorsePeds
+                deactivate DBHorsePeds
+            get_horse_peds_csv -> merge_pedsdata_with_race_results : df_HorsePeds
+        deactivate get_horse_peds_csv
+    
+    merge_pedsdata_with_race_results -[#Red]> DBPedsResults : df_PedsResults
+        activate DBPedsResults
+        deactivate DBPedsResults
+        
+    deactivate merge_pedsdata_with_race_results
+
+' 年間コース別血統データの作成
+weekly_update -> aggregate_peds_results : place_id, day.year
+    activate aggregate_peds_results
+        aggregate_peds_results -[dotted]> get_peds_data_dataset_csv : place_id, year
+            activate get_peds_data_dataset_csv
+                get_peds_data_dataset_csv -[dotted]> DBPedsResults : place_id, year
+                    activate DBPedsResults
+                        DBPedsResults -> get_peds_data_dataset_csv : df_PedsResults
+                    deactivate DBPedsResults
+                get_peds_data_dataset_csv -> aggregate_peds_results : df_PedsResults
+            deactivate get_peds_data_dataset_csv
+
+        aggregate_peds_results -> output_results : df_ground
+            activate output_results
+                output_results -> aggregate_peds_results : result_df
+            deactivate output_results
+        
+        aggregate_peds_results -> output_results : df_class
+            activate output_results
+                output_results -> aggregate_peds_results : df_class
+            deactivate output_results
+
+        aggregate_peds_results -[#Red]> DBPedsResultsCourse : race_type, course_len, ground_state
+            activate DBPedsResultsCourse
+            deactivate DBPedsResultsCourse
+        
+    deactivate aggregate_peds_results 
+
+' Totalコース別血統データの作成
+weekly_update -> aggregate_total_peds_results : place_id, day.year
+    activate aggregate_total_peds_results
+        aggregate_total_peds_results -[dotted]> get_peds_data_dataset_csv : place_id, year
+            activate get_peds_data_dataset_csv
+                get_peds_data_dataset_csv -[dotted]> DBPedsResults : place_id, year
+                    activate DBPedsResults
+                        DBPedsResults -> get_peds_data_dataset_csv : df_PedsResults
+                    deactivate DBPedsResults
+                get_peds_data_dataset_csv -> aggregate_total_peds_results : df_PedsResults
+            deactivate get_peds_data_dataset_csv
+        
+        aggregate_total_peds_results -[dotted]> DBPedsResultsCourse : place_id, year, course_info
+            activate DBPedsResultsCourse
+                DBPedsResultsCourse -> aggregate_total_peds_results : df_PedsResultsCourse
+            deactivate DBPedsResultsCourse
+        aggregate_total_peds_results -[#Red]> DBPedsResultsCourse : df_PedsResultsCourse
+            activate DBPedsResultsCourse
+            deactivate DBPedsResultsCourse
+    deactivate aggregate_total_peds_results
+
+    
+
+deactivate weekly_update
