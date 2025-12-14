@@ -1,0 +1,143 @@
+box "src/Datasets/average_time" #LightBlue
+participant "timedata_update" as weekly_update
+participant "make_annual_average_time_datasets" as make_annual_average_time_datasets
+participant "total_average_datas" as total_average_datas
+participant "make_average_time_datasets" as make_average_time_datasets
+participant "extract_course_race_results" as extract_course_race_results
+participant "make_avg_time_dataset" as make_avg_time_dataset
+participant "get_avg_time_list_from_race_results_df" as get_avg_time_list_from_race_results_df
+participant "calc_avg_time" as calc_avg_time
+
+box "API"  #LightBlue
+participant "save_annual_average_datasets" as save_annual_average_datasets
+participant "save_total_average_datasets" as save_total_average_datasets
+end box
+end box
+
+box "src/Datasets/race_results" #LightBlue
+participant "get_race_results_csv"  as get_race_results_csv
+end box
+
+' box "src/lib/get_race_id" #LightCyan
+' participant "get_past_weekly_id" as get_past_weekly_id
+' end box
+
+box DataBase
+database "Data/RaceResults" as DBRaceResults
+database "Data/AverageTimes" as DBAverageTimes
+end box
+
+box NetKeiba #LightGoldenRodYellow
+database "NetKeiba" as NetKeiba
+end box
+
+
+activate weekly_update 
+
+' 年間平均タイムデータの作成
+weekly_update -> make_annual_average_time_datasets
+    activate make_annual_average_time_datasets
+    ' race_resultsの取得
+    make_annual_average_time_datasets -[dotted]> get_race_results_csv : place_id, day
+        activate get_race_results_csv
+        get_race_results_csv -[dotted]> DBRaceResults : place_id, year
+                activate DBRaceResults
+                DBRaceResults -> get_race_results_csv : race_results
+                deactivate  DBRaceResults
+        get_race_results_csv -> make_annual_average_time_datasets : df_course
+        deactivate get_race_results_csv
+    
+    ' 平均タイムデータの作成
+    make_annual_average_time_datasets -> make_average_time_datasets: df_course, place_id
+        activate make_average_time_datasets
+            ' 全クラスの平均タイムデータ作成
+            make_average_time_datasets -> extract_course_race_results : race_type, course_len, race_results_df
+                activate extract_course_race_results
+                extract_course_race_results -> make_average_time_datasets: df_all_all
+                deactivate extract_course_race_results
+            make_average_time_datasets -> make_avg_time_dataset : race_type, course_len, class_name, avg_time_list
+                activate make_avg_time_dataset 
+                make_avg_time_dataset ->   make_average_time_datasets :  df_avg_time_course
+                deactivate make_avg_time_dataset
+            
+            ' 各クラスの平均タイムデータ作成
+            make_average_time_datasets -> get_avg_time_list_from_race_results_df : df_all_class
+                activate get_avg_time_list_from_race_results_df
+                ' 全馬場状態のデータ作成
+                get_avg_time_list_from_race_results_df -> calc_avg_time : all_all_time
+                    activate calc_avg_time
+                    calc_avg_time -> get_avg_time_list_from_race_results_df : avg_time_list
+                    deactivate calc_avg_time
+                ' 各馬場状態のデータ作成
+                get_avg_time_list_from_race_results_df -> calc_avg_time : ground_state_time
+                    activate calc_avg_time
+                    calc_avg_time -> get_avg_time_list_from_race_results_df : avg_time_list
+                    deactivate calc_avg_time    
+                get_avg_time_list_from_race_results_df -> make_average_time_datasets : avg_time_list
+                deactivate get_avg_time_list_from_race_results_df
+
+            make_average_time_datasets -> make_annual_average_time_datasets : df_return
+        deactivate make_average_time_datasets
+
+    make_annual_average_time_datasets -> save_annual_average_datasets : place_id, year, df_return
+        activate save_annual_average_datasets
+            save_annual_average_datasets -[#Red]> DBAverageTimes : df_avg_time
+                activate DBAverageTimes
+                deactivate DBAverageTimes
+        deactivate save_annual_average_datasets
+    
+    deactivate make_annual_average_time_datasets
+
+' 全期間平均タイムデータの作成
+weekly_update -> total_average_datas : place_id, year
+    activate total_average_datas
+    total_average_datas -[dotted]> get_race_results_csv : place_id, day
+        activate get_race_results_csv
+        get_race_results_csv -[dotted]> DBRaceResults : place_id, year
+                activate DBRaceResults
+                DBRaceResults -> get_race_results_csv : race_results
+                deactivate  DBRaceResults
+        get_race_results_csv -> total_average_datas : df_race_results_all
+        deactivate get_race_results_csv
+    
+    total_average_datas -> make_average_time_datasets : df_race_results_all, place_id
+        activate make_average_time_datasets
+            ' 全クラスの平均タイムデータ作成
+            make_average_time_datasets -> extract_course_race_results : race_type, course_len, race_results_df
+                activate extract_course_race_results
+                extract_course_race_results -> make_average_time_datasets: df_all_all
+                deactivate extract_course_race_results
+            make_average_time_datasets -> make_avg_time_dataset : race_type, course_len, class_name, avg_time_list
+                activate make_avg_time_dataset 
+                make_avg_time_dataset ->   make_average_time_datasets :  df_avg_time_course
+                deactivate make_avg_time_dataset
+            
+            ' 各クラスの平均タイムデータ作成
+            make_average_time_datasets -> get_avg_time_list_from_race_results_df : df_all_class
+                activate get_avg_time_list_from_race_results_df
+                ' 全馬場状態のデータ作成
+                get_avg_time_list_from_race_results_df -> calc_avg_time : all_all_time
+                    activate calc_avg_time
+                    calc_avg_time -> get_avg_time_list_from_race_results_df : avg_time_list
+                    deactivate calc_avg_time
+                ' 各馬場状態のデータ作成
+                get_avg_time_list_from_race_results_df -> calc_avg_time : ground_state_time
+                    activate calc_avg_time
+                    calc_avg_time -> get_avg_time_list_from_race_results_df : avg_time_list
+                    deactivate calc_avg_time    
+                get_avg_time_list_from_race_results_df -> make_average_time_datasets : avg_time_list
+                deactivate get_avg_time_list_from_race_results_df
+
+            make_average_time_datasets -> total_average_datas : df_return
+        deactivate make_average_time_datasets
+
+    total_average_datas -> save_total_average_datasets : place_id, df_return
+    activate save_total_average_datasets
+        save_total_average_datasets -[#Red]> DBAverageTimes : df_avg_time
+            activate DBAverageTimes
+            deactivate DBAverageTimes
+    deactivate save_total_average_datasets
+
+deactivate total_average_datas
+
+deactivate weekly_update

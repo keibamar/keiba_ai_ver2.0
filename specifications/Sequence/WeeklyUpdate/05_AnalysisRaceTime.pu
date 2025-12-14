@@ -1,0 +1,77 @@
+box "src/Datasets/analysis_race_time" #LightBlue
+participant "weekly_winners_time_update" as weekly_update
+participant "winners_time_update" as winners_time_update
+participant "analyze_winners_multi_years" as analyze_winners_multi_years
+participant "analyze_winners" as analyze_winners
+participant "parse_passages" as parse_passages
+
+box "API"  #LightBlue
+' participant "save_annual_average_datasets" as save_annual_average_datasets
+' participant "save_total_average_datasets" as save_total_average_datasets
+end box
+end box
+
+box "src/Datasets/race_results" #LightBlue
+participant "get_race_results_csv"  as get_race_results_csv
+end box
+
+' box "src/lib/get_race_id" #LightCyan
+' participant "get_past_weekly_id" as get_past_weekly_id
+' end box
+
+box DataBase
+database "Data/RaceResults" as DBRaceResults
+database "Data/AverageTimes" as DBAverageTimes
+end box
+
+box NetKeiba #LightGoldenRodYellow
+database "NetKeiba" as NetKeiba
+end box
+
+
+activate weekly_update 
+
+' 年間平均タイムデータの作成
+weekly_update -> winners_time_update : place_id, year
+activate winners_time_update
+    ' 各年の記録を計算
+    winners_time_update -> analyze_winners : place_id, year
+    activate analyze_winners
+        analyze_winners -[dotted]> DBRaceResults : place_id, year
+        activate DBRaceResults
+            DBRaceResults -> analyze_winners : race_results_df
+        deactivate DBRaceResults
+        analyze_winners -> parse_passages : pass_str
+        activate parse_passages
+            parse_passages -> analyze_winners : pass_str
+        deactivate parse_passages
+        analyze_winners -> winners_time_update: result_df
+    deactivate analyze_winners
+
+    winners_time_update -[#Red]> DBAverageTimes : place_id, year
+        activate DBAverageTimes
+        deactivate DBAverageTimes
+
+    winners_time_update -> analyze_winners_multi_years : place_id, start_year, year
+        activate analyze_winners_multi_years
+            analyze_winners_multi_years -> analyze_winners : place_id, year
+            activate analyze_winners
+                analyze_winners -[dotted]> DBRaceResults : place_id, year
+                activate DBRaceResults
+                    DBRaceResults -> analyze_winners : race_results_df
+                deactivate DBRaceResults
+                analyze_winners -> parse_passages : pass_str
+                activate parse_passages
+                    parse_passages -> analyze_winners : pass_str
+                deactivate parse_passages
+                analyze_winners -> analyze_winners_multi_years: result_df
+            deactivate analyze_winners
+            analyze_winners_multi_years -> winners_time_update : total_df
+        deactivate analyze_winners_multi_years
+
+    winners_time_update -[#Red]> DBAverageTimes : total_df
+        activate DBAverageTimes
+        deactivate DBAverageTimes 
+deactivate winners_time_update
+
+deactivate weekly_update

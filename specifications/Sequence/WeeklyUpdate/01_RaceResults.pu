@@ -1,0 +1,110 @@
+box "src/Datasets/race_results" #LightBlue
+participant "weekly_update_race_results" as weekly_update
+participant "update_race_results_dataset" as update_race_results_dataset
+participant "export_race_info_per_race" as export_race_info_per_race
+participant "split_race_results_by_year" as split_race_results_by_year
+box "API"  #LightBlue
+participant "scrape_race_results_dataframe" as scrape_race_results_dataframe
+participant "get_race_results_csv" as get_race_results_csv
+participant "save_race_results_dataset" as save_race_results_dataset
+end box
+end box
+
+
+box "src/lib/get_race_id" #LightCyan
+participant "get_past_weekly_id" as get_past_weekly_id
+end box
+
+box "src/lib/scraping" #LightCyan
+participant "scrape_race_results" as scrape_race_results
+end box
+
+box DataBase
+database "Data/RaceResults" as DBRaceResults
+database "Data/RaceInfo" as DBRaceInfo
+database "texts/race_calendar" as RaceCalendar
+end box
+
+box NetKeiba #LightGoldenRodYellow
+database "NetKeiba" as NetKeiba
+end box
+
+' RaceResultsの更新
+activate weekly_update 
+weekly_update -> update_race_results_dataset  : place_id, day
+activate  update_race_results_dataset
+
+update_race_results_dataset -[dotted]> get_past_weekly_id : place_id, day
+    activate get_past_weekly_id
+    get_past_weekly_id -[dotted]> RaceCalendar : place_id, race_day
+        activate RaceCalendar
+        RaceCalendar -> get_past_weekly_id : race_id_list
+        deactivate RaceCalendar
+    get_past_weekly_id -> update_race_results_dataset : race_id_list
+    deactivate get_past_weekly_id
+
+update_race_results_dataset -[dotted]> get_race_results_csv : place_id, day
+    activate get_race_results_csv
+    get_race_results_csv -[dotted]> DBRaceResults : place_id, year
+        activate DBRaceResults
+        DBRaceResults -> get_race_results_csv : df
+        deactivate DBRaceResults
+    get_race_results_csv -> update_race_results_dataset : old_race_results_df
+    deactivate get_race_results_csv
+
+
+update_race_results_dataset -> scrape_race_results_dataframe : race_id_list
+    activate scrape_race_results_dataframe
+    scrape_race_results_dataframe -[dotted]> scrape_race_results : race_id
+        activate scrape_race_results
+            scrape_race_results -[dotted]> NetKeiba: race_id
+                activate NetKeiba
+                NetKeiba -> scrape_race_results : RaceResults
+                deactivate NetKeiba
+            scrape_race_results -> scrape_race_results_dataframe : new_df
+            deactivate scrape_race_results
+    scrape_race_results_dataframe -> update_race_results_dataset : new_race_results_df
+    deactivate scrape_race_results_dataframe
+
+update_race_results_dataset -[dotted]> save_race_results_dataset : place_id, day.year, new_race_results_df
+    activate save_race_results_dataset
+    save_race_results_dataset -[#red]> DBRaceResults : place_id, year
+        activate DBRaceResults
+        deactivate DBRaceResults
+    deactivate save_race_results_dataset
+
+deactivate update_race_results_dataset
+
+' RaceInfoの更新
+weekly_update -> export_race_info_per_race : place_id, year
+activate export_race_info_per_race
+
+export_race_info_per_race -[dotted]> DBRaceResults : place_id, year
+note over export_race_info_per_race, DBRaceResults: 取得APIを作成する
+    activate DBRaceResults
+    DBRaceResults -> export_race_info_per_race : df
+    deactivate DBRaceResults
+    
+export_race_info_per_race -[#red]> DBRaceInfo : place_id, year, race_id
+note over export_race_info_per_race, DBRaceInfo: 記録APIを作成する  
+    activate DBRaceInfo
+    deactivate DBRaceInfo
+
+deactivate export_race_info_per_race
+
+' 個別RaceResultaの更新
+weekly_update -> split_race_results_by_year : place_id, year
+activate split_race_results_by_year
+
+split_race_results_by_year -> get_race_results_csv : place_id, day
+    activate get_race_results_csv
+    get_race_results_csv -> DBRaceResults : place_id, year
+        activate DBRaceResults
+        DBRaceResults -> get_race_results_csv : df
+        deactivate DBRaceResults
+    get_race_results_csv -> split_race_results_by_year : df
+    deactivate get_race_results_csv
+    
+split_race_results_by_year -[#red]> DBRaceResults : place_id, year, race_id  
+    activate DBRaceResults
+note over split_race_results_by_year, DBRaceResults: 記録APIを作成する 

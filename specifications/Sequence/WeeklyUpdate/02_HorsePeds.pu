@@ -1,0 +1,103 @@
+box "src/Datasets/horse_peds" #SkyBlue
+participant "weekly_update_horse_peds" as weekly_update
+participant "make_horse_peds_datasets_from_horse_id_list" as make_horse_peds_datasets_from_horse_id_list
+participant "make_horse_peds_dataset" as make_horse_peds_dataset
+participant "delete_invalid_strings" as delete_invalid_strings
+box "API"  #SkyBlue
+participant "is_horse_peds_dataset" as is_horse_peds_dataset
+participant "get_race_results_csv" as get_race_results_csv
+participant "save_horse_peds_dataset" as save_horse_peds_dataset
+end box
+end box
+
+box "src/Datasets/past_performance" #DarkCyan
+participant "get_horse_id_list_from_race_id_list"  as get_horse_id_list_from_race_id_list
+participant "get_horse_id_from_race_id" as get_horse_id_from_race_id
+end box
+
+box "src/Datasets/race_results" #LightBlue
+participant "get_race_results_csv"  as get_race_results_csv
+end box
+
+box "src/lib/get_race_id" #LightCyan
+participant "get_past_weekly_id" as get_past_weekly_id
+end box
+
+box "src/lib/scraping" #LightCyan
+participant "scrape_df" as scrape_df
+end box
+
+box DataBase
+database "Data/RaceResults" as DBRaceResults
+database "Data/HorsePeds" as DBHorsePeds
+database "texts/race_calendar" as RaceCalendar
+end box
+
+box NetKeiba #LightGoldenRodYellow
+database "NetKeiba" as NetKeiba
+end box
+
+' race_id_listの取得
+activate weekly_update 
+weekly_update -[dotted]> get_past_weekly_id : place_id, day
+    activate get_past_weekly_id
+    get_past_weekly_id -[dotted]> RaceCalendar : place_id, race_day
+        activate RaceCalendar
+        RaceCalendar -> get_past_weekly_id : race_id_list
+        deactivate RaceCalendar
+    get_past_weekly_id -> weekly_update : race_id_list
+    deactivate get_past_weekly_id
+
+' horse_id_listの取得
+weekly_update -[dotted]> get_horse_id_list_from_race_id_list : race_id_list
+activate get_horse_id_list_from_race_id_list
+    get_horse_id_list_from_race_id_list -[dotted]> get_horse_id_from_race_id : race_id
+    activate get_horse_id_from_race_id
+        get_horse_id_from_race_id -[dotted]> get_race_results_csv : place_id, year
+        activate get_race_results_csv
+           get_race_results_csv -[dotted]> DBRaceResults : place_id, year
+                activate DBRaceResults
+                DBRaceResults -> get_race_results_csv : race_results
+                deactivate  DBRaceResults
+        get_race_results_csv -> get_horse_id_from_race_id : horse_id_list
+        deactivate get_race_results_csv
+    get_horse_id_from_race_id -> get_horse_id_list_from_race_id_list : horse_id_list
+    deactivate get_horse_id_from_race_id
+get_horse_id_list_from_race_id_list -> weekly_update : horse_id_list
+deactivate get_horse_id_list_from_race_id_list
+
+' peds_datasetの作成
+weekly_update -> make_horse_peds_datasets_from_horse_id_list : horse_id_list
+activate make_horse_peds_datasets_from_horse_id_list
+    make_horse_peds_datasets_from_horse_id_list -[dotted]> is_horse_peds_dataset  : horse_id
+    activate is_horse_peds_dataset
+        is_horse_peds_dataset -[dotted]> DBHorsePeds : horse_id
+            activate DBHorsePeds
+                DBHorsePeds -> is_horse_peds_dataset : Exit/NotExit
+            deactivate DBHorsePeds
+        is_horse_peds_dataset -> make_horse_peds_datasets_from_horse_id_list : True/False
+    deactivate is_horse_peds_dataset
+    make_horse_peds_datasets_from_horse_id_list -> make_horse_peds_dataset : horse_id
+    activate make_horse_peds_dataset
+        make_horse_peds_dataset -[dotted]> scrape_df : horse_id
+        activate scrape_df
+            scrape_df -[dotted]> NetKeiba : horse_id
+            activate NetKeiba
+                NetKeiba -> scrape_df : peds_df
+            deactivate NetKeiba
+            scrape_df -> make_horse_peds_dataset : peds_df
+        deactivate scrape_df
+        make_horse_peds_dataset -> make_horse_peds_datasets_from_horse_id_list : peds_df
+    deactivate make_horse_peds_dataset
+
+    make_horse_peds_datasets_from_horse_id_list -> delete_invalid_strings : peds_df
+        activate delete_invalid_strings
+            delete_invalid_strings -> make_horse_peds_datasets_from_horse_id_list : peds_df
+        deactivate delete_invalid_strings
+
+    make_horse_peds_datasets_from_horse_id_list -> save_horse_peds_dataset : peds_df
+    activate save_horse_peds_dataset
+        save_horse_peds_dataset -[#Red]> DBHorsePeds : horse_id, peds_df
+        activate DBHorsePeds
+        deactivate DBHorsePeds
+    deactivate save_horse_peds_dataset

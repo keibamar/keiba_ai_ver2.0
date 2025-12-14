@@ -1,0 +1,87 @@
+box "src/Datasets/past_performance" #LightBlue
+participant "weekly_update_past_performance" as weekly_update_past_performance
+participant "make_past_performance_dataset_from_race_id_list" as make_past_performance_dataset_from_race_id_list
+participant "make_past_performanece_datasets" as make_past_performanece_datasets
+participant "make_past_performance_dataset_from_race_results" as make_past_performance_dataset_from_race_results
+box "API"  #LightBlue
+participant "get_horse_id_list_from_race_id_list" as get_horse_id_list_from_race_id_list
+participant "get_horse_id_from_race_id" as get_horse_id_from_race_id
+participant "save_past_performance_dataset" as save_past_performance_dataset
+end box
+end box
+
+box "src/Datasets/race_results" #LightBlue
+participant "get_race_results_csv"  as get_race_results_csv
+end box
+
+box "src/lib/get_race_id" #LightCyan
+participant "get_past_weekly_id" as get_past_weekly_id
+end box
+
+box DataBase
+database "Data/RaceResults" as DBRaceResults
+database "Data/PastPerfomance" as DBPastPerfomance
+database "texts/race_calendar" as RaceCalendar
+end box
+
+box NetKeiba #LightGoldenRodYellow
+database "NetKeiba" as NetKeiba
+end box
+
+activate weekly_update_past_performance 
+
+' race_id_listの取得
+weekly_update_past_performance -[dotted]> get_past_weekly_id : place_id, day
+activate get_past_weekly_id
+    get_past_weekly_id -[dotted]> RaceCalendar : place_id, race_day
+        activate RaceCalendar
+        RaceCalendar -> get_past_weekly_id : race_id_list
+        deactivate RaceCalendar
+    get_past_weekly_id -> weekly_update_past_performance : race_id_list
+deactivate get_past_weekly_id
+
+weekly_update_past_performance -> make_past_performance_dataset_from_race_id_list : race_id_list
+activate make_past_performance_dataset_from_race_id_list
+    make_past_performance_dataset_from_race_id_list -> get_horse_id_list_from_race_id_list : race_id_list
+        activate get_horse_id_list_from_race_id_list
+            get_horse_id_list_from_race_id_list -[dotted]> get_horse_id_from_race_id : race_id
+            activate get_horse_id_from_race_id
+                get_horse_id_from_race_id -[dotted]> get_race_results_csv : place_id, year
+                    activate get_race_results_csv
+                    get_race_results_csv -[dotted]> DBRaceResults : place_id, year
+                            activate DBRaceResults
+                            DBRaceResults -> get_race_results_csv : race_results
+                            deactivate  DBRaceResults
+                    get_race_results_csv -> get_horse_id_from_race_id : horse_id_list
+                    deactivate get_race_results_csv
+            get_horse_id_from_race_id -> get_horse_id_list_from_race_id_list : horse_id_list
+            deactivate get_horse_id_from_race_id
+        get_horse_id_list_from_race_id_list -> make_past_performance_dataset_from_race_id_list : horse_id_list
+        deactivate get_horse_id_list_from_race_id_list
+    
+    make_past_performance_dataset_from_race_id_list -> make_past_performanece_datasets : horse_id_list
+        activate make_past_performanece_datasets
+        make_past_performanece_datasets -> make_past_performance_dataset_from_race_results : horse_id
+            activate make_past_performance_dataset_from_race_results
+            make_past_performance_dataset_from_race_results -[dotted]> DBRaceResults : place_id
+                activate DBRaceResults
+                DBRaceResults -> make_past_performance_dataset_from_race_results : df_race_results
+                deactivate DBRaceResults
+
+            make_past_performance_dataset_from_race_results -[dotted]> RaceCalendar
+                activate RaceCalendar
+                RaceCalendar -> make_past_performance_dataset_from_race_results : race_id_list
+                deactivate RaceCalendar
+            
+            make_past_performance_dataset_from_race_results -> make_past_performanece_datasets : horse_results_df
+            deactivate make_past_performance_dataset_from_race_results
+        make_past_performanece_datasets -> save_past_performance_dataset : horse_id, horse_results_df
+            activate save_past_performance_dataset
+            save_past_performance_dataset -[#Red]> DBPastPerfomance : horse_results_df
+                activate  DBPastPerfomance
+                deactivate DBPastPerfomance
+            deactivate save_past_performance_dataset
+        deactivate make_past_performanece_datasets
+deactivate make_past_performance_dataset_from_race_id_list
+                
+deactivate weekly_update_past_performance
