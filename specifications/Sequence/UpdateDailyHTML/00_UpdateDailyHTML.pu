@@ -1,0 +1,89 @@
+@startuml
+
+title UpdateDailyHTML
+
+participant "bat/MakeHTML" as bat
+
+box web/src/scripts/update_daily_html #LightBlue
+participant "main" as main
+end box
+box web/src/generators/make_race_card_html #LightBlue
+participant "update_daily_html" as update_daily_html
+end box
+box web/src/generators/race_pages #LightBlue
+participant "make_daily_race_card_html" as make_daily_race_card_html
+end box
+box src/RacePrediction/make_time_id_list #LightBlue
+participant "get_time_id_list" as get_time_id_list
+end box
+box src/RacePrediction/daily_race_results #LightBlue
+participant "get_each_reca_results" as get_each_reca_results
+participant "save_each_race_result_csv" as save_each_race_result_csv
+end box
+
+box "src/lib/scraping" #LightCyan
+participant "scrape_day_race_results" as scrape_day_race_results
+participant "clean_race_results" as clean_race_results
+end box
+
+box DataBase
+database "Data/RaceResults" as DBRaceResults
+database "texts/race_calendar/race_time_id_list" as RaceCalendar
+end box
+
+box NetKeiba #LightGoldenRodYellow
+database "NetKeiba" as NetKeiba
+end box
+
+
+bat -> main
+activate main
+    main -> update_daily_html : race_day
+    activate update_daily_html
+        ' time_id_listの取得
+        update_daily_html -[dotted]> get_time_id_list : race_day
+        activate get_time_id_list
+            get_time_id_list -[dotted]> RaceCalendar : year
+            activate RaceCalendar
+                RaceCalendar -> get_time_id_list : RaceCalendar
+            deactivate RaceCalendar
+            get_time_id_list -> update_daily_html : time_id_list
+        deactivate get_time_id_list
+
+        ' 各レース結果の取得と保存
+        update_daily_html -[dotted]> get_each_reca_results : race_id
+        activate get_each_reca_results
+            get_each_reca_results -[dotted]> scrape_day_race_results : race_id
+            activate scrape_day_race_results
+                scrape_day_race_results -[dotted]> NetKeiba
+                activate NetKeiba
+                    NetKeiba -> scrape_day_race_results : df_RaceCard
+                deactivate NetKeiba
+                scrape_day_race_results -> clean_race_results : df_RaceCard
+                activate clean_race_results
+                    clean_race_results -> scrape_day_race_results : df_RaceCard
+                deactivate clean_race_results
+                scrape_day_race_results -> get_each_reca_results : df_RaceCard
+            deactivate scrape_day_race_results
+            get_each_reca_results -> update_daily_html : df_RaceCard
+        deactivate get_each_reca_results
+
+        ' 各レース結果の保存
+        update_daily_html -[dotted]> save_each_race_result_csv : race_id, results_df
+        activate save_each_race_result_csv
+            save_each_race_result_csv -[#Red]> DBRaceResults : place_id, year
+            activate DBRaceResults
+            deactivate DBRaceResults
+        deactivate save_each_race_result_csv
+        
+        update_daily_html ->  make_daily_race_card_html : race_day
+        activate make_daily_race_card_html
+        note over  make_daily_race_card_html
+            make_daily_race_card_htmlシーケンス図参照
+        end note
+
+
+deactivate main
+
+
+@enduml
