@@ -34,7 +34,7 @@ from generators.race_pages import make_daily_race_card_html
 import analysis_race_info
 import make_time_id_list
 import race_card
-import daily_racve_results
+import daily_race_results
 
 def make_html_prev_day(race_day = date.today() + timedelta(days=1)):
     time_id_list = make_time_id_list.get_time_id_list(race_day)
@@ -75,9 +75,9 @@ def update_daily_html(race_day = date.today()):
     while(any(time_id_list)):
         race_id = time_id_list[0][1]
         print("update_results_df:",race_id)
-        results_df = daily_racve_results.get_each_reca_results(race_id)
+        results_df = daily_race_results.get_each_reca_results(race_id)
         if not results_df.empty:
-            daily_racve_results.save_each_race_result_csv(race_id, results_df)
+            daily_race_results.save_each_race_result_csv(race_id, results_df)
         time_id_list.pop(0)
     make_daily_race_card_html(race_day)
 

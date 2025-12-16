@@ -21,7 +21,7 @@ import make_text
 import race_card
 import calc_returns
 
-import daily_racve_results
+import daily_race_results
 
 from generators.date_index import add_race_day
 from generators.daily_index import make_daily_index_page
@@ -121,9 +121,9 @@ def post_daily_race_pred(race_day = date.today()):
            # 直前レースがあれば、結果の取得とhtmlを再生成(リンク更新のため)
            if previous_race_id:
                # レース結果の取得
-                results_df = daily_racve_results.get_each_reca_results(previous_race_id)
+                results_df = daily_race_results.get_each_reca_results(previous_race_id)
                 if not results_df.empty:
-                    daily_racve_results.save_each_race_result_csv(previous_race_id, results_df)
+                    daily_race_results.save_each_race_result_csv(previous_race_id, results_df)
                # 配当結果の取得
                 df_return = calc_returns.get_race_return(previous_race_id)
                 if not df_return.empty:
@@ -144,7 +144,7 @@ def post_daily_race_pred(race_day = date.today()):
         last_race_id = last_race_by_place.get(place_id)
         if last_race_id is not None:
             # レース結果の取得
-            results_df = daily_racve_results.get_each_reca_results(last_race_id)
+            results_df = daily_race_results.get_each_reca_results(last_race_id)
             if not results_df.empty:
                 daily_racve_results.save_each_race_result_csv(last_race_id, results_df)
             # 配当結果の取得
