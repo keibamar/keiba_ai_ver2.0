@@ -128,7 +128,7 @@ def get_race_info(year, place_id, target_id):
       return None, None, None, None
 
 
-def build_table_rows(df):
+def build_table_race_cards(df):
     """メインの出走表（csv側）から HTML の行文字列を作成"""
     if df is None or df.empty:
         return ""
@@ -243,7 +243,7 @@ def build_nav_html(output_dir, date_str, place_id, target_id):
             race_file = f"{place_id_str}R{race_num}.html"
             race_path = os.path.join(output_dir.replace(name_header.PLACE_LIST[place_id - 1],
                                                         place_id_str), race_file)
-            print(rid, place_code, place_name, race_num, rname)
+            # print(rid, place_code, place_name, race_num, rname)
             # ファイル存在チェック
             if os.path.exists(race_path):
                 link_html = f'<a href="{race_file}">{place_name}{race_num}R（{rname}）</a>'
@@ -800,16 +800,16 @@ def generate_run_time_info(date_str, place_id, target_id) :
     year_run_df = read_csv_safe(year_run_time_path)
     year_data_df = read_csv_safe(year_data_path)
 
-    # --- CSV読み込み（なければ空DataFrame）---
-    def read_if_exists(path):
-        if os.path.exists(path):
-            return pd.read_csv(path, dtype=str)
-        return pd.DataFrame()
+    # # --- CSV読み込み（なければ空DataFrame）---
+    # def read_if_exists(path):
+    #     if os.path.exists(path):
+    #         return pd.read_csv(path, dtype=str)
+    #     return pd.DataFrame()
 
-    total_run_df = read_if_exists(total_run_time_path)
-    total_data_df = read_if_exists(total_data_path)
-    year_run_df = read_if_exists(year_run_time_path)
-    year_data_df = read_if_exists(year_data_path)
+    # total_run_df = read_if_exists(total_run_time_path)
+    # total_data_df = read_if_exists(total_data_path)
+    # year_run_df = read_if_exists(year_run_time_path)
+    # year_data_df = read_if_exists(year_data_path)
 
     def normalize_ground_state(state):
         if pd.isna(state):
@@ -1575,7 +1575,7 @@ def make_race_card_html(date_str, place_id, target_id):
     payout_table_html = generate_payout_table_html(returns_df)
 
     # テーブル行作成
-    table_rows = build_table_rows(df)
+    table_rows = build_table_race_cards(df)
 
     # レース名・時刻取得
     race_info_path = os.path.join(RACE_CALENDAR_FOLDER_PATH, f"race_time_id_list/{date_str}.csv")

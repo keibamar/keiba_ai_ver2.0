@@ -1,0 +1,787 @@
+@startuml
+
+title MakeTimeIDList
+
+participant "bat/MakeHTML" as bat
+
+box web/src/scripts/make_html_prev_day #LightBlue
+participant "main" as main
+end box
+box web/src/generators/make_race_card_html #LightBlue
+participant "make_html_prev_day" as make_html_prev_day
+participant "add_race_day" as add_race_day
+end box
+box web/src/generators/daily_index #LightBlue
+participant "make_daily_index_page" as make_daily_index_page
+participant "list_files_and_parse" as list_files_and_parse
+participant "make_index_page" as make_index_page
+participant "group_place_races" as group_place_races
+participant "build_table_rows" as build_table_rows
+participant "daily_index_template" as daily_index_template
+end box 
+box web/src/generators/race_pages #LightBlue
+participant "make_daily_race_card_html" as make_daily_race_card_html
+participant "make_race_card_html" as make_race_card_html
+participant "generate_race_info" as generate_race_info
+participant "generate_result_table" as generate_result_table
+participant "generate_payout_table_html" as generate_payout_table_html
+participant "build_table_race_cards" as build_table_race_cards
+participant "generate_run_time_info" as generate_run_time_info
+participant "generate_weight_info" as generate_weight_info
+participant "generate_peds_result_html" as generate_peds_result_html
+participant "generate_pops_info" as generate_pops_info
+participant "generate_frame_horse_info" as generate_frame_horse_info
+participant "build_nav_html" as build_nav_html
+participant "generate_recent_same_condition_html" as generate_recent_same_condition_html
+participant "build_html_content" as build_html_content
+end box
+box API #LightBlue
+participant "get_result_table" as get_result_table
+participant "get_returns_table" as get_returns_table
+participant "get_race_info" as get_race_info
+end box
+
+
+box web/src/generators/horse_info #LightBlue
+participant "build_horse_report" as build_horse_report
+participant "get_horse_id_by_name" as get_horse_id_by_name
+participant "recent_5_performances" as recent_5_performances
+participant "time_str_to_ms" as time_str_to_ms
+participant "get_avg_time" as get_avg_time
+participant "normalize_passage" as normalize_passage
+participant "turf_dirt_summary" as turf_dirt_summary
+participant "calc_average_norm_passages" as calc_average_norm_passages
+participant "safe_value" as safe_value
+participant "same_course_best_time" as same_course_best_time
+participant "ms_to_time_str" as ms_to_time_str
+participant "horse_report_to_html" as horse_report_to_html
+participant "get_time_diff_color" as get_time_diff_color
+participant "get_class_collor" as get_class_color
+participant "get_ground_state_color" as get_ground_state_color
+participant "get_race_type_color" as get_race_type_color
+end box
+box API #LightBlue
+participant "load_horse_id_map" as load_horse_id_map
+participant "load_past_performance" as load_past_performance
+
+end box 
+
+box web/src/utils/format_data #LightBlue
+participant "format_date" as format_date
+participant "merge_rank_score" as merge_rank_score
+participant "extract_entry_sub" as extract_entry_sub
+participant "extract_peds_name" as extract_peds_name
+participant "peds_results_for_bloodline" as peds_results_for_bloodline
+end box
+box API #LightBlue
+participant "load_race_info" as load_race_info
+participant "read_race_csv" as read_race_csv
+participant "load_peds_results" as load_peds_results
+participant "load_horse_peds" as load_horse_peds
+end box 
+
+box "src/RacePrediction/race_card" #LightBlue
+participant "make_race_card" as make_race_card
+participant "save_race_cards" as save_race_cards
+participant "save_race_info_df" as save_race_info_df
+end box
+
+box "src/Datasets/analysis_race_info" #LightBlue
+participant "update_horse_name_id_map" as update_horse_name_id_map
+participant "add_horse_name_id_map" as add_horse_name_id_map
+end box
+
+box "src/lib/get_race_id" #LightCyan
+participant "get_daily_id" as get_daily_id
+end box
+box "src/lib/scraping" #LightCyan
+participant "scrape_race_card" as scrape_race_card
+end box
+
+box DataBase
+database "texts/race_calendar" as RaceCalendar
+database "data/RaceCards" as DBRaceCards
+database "data/RaceInfo" as DBRaceInfo
+database "data/RaceResults" as DBRaceResults
+database "data/RaceReturns" as DBRaceReturns
+database "data/AverageTimes" as DBAverageTimes
+database "data/AverageWeights" as DBAverageWeights
+database "data/PedsResults" as DBPedsResults
+database "data/AveragePops" as DBAveragePops
+database "data/AverageFrames" as DBAverageFrames
+database "data/HorsePeds" as DBHorsePeds
+database "data/PatPerformance" as DBPastPerformance
+database "data/HorseIDMap" as DBHorseIDMap
+end box
+
+box HTML
+database "web/site/assets/js" as json
+database "web/site/races/" as RacesFolder
+database "web/site/races/index" as index
+database "web/site/races/race_day/index" as daily_index
+database "web/site/races/race_day/race_html" as race_html
+end box
+
+box NetKeiba #LightGoldenRodYellow
+database "NetKeiba" as NetKeiba
+end box
+
+bat -> main
+activate main 
+    main -> make_html_prev_day : race_day
+    activate make_html_prev_day
+        'indexPageに日付を追加
+        make_html_prev_day -> add_race_day : race_day
+        activate add_race_day
+            add_race_day -[#Red]>  json
+            activate json
+            deactivate json
+        deactivate add_race_day
+
+        'indexPageの作成
+        make_html_prev_day -> make_daily_index_page : race_day
+        activate make_daily_index_page
+            ' FileList(RaceIdList)を取得
+            make_daily_index_page -> list_files_and_parse : date_str
+            activate list_files_and_parse
+                list_files_and_parse -[dotted]> DBRaceCards : date_str
+                activate DBRaceCards
+                    DBRaceCards -> list_files_and_parse : file_info_list
+                deactivate DBRaceCards
+                list_files_and_parse -> make_daily_index_page : file_info_list
+            deactivate list_files_and_parse
+            
+            make_daily_index_page -> make_index_page : day_str, output_dir, files_info_list
+            activate make_index_page
+                make_index_page -> format_date : date_str
+                activate format_date
+                    format_date -> make_index_page :date_display
+                deactivate format_date
+                ' レース情報の取得
+                make_index_page -> load_race_info : date_str
+                activate load_race_info
+                    load_race_info -> RaceCalendar : date_str
+                    activate RaceCalendar
+                        RaceCalendar -> load_race_info : race_time_id_list
+                    deactivate RaceCalendar
+                    load_race_info -> make_index_page : race_time_id_list
+                deactivate load_race_info
+
+                ' 前日と当日のデータを取得
+                make_index_page -[dotted]> RacesFolder
+                activate  RacesFolder
+                    RacesFolder -> make_index_page : all_days
+                deactivate RacesFolder
+                make_index_page -> format_date : prev_day
+                activate format_date
+                    format_date -> make_index_page :date_display
+                deactivate format_date
+                make_index_page -> format_date : next_day
+                activate format_date
+                    format_date -> make_index_page :date_display
+                deactivate format_date
+
+                '  # --- レース情報のグルーピング ---
+                make_index_page -> group_place_races : files_info_list, race_info_dict
+                activate group_place_races
+                    group_place_races -> make_index_page : place_races
+                deactivate group_place_races
+                
+                ' # --- テーブル行とplace_keysを作成 ---
+                make_index_page -> build_table_rows : place_races, output_dir
+                activate build_table_rows
+                    build_table_rows -> make_index_page  : table_rows, place_keys
+                deactivate build_table_rows
+
+                '# HTML生成
+                make_index_page -> daily_index_template : date_display, nav_links, place_races, place_keys, table_rows
+                activate daily_index_template
+                    daily_index_template -> make_index_page : index_page_html
+                deactivate daily_index_template
+
+                make_index_page -[#Red]> daily_index : index_page_html
+                activate daily_index
+                deactivate daily_index
+            deactivate make_index_page
+        deactivate make_daily_index_page
+
+        make_html_prev_day -> make_daily_index_page : past_day
+        activate make_daily_index_page
+            ' FileList(RaceIdList)を取得
+            make_daily_index_page -> list_files_and_parse : date_str
+            activate list_files_and_parse
+                list_files_and_parse -[dotted]> DBRaceCards : date_str
+                activate DBRaceCards
+                    DBRaceCards -> list_files_and_parse : file_info_list
+                deactivate DBRaceCards
+                list_files_and_parse -> make_daily_index_page : file_info_list
+            deactivate list_files_and_parse
+            
+            make_daily_index_page -> make_index_page : day_str, output_dir, files_info_list
+            activate make_index_page
+                make_index_page -> format_date : date_str
+                activate format_date
+                    format_date -> make_index_page :date_display
+                deactivate format_date
+                ' レース情報の取得
+                make_index_page -> load_race_info : date_str
+                activate load_race_info
+                    load_race_info -> RaceCalendar : date_str
+                    activate RaceCalendar
+                        RaceCalendar -> load_race_info : race_time_id_list
+                    deactivate RaceCalendar
+                    load_race_info -> make_index_page : race_time_id_list
+                deactivate load_race_info
+
+                ' 前日と当日のデータを取得
+                make_index_page -[dotted]> RacesFolder
+                activate  RacesFolder
+                    RacesFolder -> make_index_page : all_days
+                deactivate RacesFolder
+                make_index_page -> format_date : prev_day
+                activate format_date
+                    format_date -> make_index_page :date_display
+                deactivate format_date
+                make_index_page -> format_date : next_day
+                activate format_date
+                    format_date -> make_index_page :date_display
+                deactivate format_date
+
+                '  # --- レース情報のグルーピング ---
+                make_index_page -> group_place_races : files_info_list, race_info_dict
+                activate group_place_races
+                    group_place_races -> make_index_page : place_races
+                deactivate group_place_races
+                
+                ' # --- テーブル行とplace_keysを作成 ---
+                make_index_page -> build_table_rows : place_races, output_dir
+                activate build_table_rows
+                    build_table_rows -> make_index_page  : table_rows, place_keys
+                deactivate build_table_rows
+
+                '# HTML生成
+                make_index_page -> daily_index_template : date_display, nav_links, place_races, place_keys, table_rows
+                activate daily_index_template
+                    daily_index_template -> make_index_page : index_page_html
+                deactivate daily_index_template
+
+                make_index_page -[#Red]> daily_index : index_page_html
+                activate daily_index
+                deactivate daily_index
+            deactivate make_index_page
+        deactivate make_daily_index_page
+    
+        'レースカードの作成
+        make_html_prev_day -> make_race_card : race_id
+        activate make_race_card
+            make_race_card -[dotted]> scrape_race_card : race_id
+            activate scrape_race_card
+                scrape_race_card -[dotted]> NetKeiba
+                activate NetKeiba
+                    NetKeiba -> scrape_race_card : df_RaceCard
+                deactivate NetKeiba
+                scrape_race_card -> make_race_card : race_info, df_race_info, df_race_card
+            deactivate scrape_race_card
+            make_race_card -> make_html_prev_day : race_card_df, race_info_df
+        deactivate make_race_card
+
+        make_html_prev_day -> save_race_cards : race_card_df, race_day, race_id
+        activate save_race_cards
+            save_race_cards -[#Red]> DBRaceCards : race_card_df
+            activate DBRaceCards
+            deactivate DBRaceCards
+        deactivate save_race_cards
+
+        make_html_prev_day -> save_race_info_df : race_info_df, race_day, race_id
+        activate save_race_info_df
+            save_race_info_df -[#Red]> DBRaceInfo : race_info_df
+            activate DBRaceInfo
+            deactivate DBRaceInfo
+        deactivate save_race_info_df
+
+        make_html_prev_day -> update_horse_name_id_map : race_card_df
+        activate update_horse_name_id_map
+            update_horse_name_id_map -> add_horse_name_id_map : horse_id, horse_name
+            activate add_horse_name_id_map
+                add_horse_name_id_map -[#Red]> DBHorseIDMap : horse_id, horse_name
+                activate DBHorseIDMap
+                deactivate DBHorseIDMap
+            deactivate add_horse_name_id_map
+        deactivate update_horse_name_id_map
+        
+        ' # 各レースのHTMLを作成
+        make_html_prev_day -> make_daily_race_card_html : race_day
+        activate make_daily_race_card_html
+            ' race_idリストの取得
+            make_daily_race_card_html -> get_daily_id : place_id, race_day
+            activate get_daily_id
+                get_daily_id -> RaceCalendar : year
+                activate RaceCalendar
+                    RaceCalendar -> get_daily_id : race_time_id_list
+                deactivate RaceCalendar
+                get_daily_id -> make_daily_race_card_html : race_id_list
+            deactivate get_daily_id
+
+            make_daily_race_card_html -> make_race_card_html : date_str, place_id, race_id
+            activate make_race_card_html
+                make_race_card_html -> format_date : date_str
+                activate format_date
+                    format_date -> make_race_card_html : date_display
+                deactivate format_date
+                make_race_card_html -> read_race_csv : date_str, target_id
+                activate read_race_csv
+                    read_race_csv -[dotted]> DBRaceCards : date_str, target_id
+                    activate DBRaceCards
+                        DBRaceCards -> read_race_csv : race_card_df
+                    deactivate DBRaceCards
+                    read_race_csv -> make_race_card_html : race_card_df
+                deactivate read_race_csv
+
+                '# --- レース情報取得 ---
+                make_race_card_html -> generate_race_info : date_str, place_id, target_id
+                activate generate_race_info
+                    generate_race_info -> DBRaceInfo : place_id, target_id
+                    activate DBRaceInfo
+                        DBRaceInfo -> generate_race_info : race_info_df
+                    deactivate DBRaceInfo
+                    generate_race_info -> make_race_card_html :course_info_text
+                deactivate generate_race_info
+
+                '# --- レース結果取得 ---
+                make_race_card_html -> get_result_table : date_str, place_id, target_id
+                activate get_result_table
+                    get_result_table -[dotted]> DBRaceResults : place_id, target_id
+                    activate DBRaceResults
+                        DBRaceResults -> get_result_table : result_df, payout_df
+                    deactivate DBRaceResults
+                    get_result_table -> make_race_card_html : result_df, payout_df
+                deactivate get_result_table
+
+                make_race_card_html -> merge_rank_score : result_df, race_info_df
+                activate merge_rank_score
+                    merge_rank_score -> extract_entry_sub : df_analysis
+                    activate extract_entry_sub
+                        extract_entry_sub -> merge_rank_score : entry_sub
+                    deactivate extract_entry_sub
+                    merge_rank_score -> make_race_card_html : merged
+                deactivate merge_rank_score
+
+                make_race_card_html -> generate_result_table : result_df
+                activate generate_result_table
+                    generate_result_table -> make_race_card_html : result_table_html
+                deactivate generate_result_table
+
+                '# --- レース配当取得 ---
+                make_race_card_html -> get_returns_table : date_str, place_id, target_id
+                activate get_returns_table
+                    get_returns_table -[dotted]> DBRaceReturns : place_id, target_id
+                    activate DBRaceReturns
+                        DBRaceReturns -> get_returns_table : payout_df
+                    deactivate DBRaceReturns
+                    get_returns_table -> make_race_card_html : payout_df
+                deactivate get_returns_table
+
+                make_race_card_html -> generate_payout_table_html : payout_df
+                activate generate_payout_table_html
+                    generate_payout_table_html -> make_race_card_html : payout_table_html
+                deactivate generate_payout_table_html
+
+                ' # テーブル行作成
+                make_race_card_html -> build_table_race_cards : race_card_df
+                activate build_table_race_cards
+                    build_table_race_cards -> make_race_card_html : table_rows_html
+                deactivate build_table_race_cards
+
+                ' # レース名・時刻取得
+                make_race_card_html -> RaceCalendar : date_str
+                activate RaceCalendar
+                    RaceCalendar -> make_race_card_html : df_race_info
+                deactivate RaceCalendar
+
+                ' # レースの平均時計、上り時計を取得
+                make_race_card_html -> generate_run_time_info : date_str, place_id, target_id
+                activate generate_run_time_info
+                    generate_run_time_info -> get_race_info : date_str, place_id, target_id
+                    activate get_race_info
+                        get_race_info -[dotted]> DBRaceInfo : place_id, target_id
+                        activate DBRaceInfo
+                            DBRaceInfo -> get_race_info : race_info_df
+                        deactivate DBRaceInfo  
+                        get_race_info -> generate_run_time_info : race_type, course_len, ground_state, race_class
+                    deactivate get_race_info
+                    
+                    ' 平均時計・上り時計データの取得
+                    generate_run_time_info  -> DBAverageTimes : place_id
+                    activate DBAverageTimes
+                        DBAverageTimes -> generate_run_time_info : total_run_df
+                    deactivate DBAverageTimes
+                    generate_run_time_info  -> DBAverageTimes : place_id
+                    activate DBAverageTimes
+                        DBAverageTimes -> generate_run_time_info : total_data_df
+                    deactivate DBAverageTimes
+                    generate_run_time_info  -> DBAverageTimes : place_id, year
+                    activate DBAverageTimes
+                        DBAverageTimes -> generate_run_time_info : year_run_df
+                    deactivate DBAverageTimes
+                    generate_run_time_info  -> DBAverageTimes : place_id, year
+                    activate DBAverageTimes
+                        DBAverageTimes -> generate_run_time_info : year_data_df
+                    deactivate DBAverageTimes
+
+                    generate_run_time_info -> make_race_card_html : run_time_info_html
+                deactivate generate_run_time_info
+
+                '  # レースの勝ち馬の平均馬体重情報を取得
+                make_race_card_html -> generate_weight_info : date_str, place_id, target_id
+                activate generate_weight_info
+                    generate_weight_info -> get_race_info : date_str, place_id, target_id
+                    activate get_race_info
+                        get_race_info -[dotted]> DBRaceInfo : place_id, target_id
+                        activate DBRaceInfo
+                            DBRaceInfo -> get_race_info : race_info_df
+                        deactivate DBRaceInfo  
+                        get_race_info -> generate_weight_info : race_type, course_len, ground_state, race_class
+                    deactivate get_race_info
+
+                    generate_weight_info  -> DBAverageWeights : place_id
+                    activate DBAverageWeights
+                        DBAverageWeights -> generate_weight_info : total_weight_df
+                    deactivate DBAverageWeights
+                    generate_weight_info  -> DBAverageWeights : place_id
+                    activate DBAverageWeights
+                        DBAverageWeights -> generate_weight_info : year_weight_df
+                    deactivate DBAverageWeights
+                    generate_weight_info -> make_race_card_html : weight_info_html
+                deactivate generate_weight_info
+
+                ' # レースの血統情報を取得
+                make_race_card_html -> generate_peds_result_html : date_str, place_id, target_id
+                activate generate_peds_result_html
+                    generate_peds_result_html -> get_race_info : date_str, place_id, target_id
+                    activate get_race_info
+                        get_race_info -[dotted]> DBRaceInfo : place_id, target_id
+                        activate DBRaceInfo
+                            DBRaceInfo -> get_race_info : race_info_df
+                        deactivate DBRaceInfo  
+                        get_race_info -> generate_peds_result_html : race_type, course_len, ground_state, race_class
+                    deactivate get_race_info
+
+                    generate_peds_result_html -> DBPedsResults : place_id, race_type, course_len, ground_state
+                    activate DBPedsResults
+                        DBPedsResults -> generate_peds_result_html : total_peds_result_df
+                    deactivate DBPedsResults
+                    generate_peds_result_html -> DBPedsResults : place_id, year, race_type, course_len, ground_state
+                    activate DBPedsResults
+                        DBPedsResults -> generate_peds_result_html : year_peds_result_df
+                    deactivate DBPedsResults
+                    generate_peds_result_html -> make_race_card_html : peds_result_html
+                deactivate generate_peds_result_html
+
+                ' # レースの人気情報を取得
+                make_race_card_html -> generate_pops_info : date_str, place_id, target_id
+                activate generate_pops_info
+                    generate_pops_info -> get_race_info : date_str, place_id, target_id
+                    activate get_race_info
+                        get_race_info -[dotted]> DBRaceInfo : place_id, target_id
+                        activate DBRaceInfo
+                            DBRaceInfo -> get_race_info : race_info_df
+                        deactivate DBRaceInfo  
+                        get_race_info -> generate_pops_info : race_type, course_len, ground_state, race_class
+                    deactivate get_race_info
+
+                    generate_pops_info -> DBAveragePops : place_id
+                    activate DBAveragePops
+                        DBAveragePops -> generate_pops_info : total_pops_df
+                    deactivate DBAveragePops
+                    generate_pops_info -> DBAveragePops : place_id, year
+                    activate DBAveragePops
+                        DBAveragePops -> generate_pops_info : year_pops_df
+                    deactivate DBAveragePops
+                    generate_pops_info -> DBAveragePops : place_id
+                    activate DBAveragePops
+                        DBAveragePops -> generate_pops_info : total_pops_top3_df
+                    deactivate DBAveragePops
+                    generate_pops_info -> DBAveragePops : place_id, year
+                    activate DBAveragePops
+                        DBAveragePops -> generate_pops_info : year_pops_top3_df
+                    deactivate DBAveragePops
+                    generate_pops_info -> make_race_card_html : pops_info_html
+                deactivate generate_pops_info
+
+                ' # レースの枠順情報を取得
+                make_race_card_html -> generate_frame_horse_info : date_str, place_id, target_id
+                activate generate_frame_horse_info
+                    generate_frame_horse_info -> get_race_info : date_str, place_id, target_id
+                    activate get_race_info
+                        get_race_info -[dotted]> DBRaceInfo : place_id, target_id
+                        activate DBRaceInfo
+                            DBRaceInfo -> get_race_info : race_info_df
+                        deactivate DBRaceInfo  
+                        get_race_info -> generate_frame_horse_info : race_type, course_len, ground_state, race_class
+                    deactivate get_race_info
+
+                    generate_frame_horse_info -> DBAverageFrames : place_id
+                    activate DBAverageFrames
+                        DBAverageFrames -> generate_frame_horse_info : total_frame_df
+                    deactivate DBAverageFrames
+                    generate_frame_horse_info -> DBAverageFrames : place_id, year
+                    activate DBAverageFrames
+                        DBAverageFrames -> generate_frame_horse_info : year_frame_df
+                    deactivate DBAverageFrames
+                    generate_frame_horse_info -> DBAverageFrames : place_id
+                    activate DBAverageFrames
+                        DBAverageFrames -> generate_frame_horse_info : total_frame_top3_df
+                    deactivate DBAverageFrames
+                    generate_frame_horse_info -> DBAverageFrames : place_id, year
+                    activate DBAverageFrames
+                        DBAverageFrames -> generate_frame_horse_info : year_frame_top3_df
+                    deactivate DBAverageFrames
+                    generate_frame_horse_info -> make_race_card_html : frame_info_html
+                deactivate generate_frame_horse_info
+
+                ' # ナビゲーション作成
+                make_race_card_html -> build_nav_html :output_dir, date_str, place_id, target_id
+                activate build_nav_html
+                    build_nav_html -> RaceCalendar : date_str
+                    activate RaceCalendar
+                        RaceCalendar -> build_nav_html : df_race_info
+                    deactivate RaceCalendar
+                    build_nav_html -> race_html : place_id, prev_race_num
+                    activate race_html
+                        race_html -> build_nav_html : prev_day_html
+                    deactivate race_html
+                    build_nav_html -> race_html : place_id, next_race_num
+                    activate race_html
+                        race_html -> build_nav_html : next_day_html
+                    deactivate race_html
+                    build_nav_html -> race_html : place_id, race_num
+                    activate race_html
+                        race_html -> build_nav_html : other_course_html
+                    deactivate race_html
+                    build_nav_html -> make_race_card_html : nav_html
+                deactivate build_nav_html
+
+                ' # 近走の結果を取得
+                make_race_card_html -> generate_recent_same_condition_html : date_str, place_id, target_id
+                activate generate_recent_same_condition_html
+                    generate_recent_same_condition_html -> get_race_info : date_str, place_id, target_id
+                    activate get_race_info
+                        get_race_info -[dotted]> DBRaceInfo : place_id, target_id
+                        activate DBRaceInfo
+                            DBRaceInfo -> get_race_info : race_info_df
+                        deactivate DBRaceInfo  
+                        get_race_info -> generate_recent_same_condition_html : race_type, course_len, ground_state, race_class
+                    deactivate get_race_info
+
+                    generate_recent_same_condition_html -> get_daily_id : place_id, race_day
+                    activate get_daily_id
+                        get_daily_id -> RaceCalendar : year
+                        activate RaceCalendar
+                            RaceCalendar -> get_daily_id : race_time_id_list
+                        deactivate RaceCalendar
+                        get_daily_id -> generate_recent_same_condition_html : race_id_list
+                    deactivate get_daily_id
+                    
+                    ' # 近走の同条件結果を取得
+                    generate_recent_same_condition_html -> get_race_info : year, place_id, race_id
+                    activate get_race_info
+                        get_race_info -[dotted]> DBRaceInfo : place_id, target_id
+                        activate DBRaceInfo
+                            DBRaceInfo -> get_race_info : race_info_df
+                        deactivate DBRaceInfo  
+                        get_race_info -> generate_recent_same_condition_html : race_type, course_len, ground_state, race_class
+                    deactivate get_race_info
+
+                    generate_recent_same_condition_html -> DBRaceResults : place_id, year, race_id
+                    activate DBRaceResults
+                        DBRaceResults -> generate_recent_same_condition_html : result_df
+                    deactivate DBRaceResults
+
+                    ' # レース情報取得
+                    generate_recent_same_condition_html -> get_race_info : year, place_id, race_id
+                    activate get_race_info
+                        get_race_info -[dotted]> DBRaceInfo : place_id, target_id
+                        activate DBRaceInfo
+                            DBRaceInfo -> get_race_info : race_info_df
+                        deactivate DBRaceInfo  
+                        get_race_info -> generate_recent_same_condition_html : race_type, course_len, ground_state, race_class
+                    deactivate get_race_info
+
+                    ' # レース名取得
+                    generate_recent_same_condition_html -> RaceCalendar : year
+                    activate RaceCalendar
+                        RaceCalendar -> generate_recent_same_condition_html : df_race_info
+                    deactivate RaceCalendar
+
+                    generate_recent_same_condition_html -> make_race_card_html : recent_same_condition_html
+                deactivate generate_recent_same_condition_html
+
+                make_race_card_html -> build_horse_report : horse_name, place_id, target_id, date_str
+                activate build_horse_report
+                    build_horse_report -> get_race_info : year, place_id, race_id
+                    activate get_race_info
+                        get_race_info -[dotted]> DBRaceInfo : place_id, target_id
+                        activate DBRaceInfo
+                            DBRaceInfo -> get_race_info : race_info_df
+                        deactivate DBRaceInfo  
+                        get_race_info -> build_horse_report : race_type, course_len, ground_state, race_class
+                    deactivate get_race_info
+
+                    build_horse_report -> load_horse_id_map :path
+                    activate load_horse_id_map
+                        load_horse_id_map -[dotted]> DBHorseIDMap : path
+                        activate DBHorseIDMap
+                            DBHorseIDMap -> load_horse_id_map : horse_id_map
+                        deactivate DBHorseIDMap
+                        load_horse_id_map -> build_horse_report : map_df
+                    deactivate load_horse_id_map
+
+                    build_horse_report -> get_horse_id_by_name :horse_name, map_df
+                    activate get_horse_id_by_name
+                        get_horse_id_by_name -> build_horse_report : horse_id
+                    deactivate get_horse_id_by_name
+
+                    ' # ① 血統(peds_0) と PedsResults（同コースの1,2,3,着外データ）
+                    build_horse_report -> load_horse_peds : horse_id
+                    activate load_horse_peds
+                        load_horse_peds -[dotted]> DBHorsePeds : horse_id
+                        activate DBHorsePeds
+                            DBHorsePeds -> load_horse_peds : horse_peds_df
+                        deactivate DBHorsePeds
+                        load_horse_peds -> build_horse_report : horse_peds_df
+                    deactivate load_horse_peds
+
+                    build_horse_report -> extract_peds_name : peds0
+                    activate extract_peds_name
+                        extract_peds_name -> build_horse_report : peds_name
+                    deactivate extract_peds_name
+
+                    build_horse_report -> peds_results_for_bloodline : place_id, race_type, course_len, ground_state, peds0
+                    activate peds_results_for_bloodline
+                        peds_results_for_bloodline -[dotted]> load_peds_results : place_id, race_type, course_len, "all"
+                        activate load_peds_results
+                            load_peds_results -[dotted]> DBPedsResults :  place_id, race_type, course_len
+                            activate DBPedsResults
+                                DBPedsResults -> load_peds_results : peds_results_df
+                            deactivate DBPedsResults
+                            load_peds_results -> peds_results_for_bloodline : peds_results_df
+                        deactivate load_peds_results
+                        peds_results_for_bloodline -> build_horse_report : peds_results
+                    deactivate peds_results_for_bloodline
+
+                    ' # ② 近5走
+                    build_horse_report -> recent_5_performances : horse_id, date_str
+                    activate recent_5_performances
+                        recent_5_performances -[dotted]> load_past_performance : horse_id
+                        activate load_past_performance
+                            load_past_performance -[dotted]> DBPastPerformance : horse_id
+                            activate DBPastPerformance
+                                DBPastPerformance -> load_past_performance : past_performances_df
+                            deactivate DBPastPerformance
+                            load_past_performance -> recent_5_performances : past_performances_df
+                        deactivate load_past_performance
+                        recent_5_performances -> time_str_to_ms : time_raw
+                        activate time_str_to_ms
+                            time_str_to_ms -> recent_5_performances : time_ms
+                        deactivate time_str_to_ms
+                        recent_5_performances -> get_avg_time : course_name, race_type, class_name, course_len, ground
+                        activate get_avg_time
+                            get_avg_time -[dotted]> DBAverageTimes : course_name
+                            activate DBAverageTimes
+                                DBAverageTimes -> get_avg_time : avg_time_df
+                            deactivate DBAverageTimes
+                            get_avg_time -> recent_5_performances : avg_time_ms
+                        deactivate get_avg_time
+                        recent_5_performances -> normalize_passage : passage, heads
+                        activate normalize_passage
+                            normalize_passage -> recent_5_performances : passage_norm
+                        deactivate normalize_passage
+                        recent_5_performances -> DBRaceInfo : race_date
+                        activate DBRaceInfo
+                            DBRaceInfo -> recent_5_performances : df_race_info
+                        deactivate DBRaceInfo
+                        recent_5_performances -> build_horse_report : recent_5_html
+                    deactivate recent_5_performances
+
+                    ' # ③ 芝/ダート別サマリ
+                    build_horse_report -> turf_dirt_summary : horse_id, date_str
+                    activate turf_dirt_summary
+                        turf_dirt_summary -> load_past_performance : horse_id
+                        activate load_past_performance
+                            load_past_performance -[dotted]> DBPastPerformance : horse_id
+                            activate DBPastPerformance
+                                DBPastPerformance -> load_past_performance : past_performances_df
+                            deactivate DBPastPerformance
+                            load_past_performance -> turf_dirt_summary : past_performances_df
+                        deactivate load_past_performance
+                        turf_dirt_summary -> normalize_passage : passage, heads
+                        activate normalize_passage
+                            normalize_passage -> turf_dirt_summary : passage_norm
+                        deactivate normalize_passage
+                        turf_dirt_summary -> calc_average_norm_passages : normalize_passage
+                        activate calc_average_norm_passages
+                            calc_average_norm_passages -> turf_dirt_summary : avg_pass_norm
+                        deactivate calc_average_norm_passages
+                        turf_dirt_summary -> safe_value : avg_up
+                        activate safe_value
+                            safe_value -> turf_dirt_summary : avg_up
+                        deactivate safe_value
+                        turf_dirt_summary -> safe_value : avg_pass_norm
+                        activate safe_value
+                            safe_value -> turf_dirt_summary : avg_pass_norm
+                        deactivate safe_value
+                        turf_dirt_summary -> build_horse_report : surface_summary
+                    deactivate turf_dirt_summary
+
+                    ' # ④ 同コースの持ち時計（もし race_type/course_len 与えられていれば）
+                    build_horse_report -> same_course_best_time : hid, course_len, race_type, place_id, date_str
+                    activate same_course_best_time
+                        same_course_best_time -> load_past_performance : horse_id
+                        activate load_past_performance
+                            load_past_performance -[dotted]> DBPastPerformance : horse_id
+                            activate DBPastPerformance
+                                DBPastPerformance -> load_past_performance : past_performances_df
+                            deactivate DBPastPerformance
+                            load_past_performance -> same_course_best_time : past_performances_df
+                        deactivate load_past_performance
+                        same_course_best_time -> ms_to_time_str : best_time_ms
+                        activate ms_to_time_str
+                            ms_to_time_str -> same_course_best_time : time_str
+                        deactivate ms_to_time_str
+                        same_course_best_time -> build_horse_report : same_course_best
+                    deactivate same_course_best_time
+
+                    build_horse_report -> make_race_card_html : horse_report
+                deactivate build_horse_report
+
+                make_race_card_html -> horse_report_to_html : build_horse_report
+                activate horse_report_to_html
+                    horse_report_to_html -> get_time_diff_color : diff_avg
+                    activate get_time_diff_color
+                        get_time_diff_color -> horse_report_to_html : diff_color
+                    deactivate get_time_diff_color
+                    horse_report_to_html -> get_class_color : class_name
+                    activate get_class_color
+                        get_class_color -> horse_report_to_html : class_bg_color
+                    deactivate get_class_color
+                    horse_report_to_html -> get_race_type_color : recent_race_type
+                    activate get_race_type_color
+                        get_race_type_color -> horse_report_to_html : race_type_color
+                    deactivate get_race_type_color
+                    horse_report_to_html -> get_ground_state_color : ground_state
+                    activate get_ground_state_color
+                        get_ground_state_color -> horse_report_to_html : ground_state_color
+                    deactivate get_ground_state_color
+                    horse_report_to_html -> make_race_card_html : horse_report_html
+                deactivate horse_report_to_html
+
+                make_race_card_html -> build_html_content : date_display, place_id, race_num, race_name, race_time, nav_html, table_rows, run_time_info,  weight_info, peds_info, pops_info, frames_info, recent_html, result_table_html, payout_table_html
+                activate build_html_content
+                    build_html_content -> make_race_card_html : html_content
+                deactivate build_html_content
+
+                make_race_card_html -[#Red]> race_html : html_content
+            deactivate make_race_card_html
+        deactivate make_daily_race_card_html
+    deactivate make_html_prev_day
+deactivate main
