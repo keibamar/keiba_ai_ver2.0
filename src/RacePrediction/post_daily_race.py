@@ -146,7 +146,7 @@ def post_daily_race_pred(race_day = date.today()):
             # レース結果の取得
             results_df = daily_race_results.get_each_reca_results(last_race_id)
             if not results_df.empty:
-                daily_racve_results.save_each_race_result_csv(last_race_id, results_df)
+                daily_race_results.save_each_race_result_csv(last_race_id, results_df)
             # 配当結果の取得
             df_return = calc_returns.get_race_return(last_race_id)
             if not df_return.empty:
