@@ -47,7 +47,7 @@ def save_day_race_result_each(race_day = date.today()):
         else:   
             print("not_race_result:", race_id)
 
-def get_each_reca_results(race_id):
+def get_each_race_results(race_id):
     results_df = scraping.scrape_day_race_results(race_id)
     if not results_df.empty:
         # 各レースの配当結果を保存

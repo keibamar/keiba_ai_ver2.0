@@ -75,7 +75,7 @@ def update_daily_html(race_day = date.today()):
     while(any(time_id_list)):
         race_id = time_id_list[0][1]
         print("update_results_df:",race_id)
-        results_df = daily_race_results.get_each_reca_results(race_id)
+        results_df = daily_race_results.get_each_race_results(race_id)
         if not results_df.empty:
             daily_race_results.save_each_race_result_csv(race_id, results_df)
         time_id_list.pop(0)

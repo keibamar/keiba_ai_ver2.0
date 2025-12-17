@@ -17,7 +17,7 @@ box src/RacePrediction/make_time_id_list #LightBlue
 participant "get_time_id_list" as get_time_id_list
 end box
 box src/RacePrediction/daily_race_results #LightBlue
-participant "get_each_reca_results" as get_each_reca_results
+participant "get_each_race_results" as get_each_race_results
 participant "save_each_race_result_csv" as save_each_race_result_csv
 end box
 
@@ -51,9 +51,9 @@ activate main
         deactivate get_time_id_list
 
         ' 各レース結果の取得と保存
-        update_daily_html -[dotted]> get_each_reca_results : race_id
-        activate get_each_reca_results
-            get_each_reca_results -[dotted]> scrape_day_race_results : race_id
+        update_daily_html -[dotted]> get_each_race_results : race_id
+        activate get_each_race_results
+            get_each_race_results -[dotted]> scrape_day_race_results : race_id
             activate scrape_day_race_results
                 scrape_day_race_results -[dotted]> NetKeiba
                 activate NetKeiba
@@ -63,10 +63,10 @@ activate main
                 activate clean_race_results
                     clean_race_results -> scrape_day_race_results : df_RaceCard
                 deactivate clean_race_results
-                scrape_day_race_results -> get_each_reca_results : df_RaceCard
+                scrape_day_race_results -> get_each_race_results : df_RaceCard
             deactivate scrape_day_race_results
-            get_each_reca_results -> update_daily_html : df_RaceCard
-        deactivate get_each_reca_results
+            get_each_race_results -> update_daily_html : df_RaceCard
+        deactivate get_each_race_results
 
         ' 各レース結果の保存
         update_daily_html -[dotted]> save_each_race_result_csv : race_id, results_df
