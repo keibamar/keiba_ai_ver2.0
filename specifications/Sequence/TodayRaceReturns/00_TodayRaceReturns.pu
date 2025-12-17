@@ -1,0 +1,208 @@
+@startuml
+
+title TodayRaceReturns
+
+participant "bat/MakeHTML" as bat
+box src/Prediction/calc_returns as calc_returns
+participant "main" as main
+participant "calc_day_race_return_all" as calc_day_race_return_all
+participant "calc_day_race_return" as calc_day_race_return
+participant "get_win_result" as get_win_result
+participant "get_place_result" as get_place_result
+participant "get_quinella_box_result" as get_quinella_box_result
+participant "get_quinella_wheel_result" as get_quinella_wheel_result
+participant "get_trio_box_result" as get_trio_box_result
+participant "get_trio_wheel_result" as get_trio_wheel_result
+end box
+box API
+participant "get_each_race_retutn_csv" as get_each_race_retutn_csv
+participant "save_day_race_return_csv" as save_day_race_return_csv
+end box
+box web/src/generators/make_race_card_html
+participant "main" as main2
+participant "make_html_prev_day" as make_html_prev_day
+end box
+
+box src/RacePrediction/race_card
+participant "get_race_cards" as get_race_cards
+end box
+
+box src/lib/get_race_id #LightCyan
+participant "get_daily_id" as get_daily_id
+end box
+
+box DataBase
+database "texts/race_calendar" as RaceCalendar
+database "texts/race_returns" as RaceReturns
+database "data/RaceCards" as DBRaceCards
+database "data/RaceReturns" as DBRaceReturns
+end box
+
+bat -> main
+activate main
+    main -> calc_day_race_return_all : race_day
+    activate calc_day_race_return_all
+    ' race_idリストの取得
+        calc_day_race_return_all -> get_daily_id : place_id, race_day
+        activate get_daily_id
+            get_daily_id -> RaceCalendar : year
+            activate RaceCalendar
+                RaceCalendar -> get_daily_id : race_time_id_list
+            deactivate RaceCalendar
+            get_daily_id -> calc_day_race_return_all : race_id_list
+        deactivate get_daily_id
+        
+        ' # 各競馬場毎の的中率・回収率の計算
+        calc_day_race_return_all -> calc_day_race_return : place_id, race_day, race_id_list
+        activate calc_day_race_return
+            ' # 単勝回収率・的中率
+            calc_day_race_return -> get_win_result : race_day, race_id_list
+            activate get_win_result
+                get_win_result -> get_race_cards : race_day, race_id
+                activate get_race_cards
+                    get_race_cards -> DBRaceCards : str_day, race_id
+                    activate DBRaceCards
+                        DBRaceCards -> get_race_cards : race_card_df
+                    deactivate DBRaceCards
+                    get_race_cards -> get_win_result : race_card_df
+                deactivate get_race_cards
+                get_win_result -> get_each_race_retutn_csv : race_id
+                activate get_each_race_retutn_csv
+                    get_each_race_retutn_csv -> DBRaceReturns : place_id, year, race_id
+                    activate DBRaceReturns
+                        DBRaceReturns -> get_each_race_retutn_csv : df_returns
+                    deactivate DBRaceReturns
+                    get_each_race_retutn_csv -> get_win_result : df_returns
+                deactivate get_each_race_retutn_csv
+                get_win_result -> calc_day_race_return : win_hit_rate, win_return_rate, win_hit_race
+            deactivate get_win_result
+
+            '  # 複勝回収率・的中率
+            calc_day_race_return -> get_place_result : race_day, race_id_list
+            activate get_place_result
+                get_place_result -> get_race_cards : race_day, race_id
+                activate get_race_cards
+                    get_race_cards -> DBRaceCards : str_day, race_id
+                    activate DBRaceCards
+                        DBRaceCards -> get_race_cards : race_card_df
+                    deactivate DBRaceCards
+                    get_race_cards -> get_place_result : race_card_df
+                deactivate get_race_cards
+                get_place_result -> get_each_race_retutn_csv : race_id
+                activate get_each_race_retutn_csv
+                    get_each_race_retutn_csv -> DBRaceReturns : place_id, year, race_id
+                    activate DBRaceReturns
+                        DBRaceReturns -> get_each_race_retutn_csv : df_returns
+                    deactivate DBRaceReturns
+                    get_each_race_retutn_csv -> get_place_result : df_returns
+                deactivate get_each_race_retutn_csv
+                get_place_result -> calc_day_race_return : place_hit_rate, place_return_rate, place_hit_race
+            deactivate get_place_result
+
+            ' # 馬連回収率・的中率(BOX)
+            calc_day_race_return -> get_quinella_box_result : race_day, race_id_list
+            activate get_quinella_box_result
+                get_quinella_box_result -> get_race_cards : race_day, race_id
+                activate get_race_cards
+                    get_race_cards -> DBRaceCards : str_day, race_id
+                    activate DBRaceCards
+                        DBRaceCards -> get_race_cards : race_card_df
+                    deactivate DBRaceCards
+                    get_race_cards -> get_quinella_box_result : race_card_df
+                deactivate get_race_cards
+                get_quinella_box_result -> get_each_race_retutn_csv : race_id
+                activate get_each_race_retutn_csv
+                    get_each_race_retutn_csv -> DBRaceReturns : place_id, year, race_id
+                    activate DBRaceReturns
+                        DBRaceReturns -> get_each_race_retutn_csv : df_returns
+                    deactivate DBRaceReturns
+                    get_each_race_retutn_csv -> get_quinella_box_result : df_returns
+                deactivate get_each_race_retutn_csv
+                get_quinella_box_result -> calc_day_race_return : quinella_box_hit_rate, quinella_box_return_rate, quinella_box_hit_race
+            deactivate get_quinella_box_result
+            ' # 馬連回収率・的中率(流し)
+            calc_day_race_return -> get_quinella_wheel_result : race_day, race_id_list
+            activate get_quinella_wheel_result
+                get_quinella_wheel_result -> get_race_cards : race_day, race_id
+                activate get_race_cards
+                    get_race_cards -> DBRaceCards : str_day, race_id
+                    activate DBRaceCards
+                        DBRaceCards -> get_race_cards : race_card_df
+                    deactivate DBRaceCards
+                    get_race_cards -> get_quinella_wheel_result : race_card_df
+                deactivate get_race_cards
+                get_quinella_wheel_result -> get_each_race_retutn_csv : race_id
+                activate get_each_race_retutn_csv
+                    get_each_race_retutn_csv -> DBRaceReturns : place_id, year, race_id
+                    activate DBRaceReturns
+                        DBRaceReturns -> get_each_race_retutn_csv : df_returns
+                    deactivate DBRaceReturns
+                    get_each_race_retutn_csv -> get_quinella_wheel_result : df_returns
+                deactivate get_each_race_retutn_csv
+                get_quinella_wheel_result -> calc_day_race_return : quinella_wheel_hit_rate, quinella_wheel_return_rate, quinella_wheel_hit_race
+            deactivate get_quinella_wheel_result
+
+            ' # 3連複回収率・的中率(BOX)
+            calc_day_race_return -> get_trio_box_result : race_day, race_id_list
+            activate get_trio_box_result
+                get_trio_box_result -> get_race_cards : race_day, race_id
+                activate get_race_cards
+                    get_race_cards -> DBRaceCards : str_day, race_id
+                    activate DBRaceCards
+                        DBRaceCards -> get_race_cards : race_card_df
+                    deactivate DBRaceCards
+                    get_race_cards -> get_trio_box_result : race_card_df
+                deactivate get_race_cards
+                get_trio_box_result -> get_each_race_retutn_csv : race_id
+                activate get_each_race_retutn_csv
+                    get_each_race_retutn_csv -> DBRaceReturns : place_id, year, race_id
+                    activate DBRaceReturns
+                        DBRaceReturns -> get_each_race_retutn_csv : df_returns
+                    deactivate DBRaceReturns
+                    get_each_race_retutn_csv -> get_trio_box_result : df_returns
+                deactivate get_each_race_retutn_csv
+                get_trio_box_result -> calc_day_race_return : trio_box_hit_rate, trio_box_return_rate, trio_box_hit_race
+            deactivate get_trio_box_result
+            ' # 3連複回収率・的中率(流し)
+            calc_day_race_return -> get_trio_wheel_result : race_day, race_id_list
+            activate get_trio_wheel_result
+                get_trio_wheel_result -> get_race_cards : race_day, race_id
+                activate get_race_cards
+                    get_race_cards -> DBRaceCards : str_day, race_id
+                    activate DBRaceCards
+                        DBRaceCards -> get_race_cards : race_card_df
+                    deactivate DBRaceCards
+                    get_race_cards -> get_trio_wheel_result : race_card_df
+                deactivate get_race_cards
+                get_trio_wheel_result -> get_each_race_retutn_csv : race_id
+                activate get_each_race_retutn_csv
+                    get_each_race_retutn_csv -> DBRaceReturns : place_id, year, race_id
+                    activate DBRaceReturns
+                        DBRaceReturns -> get_each_race_retutn_csv : df_returns
+                    deactivate DBRaceReturns
+                    get_each_race_retutn_csv -> get_trio_wheel_result : df_returns
+                deactivate get_each_race_retutn_csv
+                get_trio_wheel_result -> calc_day_race_return : trio_wheel_hit_rate, trio_wheel_return_rate, trio_wheel_hit_race
+            deactivate get_trio_wheel_result
+
+            calc_day_race_return -> save_day_race_return_csv : place_id, race_day, return_result_df
+            activate save_day_race_return_csv
+                save_day_race_return_csv -[#Red]> RaceReturns : place_id, year
+                activate RaceReturns
+                deactivate RaceReturns
+            deactivate save_day_race_return_csv
+        deactivate calc_day_race_return
+    deactivate calc_day_race_return_all
+deactivate main
+
+bat -> main2
+activate main2
+main2 -> make_html_prev_day
+activate make_html_prev_day
+    note over make_html_prev_day
+        make_html_prev_dayシーケンス図参照
+    end note
+deactivate make_html_prev_day
+deactivate main2
+
+@enduml
