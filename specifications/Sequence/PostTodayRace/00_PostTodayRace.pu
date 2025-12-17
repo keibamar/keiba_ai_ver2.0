@@ -1,0 +1,292 @@
+@startuml
+
+title PostTodayRace
+
+participant "bat/MakeHTML" as bat
+
+box src/RacePdediction/post_daily_race_pred #LightBlue
+participant "main" as main
+participant "post_daily_race_pred" as post_daily_race_pred
+participant "post_race_pred"  as post_race_pred
+end box
+box src/RacePrediction/make_time_id_list #LightBlue
+participant "get_time_id_list" as get_time_id_list
+end box
+
+box "src/RacePrediction/make_text" #LightBlue
+participant "make_race_text" as make_race_text
+participant "extract_top5_pred" as extract_top5_pred
+end box
+box "src/RacePrediction/race_card" #LightBlue
+participant "make_race_card" as make_race_card
+participant "get_race_info" as get_race_info
+end box
+box API #LightBlue
+participant "save_race_cards" as save_race_cards
+participant "save_race_info_df" as save_race_info_df
+participant "get_race_cards" as get_race_cards
+end box
+box "src/RacePrediction/daily_race_results" #LightBlue
+participant "get_each_race_results" as get_each_race_results
+end box
+box "src/RacePrediction/calc_returns" #LightBlue
+participant "get_race_return" as get_race_return
+participant "save_each_race_return_csv" as save_each_race_return_csv
+end box
+
+box "src/Datasets/analysis_race_info" #LightBlue
+participant "update_horse_name_id_map" as update_horse_name_id_map
+participant "add_horse_name_id_map" as add_horse_name_id_map
+end box
+
+box web/src/generators/make_race_card_html #LightBlue
+participant "add_race_day" as add_race_day
+end box
+
+box web/src/generators/daily_index #LightBlue
+participant "make_daily_index_page" as make_daily_index_page
+end box
+
+box "src/lib/post_text" #LightCyan
+participant "post_text_data" as post_text_data
+end box
+box "src/lib/mail_api" #LightCyan
+participant "send_race_pred" as send_race_pred
+participant "send_email" as send_email
+participant "send_gmail" as send_gmail
+participant "read_txt_file" as read_txt_file
+end box
+
+box "src/lib/scraping" #LightCyan
+participant "scrape_race_card" as scrape_race_card
+participant "scrape_day_race_returns" as scrape_day_race_returns
+end box
+
+box "web/src/generators/race_pages"   #LightBlue
+participant "make_race_card_html" as make_race_card_html
+end box
+
+box DataBase
+database "texts/race_calendar" as RaceCalendar
+database "texts/race_prediction" as DBRacePrediction
+database "data/RaceReturns" as DBRaceReturns
+database "data/RaceInfo" as DBRaceInfo
+database "data/RaceCards" as DBRaceCards
+database "data/HorseIDMap" as DBHorseIDMap
+end box
+
+
+box HTML
+database "web/site/assets/js" as json
+end box
+
+box NetKeiba #LightGoldenRodYellow
+database "NetKeiba" as NetKeiba
+end box
+box X #LightGoldenRodYellow
+database "X" as X
+end box
+box GMail #LightGoldenRodYellow
+database "GMail" as GMail
+end box
+
+
+bat -> main
+activate main
+    main -> post_daily_race_pred : race_day
+    activate post_daily_race_pred
+        ' time_id_listの取得
+        post_daily_race_pred -[dotted]> get_time_id_list : race_day
+        activate get_time_id_list
+            get_time_id_list -[dotted]> RaceCalendar : year
+            activate RaceCalendar
+                RaceCalendar -> get_time_id_list : RaceCalendar
+            deactivate RaceCalendar
+            get_time_id_list -> post_daily_race_pred : time_id_list
+        deactivate get_time_id_list
+
+        'indexPageに日付を追加
+        post_daily_race_pred -> add_race_day : race_day
+        activate add_race_day
+            add_race_day -[#Red]>  json
+            activate json
+            deactivate json
+        deactivate add_race_day
+
+        'indexPageの作成
+        post_daily_race_pred -> make_daily_index_page : race_day
+        activate make_daily_index_page
+            note  over  make_daily_index_page
+                make_daily_index_page 参照
+            end note
+        deactivate make_daily_index_page
+        '過去１週間indexPageの更新
+        post_daily_race_pred -> make_daily_index_page : past_day
+        activate make_daily_index_page
+            note  over  make_daily_index_page
+                make_daily_index_page 参照
+            end note
+        deactivate make_daily_index_page
+
+        'レースカードの作成
+        post_daily_race_pred -> make_race_card : race_id
+        activate make_race_card
+            make_race_card -[dotted]> scrape_race_card : race_id
+            activate scrape_race_card
+                scrape_race_card -[dotted]> NetKeiba
+                activate NetKeiba
+                    NetKeiba -> scrape_race_card : df_RaceCard
+                deactivate NetKeiba
+                scrape_race_card -> make_race_card : race_info, df_race_info, df_race_card
+            deactivate scrape_race_card
+            make_race_card -> post_daily_race_pred : race_card_df, race_info_df
+        deactivate make_race_card
+
+        post_daily_race_pred -> save_race_cards : race_card_df, race_day, race_id
+        activate save_race_cards
+            save_race_cards -[#Red]> DBRaceCards : race_card_df
+            activate DBRaceCards
+            deactivate DBRaceCards
+        deactivate save_race_cards
+
+        post_daily_race_pred -> save_race_info_df : race_info_df, race_day, race_id
+        activate save_race_info_df
+            save_race_info_df -[#Red]> DBRaceInfo : race_info_df
+            activate DBRaceInfo
+            deactivate DBRaceInfo
+        deactivate save_race_info_df
+
+        post_daily_race_pred -> update_horse_name_id_map : race_card_df
+        activate update_horse_name_id_map
+            update_horse_name_id_map -> add_horse_name_id_map : horse_id, horse_name
+            activate add_horse_name_id_map
+                add_horse_name_id_map -[#Red]> DBHorseIDMap : horse_id, horse_name
+                activate DBHorseIDMap
+                deactivate DBHorseIDMap
+            deactivate add_horse_name_id_map
+        deactivate update_horse_name_id_map
+
+        ' #textの作成
+        post_daily_race_pred -> make_race_text : race_day, race_id
+        activate make_race_text
+            make_race_text -[dotted]> get_race_cards : race_day, race_id
+            activate get_race_cards
+                get_race_cards -[dotted]> DBRaceCards : str_day, race_id
+                activate DBRaceCards
+                    DBRaceCards -> get_race_cards : race_card_df
+                deactivate DBRaceCards
+                get_race_cards -> make_race_text : race_card_df
+            deactivate get_race_cards
+
+            make_race_text -> extract_top5_pred : race_card_df
+            activate extract_top5_pred
+                extract_top5_pred -> make_race_text : result_list
+            deactivate extract_top5_pred
+
+            note over make_race_text, get_race_info
+                データセットから抽出するように修正
+            end note    
+            make_race_text -> get_race_info : date_str, place_id, target_id
+            activate get_race_info
+                get_race_info -[dotted]> scrape_race_card : race_id
+                activate scrape_race_card
+                    scrape_race_card -[dotted]> NetKeiba
+                    activate NetKeiba
+                        NetKeiba -> scrape_race_card : df_RaceCard
+                    deactivate NetKeiba
+                    scrape_race_card -> get_race_info : race_info, df_race_info, df_race_card
+                deactivate scrape_race_card
+                get_race_info -> make_race_text : race_info
+            deactivate get_race_info
+
+            make_race_text -[#Red]> DBRacePrediction
+            activate DBRacePrediction
+            deactivate DBRacePrediction
+        deactivate make_race_text
+        
+        ' 予想をポスト
+        post_daily_race_pred -> post_race_pred : race_id, race_day
+        activate post_race_pred
+            post_race_pred -> post_text_data : text_path
+            activate post_text_data
+                post_race_pred -> post_text_data : text_path
+                post_text_data -[dotted]> DBRacePrediction :  
+                activate DBRacePrediction
+                    DBRacePrediction -> post_text_data : race_text_data
+                deactivate DBRacePrediction
+                    post_text_data -[#Red]> X : race_text_data
+            deactivate post_text_data
+        deactivate post_race_pred
+        ' 予想をメールで送信
+        post_daily_race_pred -> send_race_pred :race_day, race_id
+        activate send_race_pred
+            send_race_pred -> send_email : text_path
+            activate send_email
+                send_email -> read_txt_file : file_paht
+                activate read_txt_file
+                    read_txt_file -[dotted]> DBRacePrediction :  
+                    activate DBRacePrediction
+                        DBRacePrediction -> read_txt_file : race_text_data
+                    deactivate DBRacePrediction
+                    read_txt_file -> send_email : msg
+                deactivate read_txt_file 
+                send_email -> send_gmail : msg
+                activate send_gmail
+                    send_gmail -[#Red]> GMail : msg
+                    activate GMail
+                    deactivate GMail
+                deactivate send_gmail
+            deactivate send_email
+        deactivate send_race_pred
+
+        ' #htmlの作成
+        post_daily_race_pred -> make_race_card_html : date_str, place_id, race_id
+        activate make_race_card_html
+        note over make_race_card_html
+            make_race_card_html シーケンス 参照
+        end note
+        deactivate make_race_card_html
+        post_daily_race_pred -> make_daily_index_page : race_day
+        note over make_daily_index_page
+            make_daily_index_page シーケンス 参照
+        end note
+        activate make_daily_index_page
+        deactivate make_daily_index_page
+
+        post_daily_race_pred -> get_each_race_results : race_id
+        note over get_each_race_results
+            get_each_race_results シーケンス 参照
+        end note
+        activate get_each_race_results
+        deactivate get_each_race_results
+
+        post_daily_race_pred -> get_race_return : last_race_id
+        activate get_race_return
+            get_race_return -> scrape_day_race_returns : last_race_id
+            activate scrape_day_race_returns
+                scrape_day_race_returns -[dotted]> NetKeiba
+                activate NetKeiba
+                    NetKeiba -> scrape_day_race_returns : df_return
+                deactivate NetKeiba
+                scrape_day_race_returns -> get_race_return : df_return
+            deactivate scrape_day_race_returns
+            get_race_return -> post_daily_race_pred : df_return
+        deactivate get_race_return
+
+        post_daily_race_pred -> save_each_race_return_csv : last_race_id, df_return
+        activate save_each_race_return_csv
+            save_each_race_return_csv -[#Red]> DBRaceReturns : 
+                activate DBRaceReturns
+                deactivate DBRaceReturns
+            deactivate save_each_race_return_csv
+        deactivate save_each_race_return_csv
+
+        post_daily_race_pred -> make_race_card_html : date_str, place_id, last_race_id
+        activate make_race_card_html
+        note over make_race_card_html
+            make_race_card_html シーケンス 参照
+        end note
+        deactivate make_race_card_html
+    deactivate post_daily_race_pred
+deactivate main
+
