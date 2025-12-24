@@ -1,0 +1,22 @@
+' # レースの血統情報を取得
+    make_race_card_html -> generate_peds_result_html : date_str, place_id, target_id
+    activate generate_peds_result_html
+        generate_peds_result_html -> get_race_info : date_str, place_id, target_id
+        activate get_race_info
+            get_race_info -[dotted]> DBRaceInfo : place_id, target_id
+            activate DBRaceInfo
+                DBRaceInfo -> get_race_info : race_info_df
+            deactivate DBRaceInfo  
+            get_race_info -> generate_peds_result_html : race_type, course_len, ground_state, race_class
+        deactivate get_race_info
+
+        generate_peds_result_html -> DBPedsResults : place_id, race_type, course_len, ground_state
+        activate DBPedsResults
+            DBPedsResults -> generate_peds_result_html : total_peds_result_df
+        deactivate DBPedsResults
+        generate_peds_result_html -> DBPedsResults : place_id, year, race_type, course_len, ground_state
+        activate DBPedsResults
+            DBPedsResults -> generate_peds_result_html : year_peds_result_df
+        deactivate DBPedsResults
+        generate_peds_result_html -> make_race_card_html : peds_result_html
+    deactivate generate_peds_result_html

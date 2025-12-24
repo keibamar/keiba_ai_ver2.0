@@ -1,0 +1,32 @@
+' # レースの平均時計、上り時計を取得
+    make_race_card_html -> generate_run_time_info : date_str, place_id, target_id
+    activate generate_run_time_info
+        generate_run_time_info -> get_race_info : date_str, place_id, target_id
+        activate get_race_info
+            get_race_info -[dotted]> DBRaceInfo : place_id, target_id
+            activate DBRaceInfo
+                DBRaceInfo -> get_race_info : race_info_df
+            deactivate DBRaceInfo  
+            get_race_info -> generate_run_time_info : race_type, course_len, ground_state, race_class
+        deactivate get_race_info
+        
+        ' 平均時計・上り時計データの取得
+        generate_run_time_info  -> DBAverageTimes : place_id
+        activate DBAverageTimes
+            DBAverageTimes -> generate_run_time_info : total_run_df
+        deactivate DBAverageTimes
+        generate_run_time_info  -> DBAverageTimes : place_id
+        activate DBAverageTimes
+            DBAverageTimes -> generate_run_time_info : total_data_df
+        deactivate DBAverageTimes
+        generate_run_time_info  -> DBAverageTimes : place_id, year
+        activate DBAverageTimes
+            DBAverageTimes -> generate_run_time_info : year_run_df
+        deactivate DBAverageTimes
+        generate_run_time_info  -> DBAverageTimes : place_id, year
+        activate DBAverageTimes
+            DBAverageTimes -> generate_run_time_info : year_data_df
+        deactivate DBAverageTimes
+
+        generate_run_time_info -> make_race_card_html : run_time_info_html
+    deactivate generate_run_time_info

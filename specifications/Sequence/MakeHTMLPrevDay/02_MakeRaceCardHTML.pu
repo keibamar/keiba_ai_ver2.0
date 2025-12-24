@@ -1,0 +1,137 @@
+box web/src/generators/race_pages #LightBlue
+participant "make_race_card_html" as make_race_card_html
+participant "generate_race_info" as generate_race_info
+participant "generate_result_table" as generate_result_table
+participant "generate_payout_table_html" as generate_payout_table_html
+participant "build_table_race_cards" as build_table_race_cards
+participant "generate_course_info_html" as generate_course_info_html
+participant "generate_horse_report_html" as generate_horse_report_html
+participant "build_html_content" as build_html_content
+end box
+box API #LightBlue
+participant "get_result_table" as get_result_table
+participant "get_returns_table" as get_returns_table
+participant "get_race_info" as get_race_info
+end box
+
+box web/src/utils/format_data #LightBlue
+participant "format_date" as format_date
+participant "merge_rank_score" as merge_rank_score
+participant "extract_entry_sub" as extract_entry_sub
+end box
+box API #LightBlue
+participant "read_race_csv" as read_race_csv
+end box 
+
+box DataBase
+database "texts/race_calendar" as RaceCalendar
+database "data/RaceCards" as DBRaceCards
+database "data/RaceInfo" as DBRaceInfo
+database "data/RaceResults" as DBRaceResults
+database "data/RaceReturns" as DBRaceReturns
+end box
+box HTML
+database "web/site/races/race_day/race_html" as race_html
+end box
+
+activate make_race_card_html
+    make_race_card_html -> format_date : date_str
+    activate format_date
+        format_date -> make_race_card_html : date_display
+    deactivate format_date
+    make_race_card_html -> read_race_csv : date_str, target_id
+    activate read_race_csv
+        read_race_csv -[dotted]> DBRaceCards : date_str, target_id
+        activate DBRaceCards
+            DBRaceCards -> read_race_csv : race_card_df
+        deactivate DBRaceCards
+        read_race_csv -> make_race_card_html : race_card_df
+    deactivate read_race_csv
+
+    '# --- レース情報取得 ---
+    make_race_card_html -> generate_race_info : date_str, place_id, target_id
+    activate generate_race_info
+        generate_race_info -> DBRaceInfo : place_id, target_id
+        activate DBRaceInfo
+            DBRaceInfo -> generate_race_info : race_info_df
+        deactivate DBRaceInfo
+        generate_race_info -> make_race_card_html :course_info_text
+    deactivate generate_race_info
+
+    '# --- レース結果取得 ---
+    make_race_card_html -> get_result_table : date_str, place_id, target_id
+    activate get_result_table
+        get_result_table -[dotted]> DBRaceResults : place_id, target_id
+        activate DBRaceResults
+            DBRaceResults -> get_result_table : result_df, payout_df
+        deactivate DBRaceResults
+        get_result_table -> make_race_card_html : result_df, payout_df
+    deactivate get_result_table
+
+    make_race_card_html -> merge_rank_score : result_df, race_info_df
+    activate merge_rank_score
+        merge_rank_score -> extract_entry_sub : df_analysis
+        activate extract_entry_sub
+            extract_entry_sub -> merge_rank_score : entry_sub
+        deactivate extract_entry_sub
+        merge_rank_score -> make_race_card_html : merged
+    deactivate merge_rank_score
+
+    make_race_card_html -> generate_result_table : result_df
+    activate generate_result_table
+        generate_result_table -> make_race_card_html : result_table_html
+    deactivate generate_result_table
+
+    '# --- レース配当取得 ---
+    make_race_card_html -> get_returns_table : date_str, place_id, target_id
+    activate get_returns_table
+        get_returns_table -[dotted]> DBRaceReturns : place_id, target_id
+        activate DBRaceReturns
+            DBRaceReturns -> get_returns_table : payout_df
+        deactivate DBRaceReturns
+        get_returns_table -> make_race_card_html : payout_df
+    deactivate get_returns_table
+
+    make_race_card_html -> generate_payout_table_html : payout_df
+    activate generate_payout_table_html
+        generate_payout_table_html -> make_race_card_html : payout_table_html
+    deactivate generate_payout_table_html
+
+    ' # テーブル行作成
+    make_race_card_html -> build_table_race_cards : race_card_df
+    activate build_table_race_cards
+        build_table_race_cards -> make_race_card_html : table_rows_html
+    deactivate build_table_race_cards
+
+    ' # レース名・時刻取得
+    make_race_card_html -> RaceCalendar : date_str
+    activate RaceCalendar
+        RaceCalendar -> make_race_card_html : df_race_info
+    deactivate RaceCalendar
+
+    ' # コース情報HTMLを作成
+    make_race_card_html -> generate_course_info_html :  date_str, place_id, target_id
+    activate generate_course_info_html
+        note over generate_course_info_html
+        generate_course_info_html参照
+        end note
+        generate_course_info_html -> make_race_card_html : course_info_html
+    deactivate
+    
+    ' # 競走馬個々の情報HTMLを作成
+    make_race_card_html -> generate_horse_report_html : horse_name, place_id, target_id, date_str
+    activate generate_horse_report_html
+        note over generate_horse_report_html
+            generate_horse_report_htmlを参照
+        end note
+        generate_horse_report_html -> make_race_card_html : horse_report_html
+    deactivate generate_horse_report_html
+
+
+    make_race_card_html -> build_html_content : date_display, place_id, race_num, race_name, race_time, nav_html, table_rows, run_time_info,  weight_info, peds_info, pops_info, frames_info, recent_html, result_table_html, payout_table_html
+    activate build_html_content
+        build_html_content -> make_race_card_html : html_content
+    deactivate build_html_content
+
+    make_race_card_html -[#Red]> race_html : html_content
+deactivate make_race_card_html

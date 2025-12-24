@@ -1,0 +1,54 @@
+' # 近走の結果を取得
+    make_race_card_html -> generate_recent_same_condition_html : date_str, place_id, target_id
+    activate generate_recent_same_condition_html
+        generate_recent_same_condition_html -> get_race_info : date_str, place_id, target_id
+        activate get_race_info
+            get_race_info -[dotted]> DBRaceInfo : place_id, target_id
+            activate DBRaceInfo
+                DBRaceInfo -> get_race_info : race_info_df
+            deactivate DBRaceInfo  
+            get_race_info -> generate_recent_same_condition_html : race_type, course_len, ground_state, race_class
+        deactivate get_race_info
+
+        generate_recent_same_condition_html -> get_daily_id : place_id, race_day
+        activate get_daily_id
+            get_daily_id -> RaceCalendar : year
+            activate RaceCalendar
+                RaceCalendar -> get_daily_id : race_time_id_list
+            deactivate RaceCalendar
+            get_daily_id -> generate_recent_same_condition_html : race_id_list
+        deactivate get_daily_id
+        
+        ' # 近走の同条件結果を取得
+        generate_recent_same_condition_html -> get_race_info : year, place_id, race_id
+        activate get_race_info
+            get_race_info -[dotted]> DBRaceInfo : place_id, target_id
+            activate DBRaceInfo
+                DBRaceInfo -> get_race_info : race_info_df
+            deactivate DBRaceInfo  
+            get_race_info -> generate_recent_same_condition_html : race_type, course_len, ground_state, race_class
+        deactivate get_race_info
+
+        generate_recent_same_condition_html -> DBRaceResults : place_id, year, race_id
+        activate DBRaceResults
+            DBRaceResults -> generate_recent_same_condition_html : result_df
+        deactivate DBRaceResults
+
+        ' # レース情報取得
+        generate_recent_same_condition_html -> get_race_info : year, place_id, race_id
+        activate get_race_info
+            get_race_info -[dotted]> DBRaceInfo : place_id, target_id
+            activate DBRaceInfo
+                DBRaceInfo -> get_race_info : race_info_df
+            deactivate DBRaceInfo  
+            get_race_info -> generate_recent_same_condition_html : race_type, course_len, ground_state, race_class
+        deactivate get_race_info
+
+        ' # レース名取得
+        generate_recent_same_condition_html -> RaceCalendar : year
+        activate RaceCalendar
+            RaceCalendar -> generate_recent_same_condition_html : df_race_info
+        deactivate RaceCalendar
+
+        generate_recent_same_condition_html -> make_race_card_html : recent_same_condition_html
+    deactivate generate_recent_same_condition_html

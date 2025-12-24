@@ -1,0 +1,96 @@
+@startuml
+
+title MakeHTMLPrevDay
+
+box web/src/generators/daily_index #LightBlue
+participant "make_daily_index_page" as make_daily_index_page
+participant "list_files_and_parse" as list_files_and_parse
+participant "make_index_page" as make_index_page
+participant "group_place_races" as group_place_races
+participant "build_table_rows" as build_table_rows
+participant "daily_index_template" as daily_index_template
+endbox
+
+box web/src/utils/format_data #LightBlue
+participant "format_date" as format_date
+end box
+box API #LightBlue
+participant "load_race_info" as load_race_info
+end box
+
+box DataBase
+database "texts/race_calendar" as RaceCalendar
+database "data/RaceCards" as DBRaceCards
+end box
+
+box HTML
+database "web/site/races/" as RacesFolder
+database "web/site/races/race_day/index" as daily_index
+end box
+
+activate make_daily_index_page
+            ' FileList(RaceIdList)を取得
+            make_daily_index_page -> list_files_and_parse : date_str
+            activate list_files_and_parse
+                list_files_and_parse -[dotted]> DBRaceCards : date_str
+                activate DBRaceCards
+                    DBRaceCards -> list_files_and_parse : file_info_list
+                deactivate DBRaceCards
+                list_files_and_parse -> make_daily_index_page : file_info_list
+            deactivate list_files_and_parse
+            
+            make_daily_index_page -> make_index_page : day_str, output_dir, files_info_list
+            activate make_index_page
+                make_index_page -> format_date : date_str
+                activate format_date
+                    format_date -> make_index_page :date_display
+                deactivate format_date
+                ' レース情報の取得
+                make_index_page -[dotted]> load_race_info : date_str
+                activate load_race_info
+                    load_race_info -[dotted]> RaceCalendar : date_str
+                    activate RaceCalendar
+                        RaceCalendar -> load_race_info : race_time_id_list
+                    deactivate RaceCalendar
+                    load_race_info -> make_index_page : race_time_id_list
+                deactivate load_race_info
+
+                ' 前日と当日のデータを取得
+                make_index_page -[dotted]> RacesFolder
+                activate  RacesFolder
+                    RacesFolder -> make_index_page : all_days
+                deactivate RacesFolder
+                make_index_page -> format_date : prev_day
+                activate format_date
+                    format_date -> make_index_page :date_display
+                deactivate format_date
+                make_index_page -> format_date : next_day
+                activate format_date
+                    format_date -> make_index_page :date_display
+                deactivate format_date
+
+                '  # --- レース情報のグルーピング ---
+                make_index_page -> group_place_races : files_info_list, race_info_dict
+                activate group_place_races
+                    group_place_races -> make_index_page : place_races
+                deactivate group_place_races
+                
+                ' # --- テーブル行とplace_keysを作成 ---
+                make_index_page -> build_table_rows : place_races, output_dir
+                activate build_table_rows
+                    build_table_rows -> make_index_page  : table_rows, place_keys
+                deactivate build_table_rows
+
+                '# HTML生成
+                make_index_page -> daily_index_template : date_display, nav_links, place_races, place_keys, table_rows
+                activate daily_index_template
+                    daily_index_template -> make_index_page : index_page_html
+                deactivate daily_index_template
+
+                make_index_page -[#Red]> daily_index : index_page_html
+                activate daily_index
+                deactivate daily_index
+            deactivate make_index_page
+        deactivate make_daily_index_page
+
+@endulml

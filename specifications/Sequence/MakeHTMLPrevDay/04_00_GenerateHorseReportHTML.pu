@@ -1,0 +1,28 @@
+ generate_horse_info_html -> build_horse_report : horse_name, place_id, target_id, date_str
+    activate build_horse_report
+        note over build_horse_report
+            build_horse_reportを参照
+        end note
+        build_horse_report -> generate_horse_info_html : horse_report
+    deactivate build_horse_report
+
+    generate_horse_info_html -> horse_report_to_html : build_horse_report
+    activate horse_report_to_html
+        horse_report_to_html -> get_time_diff_color : diff_avg
+        activate get_time_diff_color
+            get_time_diff_color -> horse_report_to_html : diff_color
+        deactivate get_time_diff_color
+        horse_report_to_html -> get_class_color : class_name
+        activate get_class_color
+            get_class_color -> horse_report_to_html : class_bg_color
+        deactivate get_class_color
+        horse_report_to_html -> get_race_type_color : recent_race_type
+        activate get_race_type_color
+            get_race_type_color -> horse_report_to_html : race_type_color
+        deactivate get_race_type_color
+        horse_report_to_html -> get_ground_state_color : ground_state
+        activate get_ground_state_color
+            get_ground_state_color -> horse_report_to_html : ground_state_color
+        deactivate get_ground_state_color
+        horse_report_to_html -> generate_horse_info_html : horse_report_html
+    deactivate horse_report_to_html

@@ -1,0 +1,22 @@
+'  # レースの勝ち馬の平均馬体重情報を取得
+    make_race_card_html -> generate_weight_info : date_str, place_id, target_id
+    activate generate_weight_info
+        generate_weight_info -> get_race_info : date_str, place_id, target_id
+        activate get_race_info
+            get_race_info -[dotted]> DBRaceInfo : place_id, target_id
+            activate DBRaceInfo
+                DBRaceInfo -> get_race_info : race_info_df
+            deactivate DBRaceInfo  
+            get_race_info -> generate_weight_info : race_type, course_len, ground_state, race_class
+        deactivate get_race_info
+
+        generate_weight_info  -> DBAverageWeights : place_id
+        activate DBAverageWeights
+            DBAverageWeights -> generate_weight_info : total_weight_df
+        deactivate DBAverageWeights
+        generate_weight_info  -> DBAverageWeights : place_id
+        activate DBAverageWeights
+            DBAverageWeights -> generate_weight_info : year_weight_df
+        deactivate DBAverageWeights
+        generate_weight_info -> make_race_card_html : weight_info_html
+    deactivate generate_weight_info

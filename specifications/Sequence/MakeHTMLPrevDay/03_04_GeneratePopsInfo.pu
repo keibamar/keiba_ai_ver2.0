@@ -1,0 +1,31 @@
+
+ ' # レースの人気情報を取得
+    make_race_card_html -> generate_pops_info : date_str, place_id, target_id
+    activate generate_pops_info
+        generate_pops_info -> get_race_info : date_str, place_id, target_id
+        activate get_race_info
+            get_race_info -[dotted]> DBRaceInfo : place_id, target_id
+            activate DBRaceInfo
+                DBRaceInfo -> get_race_info : race_info_df
+            deactivate DBRaceInfo  
+            get_race_info -> generate_pops_info : race_type, course_len, ground_state, race_class
+        deactivate get_race_info
+
+        generate_pops_info -> DBAveragePops : place_id
+        activate DBAveragePops
+            DBAveragePops -> generate_pops_info : total_pops_df
+        deactivate DBAveragePops
+        generate_pops_info -> DBAveragePops : place_id, year
+        activate DBAveragePops
+            DBAveragePops -> generate_pops_info : year_pops_df
+        deactivate DBAveragePops
+        generate_pops_info -> DBAveragePops : place_id
+        activate DBAveragePops
+            DBAveragePops -> generate_pops_info : total_pops_top3_df
+        deactivate DBAveragePops
+        generate_pops_info -> DBAveragePops : place_id, year
+        activate DBAveragePops
+            DBAveragePops -> generate_pops_info : year_pops_top3_df
+        deactivate DBAveragePops
+        generate_pops_info -> make_race_card_html : pops_info_html
+    deactivate generate_pops_info

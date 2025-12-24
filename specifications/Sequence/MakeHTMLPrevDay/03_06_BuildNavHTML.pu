@@ -1,0 +1,21 @@
+ ' # ナビゲーション作成
+    make_race_card_html -> build_nav_html :output_dir, date_str, place_id, target_id
+    activate build_nav_html
+        build_nav_html -> RaceCalendar : date_str
+        activate RaceCalendar
+            RaceCalendar -> build_nav_html : df_race_info
+        deactivate RaceCalendar
+        build_nav_html -> race_html : place_id, prev_race_num
+        activate race_html
+            race_html -> build_nav_html : prev_day_html
+        deactivate race_html
+        build_nav_html -> race_html : place_id, next_race_num
+        activate race_html
+            race_html -> build_nav_html : next_day_html
+        deactivate race_html
+        build_nav_html -> race_html : place_id, race_num
+        activate race_html
+            race_html -> build_nav_html : other_course_html
+        deactivate race_html
+        build_nav_html -> make_race_card_html : nav_html
+    deactivate build_nav_html

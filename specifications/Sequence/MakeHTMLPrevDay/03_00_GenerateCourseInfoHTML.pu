@@ -1,0 +1,62 @@
+' # レースの平均時計、上り時計を取得
+    generate_course_info_html -> generate_run_time_info : date_str, place_id, target_id
+    activate generate_run_time_info
+        note over generate_run_time_info
+            generate_run_tim_info参照
+        end note
+        generate_run_time_info -> generate_course_info_html : run_time_info_html
+    deactivate generate_run_time_info
+
+    '  # レースの勝ち馬の平均馬体重情報を取得
+    generate_course_info_html -> generate_weight_info : date_str, place_id, target_id
+    activate generate_weight_info
+        note over generate_weight_info
+            generate_weight_info参照
+        end note
+        generate_weight_info -> generate_course_info_html : weight_info_html
+    deactivate generate_weight_info
+
+    ' # レースの血統情報を取得
+    generate_course_info_html -> generate_peds_result_html : date_str, place_id, target_id
+    activate generate_peds_result_html
+        note over generate_peds_result_html
+            generate_peds_result_html参照
+        end note
+        generate_peds_result_html -> generate_course_info_html : peds_result_html
+    deactivate generate_peds_result_html
+
+    ' # レースの人気情報を取得
+    generate_course_info_html -> generate_pops_info : date_str, place_id, target_id
+    activate generate_pops_info
+        note over generate_pops_info
+            generate_pops_info参照
+        end note
+        generate_pops_info -> generate_course_info_html : pops_info_html
+    deactivate generate_pops_info
+
+    ' # レースの枠順情報を取得
+    generate_course_info_html -> generate_frame_horse_info : date_str, place_id, target_id
+    activate generate_frame_horse_info
+        note over generate_frame_horse_info
+            generate_frame_horse_info参照
+        end note
+        generate_frame_horse_info -> generate_course_info_html : frame_info_html
+    deactivate generate_frame_horse_info
+
+    ' # ナビゲーション作成
+    generate_course_info_html -> build_nav_html :output_dir, date_str, place_id, target_id
+    activate build_nav_html
+        note over build_nav_html
+            build_nav_html参照
+        end note
+        build_nav_html -> generate_course_info_html : nav_html
+    deactivate build_nav_html
+
+    ' # 近走の結果を取得
+    generate_course_info_html -> generate_recent_same_condition_html : date_str, place_id, target_id
+    activate generate_recent_same_condition_html
+        note over generate_recent_same_condition_html
+            generate_recent_same_condition_html参照
+        end note
+        generate_recent_same_condition_html -> generate_course_info_html : recent_same_condition_html
+    deactivate generate_recent_same_condition_html

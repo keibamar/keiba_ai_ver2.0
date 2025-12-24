@@ -1,0 +1,175 @@
+box web/src/generators/horse_info #LightBlue
+participant "build_horse_report" as build_horse_report
+participant "get_horse_id_by_name" as get_horse_id_by_name
+participant "recent_5_performances" as recent_5_performances
+participant "time_str_to_ms" as time_str_to_ms
+participant "get_avg_time" as get_avg_time
+participant "normalize_passage" as normalize_passage
+participant "turf_dirt_summary" as turf_dirt_summary
+participant "calc_average_norm_passages" as calc_average_norm_passages
+participant "safe_value" as safe_value
+participant "same_course_best_time" as same_course_best_time
+participant "ms_to_time_str" as ms_to_time_str
+end box
+box API #LightBlue
+participant "load_horse_id_map" as load_horse_id_map
+participant "load_past_performance" as load_past_performance
+end box
+
+box web/src/generators/race_pages #LightBlue
+participant "get_race_info" as get_race_info
+end box
+
+box web/src/utils/format_data #LightBlue
+participant "extract_peds_name" as extract_peds_name
+participant "peds_results_for_bloodline" as peds_results_for_bloodline
+end box
+box API #LightBlue
+participant "load_peds_results" as load_peds_results
+participant "load_horse_peds" as load_horse_peds
+end box
+
+box DataBase
+database "data/RaceInfo" as DBRaceInfo
+database "data/AverageTimes" as DBAverageTimes
+database "data/PedsResults" as DBPedsResults
+database "data/HorsePeds" as DBHorsePeds
+database "data/PatPerformance" as DBPastPerformance
+database "data/HorseIDMap" as DBHorseIDMap
+end box
+
+activate build_horse_report
+    build_horse_report -> get_race_info : year, place_id, race_id
+    activate get_race_info
+        get_race_info -[dotted]> DBRaceInfo : place_id, target_id
+        activate DBRaceInfo
+            DBRaceInfo -> get_race_info : race_info_df
+        deactivate DBRaceInfo  
+        get_race_info -> build_horse_report : race_type, course_len, ground_state, race_class
+    deactivate get_race_info
+
+    build_horse_report -> load_horse_id_map :path
+    activate load_horse_id_map
+        load_horse_id_map -[dotted]> DBHorseIDMap : path
+        activate DBHorseIDMap
+            DBHorseIDMap -> load_horse_id_map : horse_id_map
+        deactivate DBHorseIDMap
+        load_horse_id_map -> build_horse_report : map_df
+    deactivate load_horse_id_map
+
+    build_horse_report -> get_horse_id_by_name :horse_name, map_df
+    activate get_horse_id_by_name
+        get_horse_id_by_name -> build_horse_report : horse_id
+    deactivate get_horse_id_by_name
+
+    ' # ① 血統(peds_0) と PedsResults（同コースの1,2,3,着外データ）
+    build_horse_report -> load_horse_peds : horse_id
+    activate load_horse_peds
+        load_horse_peds -[dotted]> DBHorsePeds : horse_id
+        activate DBHorsePeds
+            DBHorsePeds -> load_horse_peds : horse_peds_df
+        deactivate DBHorsePeds
+        load_horse_peds -> build_horse_report : horse_peds_df
+    deactivate load_horse_peds
+
+    build_horse_report -> extract_peds_name : peds0
+    activate extract_peds_name
+        extract_peds_name -> build_horse_report : peds_name
+    deactivate extract_peds_name
+
+    build_horse_report -> peds_results_for_bloodline : place_id, race_type, course_len, ground_state, peds0
+    activate peds_results_for_bloodline
+        peds_results_for_bloodline -[dotted]> load_peds_results : place_id, race_type, course_len, "all"
+        activate load_peds_results
+            load_peds_results -[dotted]> DBPedsResults :  place_id, race_type, course_len
+            activate DBPedsResults
+                DBPedsResults -> load_peds_results : peds_results_df
+            deactivate DBPedsResults
+            load_peds_results -> peds_results_for_bloodline : peds_results_df
+        deactivate load_peds_results
+        peds_results_for_bloodline -> build_horse_report : peds_results
+    deactivate peds_results_for_bloodline
+
+    ' # ② 近5走
+    build_horse_report -> recent_5_performances : horse_id, date_str
+    activate recent_5_performances
+        recent_5_performances -[dotted]> load_past_performance : horse_id
+        activate load_past_performance
+            load_past_performance -[dotted]> DBPastPerformance : horse_id
+            activate DBPastPerformance
+                DBPastPerformance -> load_past_performance : past_performances_df
+            deactivate DBPastPerformance
+            load_past_performance -> recent_5_performances : past_performances_df
+        deactivate load_past_performance
+        recent_5_performances -> time_str_to_ms : time_raw
+        activate time_str_to_ms
+            time_str_to_ms -> recent_5_performances : time_ms
+        deactivate time_str_to_ms
+        recent_5_performances -> get_avg_time : course_name, race_type, class_name, course_len, ground
+        activate get_avg_time
+            get_avg_time -[dotted]> DBAverageTimes : course_name
+            activate DBAverageTimes
+                DBAverageTimes -> get_avg_time : avg_time_df
+            deactivate DBAverageTimes
+            get_avg_time -> recent_5_performances : avg_time_ms
+        deactivate get_avg_time
+        recent_5_performances -> normalize_passage : passage, heads
+        activate normalize_passage
+            normalize_passage -> recent_5_performances : passage_norm
+        deactivate normalize_passage
+        recent_5_performances -> DBRaceInfo : race_date
+        activate DBRaceInfo
+            DBRaceInfo -> recent_5_performances : df_race_info
+        deactivate DBRaceInfo
+        recent_5_performances -> build_horse_report : recent_5_html
+    deactivate recent_5_performances
+
+    ' # ③ 芝/ダート別サマリ
+    build_horse_report -> turf_dirt_summary : horse_id, date_str
+    activate turf_dirt_summary
+        turf_dirt_summary -> load_past_performance : horse_id
+        activate load_past_performance
+            load_past_performance -[dotted]> DBPastPerformance : horse_id
+            activate DBPastPerformance
+                DBPastPerformance -> load_past_performance : past_performances_df
+            deactivate DBPastPerformance
+            load_past_performance -> turf_dirt_summary : past_performances_df
+        deactivate load_past_performance
+        turf_dirt_summary -> normalize_passage : passage, heads
+        activate normalize_passage
+            normalize_passage -> turf_dirt_summary : passage_norm
+        deactivate normalize_passage
+        turf_dirt_summary -> calc_average_norm_passages : normalize_passage
+        activate calc_average_norm_passages
+            calc_average_norm_passages -> turf_dirt_summary : avg_pass_norm
+        deactivate calc_average_norm_passages
+        turf_dirt_summary -> safe_value : avg_up
+        activate safe_value
+            safe_value -> turf_dirt_summary : avg_up
+        deactivate safe_value
+        turf_dirt_summary -> safe_value : avg_pass_norm
+        activate safe_value
+            safe_value -> turf_dirt_summary : avg_pass_norm
+        deactivate safe_value
+        turf_dirt_summary -> build_horse_report : surface_summary
+    deactivate turf_dirt_summary
+
+    ' # ④ 同コースの持ち時計（もし race_type/course_len 与えられていれば）
+    build_horse_report -> same_course_best_time : hid, course_len, race_type, place_id, date_str
+    activate same_course_best_time
+        same_course_best_time -> load_past_performance : horse_id
+        activate load_past_performance
+            load_past_performance -[dotted]> DBPastPerformance : horse_id
+            activate DBPastPerformance
+                DBPastPerformance -> load_past_performance : past_performances_df
+            deactivate DBPastPerformance
+            load_past_performance -> same_course_best_time : past_performances_df
+        deactivate load_past_performance
+        same_course_best_time -> ms_to_time_str : best_time_ms
+        activate ms_to_time_str
+            ms_to_time_str -> same_course_best_time : time_str
+        deactivate ms_to_time_str
+        same_course_best_time -> build_horse_report : same_course_best
+    deactivate same_course_best_time
+
+deactivate build_horse_report
