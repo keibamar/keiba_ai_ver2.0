@@ -121,14 +121,19 @@ def post_daily_race_pred(race_day = date.today()):
            # 直前レースがあれば、結果の取得とhtmlを再生成(リンク更新のため)
            if previous_race_id:
                # レース結果の取得
-                results_df = daily_race_results.get_each_race_results(previous_race_id)
-                if not results_df.empty:
-                    daily_race_results.save_each_race_result_csv(previous_race_id, results_df)
+                try :
+                    results_df = daily_race_results.get_each_race_results(previous_race_id)
+                    if not results_df.empty:
+                        daily_race_results.save_each_race_result_csv(previous_race_id, results_df)
+                except :
+                    print("Miss Make Results : ", previous_race_id)
                # 配当結果の取得
-                df_return = calc_returns.get_race_return(previous_race_id)
-                if not df_return.empty:
-                    calc_returns.save_each_race_return_csv(previous_race_id, df_return)
-                
+                try :
+                    df_return = calc_returns.get_race_return(previous_race_id)
+                    if not df_return.empty:
+                        calc_returns.save_each_race_return_csv(previous_race_id, df_return)
+                except :
+                    print("Miss Make Returns : ", previous_race_id)
                 print("previous race html make:" + str(previous_race_id))    
                 make_race_card_html(date_str, place_id, previous_race_id)
            # 今回処理した race_id を last_race_by_place に記録
