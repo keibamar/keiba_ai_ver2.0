@@ -579,33 +579,19 @@ def run_all_year(year):
             print(f"{current} の処理中にエラー: {e}")
         current += timedelta(days=1)
 
-def run_all_year_temp(year):
-    skip_flag = False
-    for place_id in range(5, 11):
-        race_id_list = get_race_id.get_year_id_all(place_id, year)
-        for race_id in race_id_list:
-            print(race_id)
-            if skip_flag:
-                race_count = race_count + 1
-                if race_count > 11:
-                    race_count = 0
-                    skip_flag = False
-                continue
+def weekly_update_race_returns(race_day = date.today()):
+    race_id_list = get_race_id.get_past_weekly_id(base_day = race_day)
+    for race_id in race_id_list:
+        print(race_id)
 
-            # データフレームの整形
-            df_return = get_race_return(race_id)
-            if df_return.empty:
-                # race_idの下二けたからレース数を取得
-                race_num = int(race_id[10:12])
-                # 1レース目がなければ12レース目までないと判断
-                if race_num == 1:
-                    race_count = 1
-                    skip_flag = True
-                continue
+        # データフレームの整形
+        df_return = get_race_return(race_id)
+        if df_return.empty:
+            print("Empty Race Return : ", race_id)
+            continue
 
-            # 各レースの配当結果を保存
-            print(df_return)
-            save_each_race_return_csv(race_id, df_return)
+        # 各レースの配当結果を保存
+        save_each_race_return_csv(race_id, df_return)
         
 
 if __name__ =="__main__":
@@ -615,5 +601,3 @@ if __name__ =="__main__":
     for place_id in get_race_id.get_daily_place_id(race_day):
         make_text.make_return_text(place_id, race_day)
         post_race_rerurns(place_id, race_day)
-
-
