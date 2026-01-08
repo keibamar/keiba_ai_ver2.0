@@ -257,9 +257,10 @@ def update_race_results_dataset(place_id, day = date.today()):
     # 更新するデータセットがあれば更新
     if any(new_race_results_df):
         try:
-            base_columns = old_race_results_df.columns
-            # 列の順番をそろえる
-            new_race_results_df = new_race_results_df.reindex(columns=base_columns)
+            if not old_race_results_df.empty :
+                base_columns = old_race_results_df.columns
+               # 列の順番をそろえる
+                new_race_results_df = new_race_results_df.reindex(columns=base_columns)
             # 空文字や空白を NaN に変換
             new_race_results_df = new_race_results_df.replace(r'^\s*$', np.nan, regex=True)
             new_race_results_df.fillna(np.nan) 
