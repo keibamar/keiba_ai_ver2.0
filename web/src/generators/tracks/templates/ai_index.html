@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>AI予想成績（メイン）</h1>
+
+<h2>今開催の成績</h2>
+<ul>
+    <li><a href="/ai/this_meeting.html">今開催の詳細を見る</a></li>
+</ul>
+
+<h2>{{ current_year }}年の開催一覧</h2> 
+<ul> {% for m in current_year_meetings %} 
+    <li> 
+        <a href="{{ m.url }}"> 
+            {{ m.track | capitalize }} {{ m.times }}回（{{ m.period }}） 
+        </a> 
+    </li> 
+{% endfor %} 
+</ul>
+
+<h2>年間成績</h2>
+<ul>
+    <li><a href="annual/annual.html">年間成績の詳細を見る</a></li>
+</ul>
+
+<h2>競馬場別成績</h2>
+<ul>
+{% for track in tracks %}
+    <li>
+        <a href="course/{{ track }}/index.html">
+            {{ track | capitalize }} 競馬場
+        </a>
+    </li>
+{% endfor %}
+</ul>
+
+{% endblock %}
