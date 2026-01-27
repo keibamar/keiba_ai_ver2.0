@@ -1,14 +1,6 @@
 import os
-from jinja2 import Environment, FileSystemLoader
-
-# -----------------------------
-# 設定
-# -----------------------------
-TRACK_NAMES = [
-    "01_sapporo", "02_hakodate", "03_fukushima", "04_niigata",
-    "05_tokyo", "06_nakayama", "07_chukyo", "08_kyoto",
-    "09_hanshin", "10_kokura"
-]
+import sys
+from datetime import datetime, date
 
 # 競馬場ごとのコース情報のリスト
 COURSE_LISTS =[ [["芝","1000"],["芝","1200"],["芝","1500"],["芝","1800"],["芝","2000"],["芝","2600"],
@@ -33,26 +25,29 @@ COURSE_LISTS =[ [["芝","1000"],["芝","1200"],["芝","1500"],["芝","1800"],["�
                  ["ダート","1000"],["ダート","1700"],["ダート","2400"]],                                                       # 10_kokura          
               ]
 
-TEMPLATE_DIR = "./templates"
-OUTPUT_DIR = "../../../site/tracks/course"
+# pycache を生成しない
+sys.dont_write_bytecode = True
+SRC_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))  # web/src
+sys.path.append(SRC_ROOT)
 
-# -----------------------------
-# Jinja2 環境
-# -----------------------------
-env = Environment(loader=FileSystemLoader(TEMPLATE_DIR), autoescape=False)
+from config.path import TRACK_MAP, TRACKS_HTML_PATH
+from templates import load_template
 
-track_template = env.get_template("track.html")
-course_template = env.get_template("course.html")
+TRACK_TEMPLATE_NAME = "track.html"
+COURSE_TEMPLATE_NAME = "course.html"
+INDEX_TEMPLATE_NAME = "course_index.html"
 
 # -----------------------------
 # HTML生成関数
 # -----------------------------
 def generate_track_pages():
-    for idx, track_name in enumerate(TRACK_NAMES):
-        track_dir = os.path.join(OUTPUT_DIR, track_name)
+    for idx, track_name in enumerate(TRACK_MAP.values()):
+        track_dir = os.path.join(TRACKS_HTML_PATH, "course", track_name)
         os.makedirs(track_dir, exist_ok=True)
 
         course_list = COURSE_LISTS[idx]
+        track_template = load_template(TRACK_TEMPLATE_NAME)
+        course_template = load_template(COURSE_TEMPLATE_NAME)
 
         # -----------------------------
         # 競馬場全体ページ（index.html）
@@ -73,7 +68,7 @@ def generate_track_pages():
             distance = course[1]  # 1000, 1200, ...
 
             filename = f"{surface}-{distance}.html".replace("芝", "turf").replace("ダート", "dirt")
-
+            
             course_html = course_template.render(
                 track_name=track_name,
                 surface=surface,
@@ -86,7 +81,27 @@ def generate_track_pages():
         print(f"Generated: {track_name}")
 
 # -----------------------------
+# 競馬場一覧ページを生成
+# -----------------------------
+def generate_course_index_page():
+
+    # テンプレート読み込み
+    course_list_template = load_template(INDEX_TEMPLATE_NAME)
+
+    html = course_list_template.render(
+        title="競馬場別成績",
+        tracks=TRACK_MAP.values()
+    )
+
+    with open(os.path.join(TRACKS_HTML_PATH, "course", "index.html"), "w", encoding="utf-8") as f:
+        f.write(html)
+
+    print("Generated: ai/tracks/index.html")
+
+# -----------------------------
 # 実行
 # -----------------------------
 if __name__ == "__main__":
     generate_track_pages()
+    generate_course_index_page()
+

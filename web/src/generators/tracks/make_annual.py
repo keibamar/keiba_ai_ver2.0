@@ -1,84 +1,86 @@
-
 import os
-from jinja2 import Environment, FileSystemLoader
+import sys
+from datetime import datetime, date
+
+# pycache を生成しない
+sys.dont_write_bytecode = True
+SRC_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))  # web/src
+sys.path.append(SRC_ROOT)
+
+from config.path import TRACK_MAP, TRACKS_HTML_PATH
+from load_meetings import load_meetings
+from templates import load_template
+
+TEMPLATE_NAME = "ai_annual.html"
 
 # -----------------------------
-# 設定
+# 年間ページ用の開催リンクを生成
 # -----------------------------
-TEMPLATE_DIR = "./templates"
-OUTPUT_DIR = "../../../site/tracks/annual"
+def get_meeting_links_for_year(day=date.today()):
+    meetings = load_meetings(day.year)
+    links = []
 
-CURRENT_YEAR = 2026
+    for (year, course, times), days in meetings.items():
 
-# 年別AI成績（後でAIロジックと接続）
-annual_data = {
-    2026: {"hit_rate": 40.2, "return_rate": 92.1},
-    2025: {"hit_rate": 38.2, "return_rate": 88.1},
-    2024: {"hit_rate": 36.5, "return_rate": 82.4},
-    2023: {"hit_rate": 34.1, "return_rate": 79.2},
-}
+        first_day = days[0]["date"]
+        last_day = days[-1]["date"]
+        if isinstance(first_day, datetime):
+            first_day = first_day.date()
+        # 未来の開催は除外
+        if first_day > day:
+            continue
 
-# 開催別成績（例）
-meeting_list = {
-    2026: [
-        {"file": "2026-01-1st", "name": "中山1回1日〜2日", "period": "2026/01/05〜2026/01/06"},
-    ],
-    2025: [
-        {"file": "2025-01-1st", "name": "京都1回1日〜2日", "period": "2025/01/12〜2025/01/13"},
-    ],
-}
+        track_name = TRACK_MAP[course]
+        filename = f"{track_name}-{times}th.html"
+        url = f"../meeting/{year}/{filename}"
 
-# -----------------------------
-# Jinja2 環境
-# -----------------------------
-env = Environment(loader=FileSystemLoader(TEMPLATE_DIR), autoescape=False)
-template = env.get_template("ai_annual.html")
+        links.append({
+            "track": track_name,
+            "times": times,
+            "url": url,
+            "period": f"{first_day.strftime('%Y/%m/%d')}〜{last_day.strftime('%Y/%m/%d')}"
+        })
+
+    # 競馬場名 → 開催回でソート
+    links.sort(key=lambda x: (x["track"], x["times"]))
+
+    return links
+
 
 # -----------------------------
 # 年間ページ生成
 # -----------------------------
-def generate_annual_page(year):
-    os.makedirs(os.path.join(OUTPUT_DIR), exist_ok=True)
+def generate_annual_page(year, all_years):
+    if year < date.today().year:
+        day = date(year, 12, 31)
+    else:
+        day = date.today()
+    meetings = get_meeting_links_for_year(day)
+
+    template = load_template(TEMPLATE_NAME)
 
     html = template.render(
         title=f"{year}年 AI年間成績",
         year=year,
-        annual=annual_data.get(year, {"hit_rate": 0, "return_rate": 0}),
-        meetings=meeting_list.get(year, []),
-        all_years=sorted(annual_data.keys(), reverse=True)
+        meetings=meetings,
+        all_years=sorted(all_years, reverse=True)
     )
 
-    output_path = os.path.join(OUTPUT_DIR, f"{year}.html")
+    out_dir = os.path.join(TRACKS_HTML_PATH, "annual")
+    os.makedirs(out_dir, exist_ok=True)
+
+    output_path = os.path.join(out_dir, f"{year}.html")
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html)
 
     print(f"Generated: ai/annual/{year}.html")
 
-# -----------------------------
-# annual.html → 今年のページとして生成
-# -----------------------------
-def generate_current_annual():
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-
-    html = template.render(
-        title="AI年間成績",
-        year=CURRENT_YEAR,
-        annual=annual_data[CURRENT_YEAR],
-        meetings=meeting_list.get(CURRENT_YEAR, []),
-        all_years=sorted(annual_data.keys(), reverse=True)
-    )
-
-    with open(os.path.join(OUTPUT_DIR, "annual.html"), "w", encoding="utf-8") as f:
-        f.write(html)
-
-    print("Generated: ai/annual.html")
 
 # -----------------------------
 # 実行
 # -----------------------------
 if __name__ == "__main__":
-    generate_current_annual()
-
-    # 全年分のページを生成
-    for y in annual_data.keys():
-        generate_annual_page(y)
+    # 過去年のページ
+    all_years = {2026, 2025, 2024}
+    for y in all_years:
+        generate_annual_page(y,  all_years)

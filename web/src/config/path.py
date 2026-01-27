@@ -16,3 +16,17 @@ HORSE_ID_MAP_PATH =  "C:\\keiba_ai\\keiba_ai_ver2.0\\data\\horse_id_map.csv"
 
 RACE_HTML_PATH = "C:\\keiba_ai\\keiba_ai_ver2.0\\web\\site\\races\\"
 JS_FOLDER_PATH = "C:\\keiba_ai\\keiba_ai_ver2.0\\web\\site\\assets\\js\\"
+TRACKS_HTML_PATH = "C:\\keiba_ai\\keiba_ai_ver2.0\\web\\site\\tracks\\"
+
+TRACK_MAP = {
+    1: "01_sapporo",
+    2: "02_hakodate",
+    3: "03_fukushima",
+    4: "04_niigata",
+    5: "05_tokyo",
+    6: "06_nakayama",
+    7: "07_chukyo",
+    8: "08_kyoto",
+    9: "09_hanshin",
+    10: "10_kokura"
+}
