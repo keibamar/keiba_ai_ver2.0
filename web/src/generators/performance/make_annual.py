@@ -7,9 +7,9 @@ sys.dont_write_bytecode = True
 SRC_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))  # web/src
 sys.path.append(SRC_ROOT)
 
-from config.path import TRACK_MAP, TRACKS_HTML_PATH
+from config.path import TRACK_MAP, PERFORMACE_HTML_PATH
+from config.templates import load_template
 from load_meetings import load_meetings
-from templates import load_template
 
 TEMPLATE_NAME = "ai_annual.html"
 
@@ -66,7 +66,7 @@ def generate_annual_page(year, all_years):
         all_years=sorted(all_years, reverse=True)
     )
 
-    out_dir = os.path.join(TRACKS_HTML_PATH, "annual")
+    out_dir = os.path.join(PERFORMACE_HTML_PATH, "annual")
     os.makedirs(out_dir, exist_ok=True)
 
     output_path = os.path.join(out_dir, f"{year}.html")

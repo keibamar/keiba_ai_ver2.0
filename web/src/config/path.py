@@ -14,9 +14,10 @@ PAST_PERF_PATH = "C:\\keiba_ai\\keiba_ai_ver2.0\\data\\PastPerformance\\"
 
 HORSE_ID_MAP_PATH =  "C:\\keiba_ai\\keiba_ai_ver2.0\\data\\horse_id_map.csv"
 
+HTML_HOME_PATH = "C:\\keiba_ai\\keiba_ai_ver2.0\\web\\site\\"
 RACE_HTML_PATH = "C:\\keiba_ai\\keiba_ai_ver2.0\\web\\site\\races\\"
 JS_FOLDER_PATH = "C:\\keiba_ai\\keiba_ai_ver2.0\\web\\site\\assets\\js\\"
-TRACKS_HTML_PATH = "C:\\keiba_ai\\keiba_ai_ver2.0\\web\\site\\tracks\\"
+PERFORMACE_HTML_PATH = "C:\\keiba_ai\\keiba_ai_ver2.0\\web\\site\\performance\\"
 
 TRACK_MAP = {
     1: "01_sapporo",

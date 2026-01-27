@@ -30,8 +30,8 @@ sys.dont_write_bytecode = True
 SRC_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))  # web/src
 sys.path.append(SRC_ROOT)
 
-from config.path import TRACK_MAP, TRACKS_HTML_PATH
-from templates import load_template
+from config.path import TRACK_MAP, PERFORMACE_HTML_PATH
+from config.templates import load_template
 
 TRACK_TEMPLATE_NAME = "track.html"
 COURSE_TEMPLATE_NAME = "course.html"
@@ -42,7 +42,7 @@ INDEX_TEMPLATE_NAME = "course_index.html"
 # -----------------------------
 def generate_track_pages():
     for idx, track_name in enumerate(TRACK_MAP.values()):
-        track_dir = os.path.join(TRACKS_HTML_PATH, "course", track_name)
+        track_dir = os.path.join(PERFORMACE_HTML_PATH, "course", track_name)
         os.makedirs(track_dir, exist_ok=True)
 
         course_list = COURSE_LISTS[idx]
@@ -93,7 +93,7 @@ def generate_course_index_page():
         tracks=TRACK_MAP.values()
     )
 
-    with open(os.path.join(TRACKS_HTML_PATH, "course", "index.html"), "w", encoding="utf-8") as f:
+    with open(os.path.join(PERFORMACE_HTML_PATH, "course", "index.html"), "w", encoding="utf-8") as f:
         f.write(html)
 
     print("Generated: ai/tracks/index.html")

@@ -7,16 +7,17 @@ sys.dont_write_bytecode = True
 SRC_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))  # web/src
 sys.path.append(SRC_ROOT)
 
-from config.path import TRACK_MAP, TRACKS_HTML_PATH
+from config.path import TRACK_MAP, PERFORMACE_HTML_PATH
+from config.templates import load_template
 from load_meetings import load_meetings
-from templates import load_template
+
 
 TEMPLATE_NAME = "ai_meeting.html"
 # -----------------------------
 # 開催ページ生成
 # -----------------------------
 def generate_meeting_pages(day = date.today()):
-    os.makedirs(TRACKS_HTML_PATH, exist_ok=True)
+    os.makedirs(PERFORMACE_HTML_PATH, exist_ok=True)
     meetings = load_meetings( day.year )
 
     past_meetings = []
@@ -40,7 +41,7 @@ def generate_meeting_pages(day = date.today()):
     # -----------------------------
     # 過去開催ページを生成
     # -----------------------------
-    os.makedirs(os.path.join(TRACKS_HTML_PATH,"meeting", str((day.year))), exist_ok=True)
+    os.makedirs(os.path.join(PERFORMACE_HTML_PATH,"meeting", str((day.year))), exist_ok=True)
     for course, times, days in past_meetings:
         track_name = TRACK_MAP[course]
         first_day = days[0]["date"]
@@ -57,7 +58,7 @@ def generate_meeting_pages(day = date.today()):
             year=str(day.year),
         )
 
-        with open(os.path.join(TRACKS_HTML_PATH, "meeting", str(day.year), filename), "w", encoding="utf-8") as f:
+        with open(os.path.join(PERFORMACE_HTML_PATH, "meeting", str(day.year), filename), "w", encoding="utf-8") as f:
             f.write(html)
 
         print(f"Generated: {filename}")
