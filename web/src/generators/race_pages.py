@@ -112,7 +112,7 @@ def get_race_info(year, place_id, target_id):
       df_info = pd.read_csv(race_info_path, dtype=str)
       if not df_info.empty:
           race_type = str(df_info.iloc[0].get("race_type", ""))
-          course_len = int(df_info.iloc[0].get("course_len", ""))
+          course_len = int(float(df_info.iloc[0].get("course_len", "")))
           ground_state = str(df_info.iloc[0].get("ground_state", ""))
           race_class = str(df_info.iloc[0].get("class", ""))
 
