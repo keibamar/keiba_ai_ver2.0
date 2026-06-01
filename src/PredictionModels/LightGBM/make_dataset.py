@@ -133,14 +133,14 @@ def is_in_show(df_result, race_id):
             Bool 
     """
     rank = df_result.at[race_id,"着順"]
-    if rank.isdigit():
-        rank = int(rank)
-        if rank <= 3:
-            return 1
-        else:
+    rank_str = str(rank)
+    if rank_str.isdigit():
+        try:
+            rank_val = int(rank_str)
+        except Exception:
             return 0
-    else:
-        return 0
+        return 1 if rank_val <= 3 else 0
+    return 0
 
 def get_past_race_info_data(race_info_df):
     """ 過去レースのタイム指数、着順、人気を取得 
@@ -156,18 +156,34 @@ def get_past_race_info_data(race_info_df):
             # レース結果を取得(time_df(コース、距離、馬場), time_df(同クラス),"course_flag1", "len_flag1", "type_flag1", "state_flag1", "class_flag1" )
             df_time = get_time_info(race_info_df.iloc[i])
 
-            if "除" in str(race_info_df.at[i,"着順"]) or  "取" in str(race_info_df.at[i,"着順"]):
-                df_time.append(np.nan) 
+            # 着順・人気は欠損や特殊文字が混じるため文字列化して安全に扱う
+            raw_rank = race_info_df.at[i, "着順"]
+            raw_pop = race_info_df.at[i, "人気"]
+            rank_str = str(raw_rank)
+
+            if "除" in rank_str or "取" in rank_str:
                 df_time.append(np.nan)
-            elif  "中" in str(race_info_df.at[i,"着順"]) or "失" in str(race_info_df.at[i,"着順"]):
-                df_time.append(float(re.sub(r"\D", "", race_info_df.at[i,"人気"])))
-                df_time.append(np.nan)  
-            elif np.isnan(float(race_info_df.at[i,"人気"])):
                 df_time.append(np.nan)
-                df_time.append(np.nan)  
+            elif "中" in rank_str or "失" in rank_str:
+                # 人気だけは数値抽出を試みる（失格等で空の場合あり）
+                try:
+                    pop_val = float(re.sub(r"\D", "", str(raw_pop)))
+                except Exception:
+                    pop_val = np.nan
+                df_time.append(pop_val)
+                df_time.append(np.nan)
             else:
-                df_time.append(float(re.sub(r"\D", "", race_info_df.at[i,"人気"]))) 
-                df_time.append(float(re.sub(r"\D", "", race_info_df.at[i,"着順"])))
+                # 人気・着順を数値化（失敗したら NaN）
+                try:
+                    pop_val = float(re.sub(r"\D", "", str(raw_pop)))
+                except Exception:
+                    pop_val = np.nan
+                try:
+                    rank_val = float(re.sub(r"\D", "", rank_str))
+                except Exception:
+                    rank_val = np.nan
+                df_time.append(pop_val)
+                df_time.append(rank_val)
             race_score_list.append(df_time)
             
         else:

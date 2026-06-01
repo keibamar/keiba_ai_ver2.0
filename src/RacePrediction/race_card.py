@@ -174,9 +174,21 @@ def daily_race_card(place_id = 0, race_day = date.today()):
     print(race_id_list)
     # レース情報を取得
     for race_id in tqdm(race_id_list):
-        race_card_df = make_race_card(race_id)
+        res = make_race_card(race_id)
+        # make_race_card は (race_card_df, race_info_df) を返す場合と
+        # 空の DataFrame を返す場合があるため両方に対応する
+        if isinstance(res, tuple):
+            race_card_df, race_info_df = res
+        else:
+            race_card_df = res
+            race_info_df = pd.DataFrame()
         # csvファイルで出力
         save_race_cards(race_card_df, race_day, race_id)
+        # レース情報もあれば保存
+        try:
+            save_race_info_df(race_info_df, race_day, race_id)
+        except Exception:
+            pass
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='指定日の予想を作成')
