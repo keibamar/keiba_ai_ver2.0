@@ -1513,7 +1513,9 @@ def generate_recent_same_condition_html(date_str, place_id, target_id):
             pop_color = RANK_COLORS.get(str(popularity), "#ffffff")
             pop_text_color = "red" if  popularity >= 10 else "black"
           except :
-              pop_text_color = "black"
+            popularity = int(99)
+            pop_color =  "#ffffff"
+            pop_text_color = "black"
           pop_html = f'<td style="background-color: {pop_color}; color: {pop_text_color}; font-weight: bold;">{popularity}</td>'
           
           # 単勝オッズの色付け
