@@ -95,6 +95,4 @@ def update_daily_html(race_day = date.today()):
 
 # 使用例
 if __name__ == "__main__":
-    for i in range(20, 40):
-        race_day = date.today() - timedelta(days=(i))
-        make_html_prev_day(race_day)
+    make_html_prev_day()
