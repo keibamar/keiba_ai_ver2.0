@@ -233,11 +233,59 @@ def export_race_info_per_race(place_id, year):
 
         # DataFrameとして保存
         out_df = pd.DataFrame([record])
+        try :
+            out_df["course_len"] = int(out_df["course_len"].astype(float))
+        except Exception as e:
+            out_df["course_len"] = out_df["course_len"]
+        
         out_df.to_csv(out_path, index_label="", encoding="utf-8-sig")
 
         # print(f"✅ {out_path} を作成しました。")
 
     print(name_header.PLACE_LIST[place_id - 1], str(year), "レース情報出力完了")
+
+def _to_int(val):
+            if pd.isna(val) or val == "":
+                return val
+            s = str(val)
+            # 数字を抽出して整数化（例: '1400m' -> 1400, '1400.0' -> 1400）
+            m = re.search(r"(\d+)", s)
+            if m:
+                try:
+                    return int(m.group(1))
+                except Exception:
+                    pass
+            try:
+                return int(float(s))
+            except Exception:
+                return val
+            
+def convert_course_len_csv(file_path: str) -> bool:
+    """指定したCSVファイルに `course_len` 列があれば、すべて整数型に変換して上書き保存する。
+
+    Args:
+        file_path (str): 対象のCSVファイルパス
+
+    Returns:
+        bool: 変換と保存が成功したら True、ファイルが存在しない・列がない等の場合は False
+    """
+    try:
+        if not os.path.isfile(file_path):
+            print("convert_course_len_csv: file not exists:", file_path)
+            return False
+
+        df = pd.read_csv(file_path, dtype=str)
+        if "course_len" not in df.columns:
+            return False
+
+        df["course_len"] = df["course_len"].apply(_to_int)
+
+        # 上書き保存（UTF-8 BOM付きでエクセルでも開きやすく）
+        df.to_csv(file_path, index=False, encoding="utf-8-sig")
+        return True
+    except Exception as e:
+        race_results_error(e)
+        return False
 
 def update_race_results_dataset(place_id, day = date.today()):
     """ 開催コースと日にちを指定して、過去1週間分のrace_resultsデータセットを更新する 
@@ -265,6 +313,7 @@ def update_race_results_dataset(place_id, day = date.today()):
             new_race_results_df = new_race_results_df.replace(r'^\s*$', np.nan, regex=True)
             new_race_results_df.fillna(np.nan) 
             new_race_results_df = pd.concat([old_race_results_df, new_race_results_df],axis = 0)
+            new_race_results_df["course_len"] = new_race_results_df["course_len"].apply(_to_int)
             # csv/pickleに書き込む
             save_race_results_dataset(place_id, day.year, new_race_results_df)
         except Exception as e:
@@ -281,6 +330,7 @@ def make_yearly_race_results_dataset(place_id, year = date.today().year):
 
     # スクレイピング
     race_results_df = scrape_race_results_dataframe(race_id_list)
+    race_results_df["course_len"] = race_results_df["course_len"].apply(_to_int)
 
     # csv/pickleに書き込む
     save_race_results_dataset(place_id, year, race_results_df)
@@ -296,6 +346,7 @@ def make_up_to_day_dataset(place_id, day = date.today()):
 
     # スクレイピング
     race_results_df = scrape_race_results_dataframe(race_id_list)
+    race_results_df["course_len"] = race_results_df["course_len"].apply(_to_int)
 
     try:
         # csv/pickleに書き込む
