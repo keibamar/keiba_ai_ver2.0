@@ -83,6 +83,7 @@ def get_result_table(date_str, place_id, target_id) :
       return pd.DataFrame()
     
     df_race = pd.read_csv(result_csv, dtype=str, index_col=0)
+    df_race.index.name = "race_id"
     return df_race.copy()
 
 def get_returns_table(date_str, place_id, target_id) :
@@ -104,6 +105,7 @@ def get_returns_table(date_str, place_id, target_id) :
         print(f"警告: 配当結果ファイルが存在しません: {returns_csv}")
         return pd.DataFrame()
     df_race = pd.read_csv(returns_csv, dtype=str, index_col=0)
+    df_race.index.name = "race_id"
     return df_race.copy()
 
 def get_race_info(year, place_id, target_id):
@@ -1454,6 +1456,7 @@ def generate_recent_same_condition_html(date_str, place_id, target_id):
           continue
     
         df_all = pd.read_csv(result_csv, dtype=str, index_col=0)
+        df_all.index.name = "race_id"
 
         if df_all is None or df_all.empty:
             continue
