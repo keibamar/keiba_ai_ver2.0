@@ -16,6 +16,54 @@ scraping_header =  {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.3'
 }
 
+
+def url_exists(url: str) -> bool:
+    """URLが存在するかどうかを簡易チェックする。
+    HEAD を試み、ダメなら GET にフォールバックしてステータスコードを確認する。
+    タイムアウトや例外が発生した場合は False を返す。
+    """
+    try:
+        # まずはHEADで存在チェック（軽量）
+        resp = requests.head(url, headers=scraping_header, allow_redirects=True, timeout=5)
+        if resp.status_code == 200:
+            return True
+        # 一部サイトはHEADを拒否するためGETでフォールバック
+        resp = requests.get(url, headers=scraping_header, timeout=5)
+        return resp.status_code == 200
+    except Exception:
+        return False
+
+
+def validate_soup(soup, url: str, func_name: str, require_table: bool = False, selectors: list | None = None) -> bool:
+    """soupの中身が期待通りかをチェックする。問題があればログ出力してFalseを返す。
+
+    Args:
+        soup: BeautifulSoupオブジェクト
+        url (str): チェック対象のURL（ログ用）
+        func_name (str): 呼び出し関数名（ログ用）
+        require_table (bool): テーブルが必須か
+        selectors (list[str]|None): 期待するCSSセレクタのリスト
+
+    Returns:
+        bool: 有効ならTrue、無ければFalse
+    """
+    try:
+        if not soup or not getattr(soup, 'text', '').strip():
+            print(f"{func_name}: empty or no HTML content, skip {url}")
+            return False
+        if require_table and not soup.find('table'):
+            print(f"{func_name}: no <table> found, skip {url}")
+            return False
+        if selectors:
+            for sel in selectors:
+                if not soup.select_one(sel):
+                    print(f"{func_name}: expected selector '{sel}' not found, skip {url}")
+                    return False
+        return True
+    except Exception as e:
+        print(f"{func_name}: validate_soup error {e.__class__.__name__}: {e} for {url}")
+        return False
+
 def scraping_error(e):
     """ エラー時動作を記載する 
         Args:
@@ -32,6 +80,11 @@ def scrape_df(url):
         Returns:
             DataFrame: url先のテーブルデータをDataFrame型で返す    
         """
+    # URL存在チェック
+    if not url_exists(url):
+        print("scrape_df: URL not found, skip", url)
+        return pd.DataFrame()
+
     try:
         # urlからスクレイピング
         html = requests.get(url, headers=scraping_header)
@@ -39,6 +92,9 @@ def scrape_df(url):
         soup = BeautifulSoup(html.text, "html.parser")
         # バグ対策でdecode
         soup = BeautifulSoup(html.content.decode("euc-jp", "ignore"), "html.parser")
+        # soupの基本チェック
+        if not validate_soup(soup, url, 'scrape_df', require_table=True):
+            return pd.DataFrame()
         
         # テーブルデータを取得
         df = [pd.read_html(str(t))[0] for t in soup.select('table:has(tr td)')]
@@ -60,16 +116,22 @@ def scrape_race_results(race_id):
     """                     
     try:
         url = "https://db.netkeiba.com/race/" + str(race_id)
+        # URL存在チェック
+        if not url_exists(url):
+            print("scrape_race_results: URL not found, skip", url)
+            return pd.DataFrame()
         # urlからスクレイピング
         html = requests.get(url, headers=scraping_header)
         html.encoding = "EUC-JP"
         soup = BeautifulSoup(html.text, "html.parser")
         # バグ対策でdecode
         soup = BeautifulSoup(html.content.decode("euc-jp", "ignore"), "html.parser")
-        
+        # soupの基本チェック
+        if not validate_soup(soup, url, 'scrape_race_results', require_table=True, selectors=['div.data_intro','table[summary="レース結果"]']):
+            return pd.DataFrame()
         # テーブルの行を取得    
         rows = soup.find_all('tr')
-        expected_columns = 21  # 期待する列数
+        expected_columns = 25  # 期待する列数
 
         filtered_data = []
         for row in rows:
@@ -81,7 +143,7 @@ def scrape_race_results(race_id):
         # データフレームに変換
         df_results = pd.DataFrame(filtered_data, columns=[
             "着順", "枠番", "馬番", "馬名", "性齢", "斤量", "騎手",
-            "タイム", "着差", "タイム指数", "通過", "上り", "単勝",
+            "タイム", "着差", "タイム指数", "タイム指数2","タイム指数3","タイム指数4","タイム指数5","通過", "上り", "単勝",
             "人気", "馬体重", "調教タイム", "厩舎コメント", "備考", "調教師", "馬主", "賞金"
         ])
 
@@ -135,6 +197,12 @@ def scrape_race_results(race_id):
                 df_results["weather"] = [text] * len(df_results)
             if "年" in text:
                 df_results["date"] = [text] * len(df_results)
+        # course_lenを整数型に統一（floatになってしまうケースに対応）
+        if "course_len" in df_results.columns:
+            try:
+                df_results["course_len"] = int(df_results["course_len"].astype(float))
+            except Exception:
+                df_results["course_len"] = df_results["course_len"].apply(lambda x: int(x) if pd.notnull(x) else x)
         
         #馬ID、騎手IDをスクレイピング
         horse_id_list = []
@@ -155,10 +223,11 @@ def scrape_race_results(race_id):
         df_results["jockey_id"] = jockey_id_list
 
         # --- 不要列 ---
-        drop_columns = ["タイム指数", "調教タイム", "厩舎コメント", "備考", "馬主", "賞金"]
+        drop_columns = ["タイム指数","タイム指数2","タイム指数3","タイム指数4","タイム指数5", "調教タイム", "厩舎コメント", "備考", "馬主", "賞金"]
         df_results = df_results.drop(columns=[c for c in drop_columns if c in df_results.columns], errors="ignore")
         #インデックスをrace_idにする
         df_results.index = [race_id] * len(df_results)
+        print(df_results)
         return df_results
     except Exception as e:
         scraping_error(e)
@@ -203,12 +272,18 @@ def scrape_day_race_results(race_id):
     """
     # 配当結果の取得
     url = "https://race.netkeiba.com/race/result.html?race_id=" + race_id
+    # URL存在チェック
+    if not url_exists(url):
+        print("scrape_day_race_results: URL not found, skip", url)
+        return pd.DataFrame()
     html = requests.get(url, headers=scraping_header)
     html.encoding = "EUC-JP"
     try:
         soup = BeautifulSoup(html.text, "html.parser")
         # バグ対策でdecode
         soup = BeautifulSoup(html.content.decode("euc-jp", "ignore"), "html.parser")
+        if not validate_soup(soup, url, 'scrape_day_race_results', require_table=True):
+            return pd.DataFrame()
         
         # メインとなるテーブルデータを取得
         df_results = [pd.read_html(str(t))[0] for t in soup.select('table:has(tr td)')][0]
@@ -235,10 +310,19 @@ def scrape_day_race_returns(race_id):
     """
     # 配当結果の取得
     url = "https://race.netkeiba.com/race/result.html?race_id=" + race_id
+    # URL存在チェック
+    if not url_exists(url):
+        print("scrape_day_race_returns: URL not found, skip", url)
+        return pd.DataFrame()
     html = requests.get(url, headers=scraping_header)
     html.encoding = "EUC-JP"
 
     try:
+        # soupで中身チェック（pd.read_html前）
+        soup = BeautifulSoup(html.text, "html.parser")
+        soup = BeautifulSoup(html.content.decode("euc-jp", "ignore"), "html.parser")
+        if not validate_soup(soup, url, 'scrape_day_race_returns', require_table=True):
+            return pd.DataFrame()
         # 単勝、複勝、枠連、馬連のデータ
         df1 = pd.read_html(html.text)[1]
         # ワイド、馬単、三連複、三連単のデータ
@@ -263,9 +347,19 @@ def scrape_race_card(race_id):
     try :
         info =[]
         url = "https://race.netkeiba.com/race/shutuba.html?race_id=" + str(race_id)
+        # URL存在チェック
+        if not url_exists(url):
+            print("scrape_race_card: URL not found, skip", url)
+            return info, pd.DataFrame(), pd.DataFrame()
         # スクレイピング
         html = requests.get(url, headers=scraping_header)
         html.encoding = "EUC-JP"
+
+        # soupチェック
+        soup = BeautifulSoup(html.text, "html.parser")
+        soup = BeautifulSoup(html.content.decode("euc-jp", "ignore"), "html.parser")
+        if not validate_soup(soup, url, 'scrape_race_card', require_table=True, selectors=['h1.RaceName','div.RaceData01','div.RaceData02']):
+            return info, pd.DataFrame(), pd.DataFrame()
 
         # メインとなるテーブルデータを取得
         df = pd.read_html(html.text)[0]
@@ -376,9 +470,18 @@ def scrape_horse_results(horse_id):
     """
     try:
         url = 'https://db.netkeiba.com/horse/' + horse_id
+        # URL存在チェック
+        if not url_exists(url):
+            print("scrape_horse_results: URL not found, skip", url)
+            return pd.DataFrame()
         # スクレイピング
         html = requests.get(url, headers=scraping_header)
         html.encoding = "EUC-JP"
+        # soupチェック（pd.read_html前）
+        soup = BeautifulSoup(html.text, "html.parser")
+        soup = BeautifulSoup(html.content.decode("euc-jp", "ignore"), "html.parser")
+        if not validate_soup(soup, url, 'scrape_horse_results', require_table=True):
+            return pd.DataFrame()
         # 新馬戦の場合を除外
         if len(pd.read_html(html.text)) < 4:
             return pd.DataFrame()
