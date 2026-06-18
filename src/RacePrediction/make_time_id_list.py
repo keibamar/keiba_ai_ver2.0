@@ -115,6 +115,7 @@ def make_time_id_list(race_day = date.today()):
     race_id_list = get_race_id.get_daily_id(race_day = race_day)
     for race_id in race_id_list:
         race_info = race_card.get_race_info(race_id)
+        print(race_info)
         if any(race_info):
             race_time = get_race_time(race_info)
             race_name = get_race_name(race_info)

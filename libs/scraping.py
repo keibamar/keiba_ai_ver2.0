@@ -461,6 +461,71 @@ def scrape_race_card(race_id):
         scraping_error(e)
         return info, pd.DataFrame(), pd.DataFrame()
 
+def scrape_race_info(race_id):
+    """ race_idから、race_infをスクレイピング
+        Args:
+            race_id (str) : race_id
+
+        Returns:
+            info(list) : レース情報
+    """   
+    try:
+        info = []
+        url = "https://race.netkeiba.com/race/shutuba.html?race_id=" + str(race_id)
+        # URL存在チェック
+        if not url_exists(url):
+            print("scrape_race_info: URL not found, skip", url)
+            return info
+
+        # リクエストはバイナリのまま受け取り、エンコーディングは推測に任せる
+        resp = requests.get(url, headers=scraping_header)
+        content = resp.content
+        encoding = resp.apparent_encoding or "euc-jp"
+
+        # BeautifulSoup に生のバイト列を渡してエンコーディングを明示する
+        soup = BeautifulSoup(content, "html.parser", from_encoding=encoding)
+
+        if not validate_soup(soup, url, 'scrape_race_info', require_table=True, selectors=['h1.RaceName','div.RaceData01','div.RaceData02']):
+            return info
+
+        # pd.read_html は文字列を期待するため、推測したエンコーディングでデコードして渡す
+        html_text = content.decode(encoding, "ignore")
+        df = pd.read_html(html_text)[0]
+
+        # 列名に半角スペースがあれば除去する
+        df = df.rename(columns=lambda x: x.replace(' ', ''))
+
+        # 後半部分を削除
+        df = df.iloc[:, :9]
+        df = df.drop(columns='印')
+        # multicolumを解除
+        df.columns = df.columns.droplevel(0)
+
+        # レース情報をスクレイピング（soup をそのまま使用）
+        texts = (
+            soup.find("h1", attrs={"class": "RaceName"}).text
+            + " "
+            + soup.find("div", attrs={"class": "RaceData01"}).text
+            + " "
+            + soup.find("div", attrs={"class": "RaceData02"}).find_all("span")[3].text
+            + " "
+            + soup.find("div", attrs={"class": "RaceData02"}).find_all("span")[4].text
+            + " "
+            + soup.find("div", attrs={"class": "RaceData02"}).find_all("span")[5].text
+            + " "
+            + soup.find("div", attrs={"class": "RaceData02"}).find_all("span")[6].text
+            + " "
+            + soup.find("div", attrs={"class": "RaceData02"}).find_all("span")[7].text
+        )
+        info = re.findall(r'\w+', texts)
+        # Aコースなどの表記を消去
+        info = [s for s in info if s not in ('A', 'B', 'C')]
+
+        return info
+    except Exception as e:
+        scraping_error(e)
+        return info
+
 def scrape_horse_results(horse_id):
     """馬の過去成績を取得
         Args:

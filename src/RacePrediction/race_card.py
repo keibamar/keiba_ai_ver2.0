@@ -69,7 +69,7 @@ def get_race_info(race_id):
         Returns:
             race_info(list) : レース情報
     """
-    race_info, race_info_df, shutubahyou_df = scraping.scrape_race_card(race_id)
+    race_info = scraping.scrape_race_info(race_id)
     return race_info
 
 def get_race_cards(race_day, race_id):
