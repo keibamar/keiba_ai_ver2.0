@@ -352,28 +352,30 @@ def scrape_race_card(race_id):
             print("scrape_race_card: URL not found, skip", url)
             return info, pd.DataFrame(), pd.DataFrame()
         # スクレイピング
+        # リクエストはバイナリのまま受け取り、エンコーディングは推測に任せる
+        # （EUC-JP固定だと、サイトがUTF-8化された際に文字化けし列名が壊れる）
         html = requests.get(url, headers=scraping_header)
-        html.encoding = "EUC-JP"
+        content = html.content
+        encoding = html.apparent_encoding or "utf-8"
+        html_text = content.decode(encoding, "ignore")
 
         # soupチェック
-        soup = BeautifulSoup(html.text, "html.parser")
-        soup = BeautifulSoup(html.content.decode("euc-jp", "ignore"), "html.parser")
+        soup = BeautifulSoup(content, "html.parser", from_encoding=encoding)
         if not validate_soup(soup, url, 'scrape_race_card', require_table=True, selectors=['h1.RaceName','div.RaceData01','div.RaceData02']):
             return info, pd.DataFrame(), pd.DataFrame()
 
         # メインとなるテーブルデータを取得
-        df = pd.read_html(html.text)[0]
+        df = pd.read_html(html_text)[0]
 
         # 列名に半角スペースがあれば除去する
         df = df.rename(columns=lambda x: x.replace(' ', ''))
-
+        print(df)
         # 後半部分を削除
         df = df.iloc[:,:9]
         df = df.drop(columns = '印')
         # multicolumを解除
         df.columns = df.columns.droplevel(0)
-        # レース情報をスクレイピング
-        soup = BeautifulSoup(html.text, "html.parser")
+        # レース情報をスクレイピング（既にデコード済みのsoupを再利用）
         texts = (
             soup.find("h1", attrs={"class": "RaceName"}).text                              # レース名
             + " "
@@ -609,4 +611,4 @@ def scrape_peds(horse_id):
 
 
 if __name__ == "__main__":
-    scrape_race_card("202403030401")
+    scrape_race_card("202605030501")
