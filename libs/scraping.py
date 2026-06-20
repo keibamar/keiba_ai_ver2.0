@@ -369,7 +369,7 @@ def scrape_race_card(race_id):
 
         # 列名に半角スペースがあれば除去する
         df = df.rename(columns=lambda x: x.replace(' ', ''))
-        print(df)
+        # print(df)
         # 後半部分を削除
         df = df.iloc[:,:9]
         df = df.drop(columns = '印')
